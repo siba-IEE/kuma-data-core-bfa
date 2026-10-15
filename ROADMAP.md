@@ -21,7 +21,7 @@ l'amorçage et la montée en charge de la donnée burkinabè.
 - [x] Chaîne d'ingestion reproductible : ingesteurs, CSV versionnés, migration
       sans réseau.
 - [ ] CAMS Radiation (compte Copernicus ADS requis).
-- [ ] Séries journalières.
+- [x] Séries journalières NASA POWER aux provinces (ADR-0010).
 
 ## Jalon 3 : grandeurs et qualité
 

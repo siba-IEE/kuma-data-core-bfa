@@ -37,3 +37,16 @@ def test_detail_d_une_serie_mensuelle(client: TestClient, headers_auth: dict[str
     assert payload["localite_code"] == "bfa_com_ouagadougou"
     assert len(payload["mesures"]) == 12
     assert all(3.0 < m["valeur"] < 8.5 for m in payload["mesures"])
+
+
+def test_detail_d_une_serie_journaliere(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """Une série journalière renvoie un jour par mesure, 29 février compris."""
+    response = client.get(
+        "/v1/series/nasa_power_ghi_journalier_bfa_prov_kadiogo?from=2024-02-01&to=2024-02-29",
+        headers=headers_auth,
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["localite_code"] == "bfa_prov_kadiogo"
+    assert len(payload["mesures"]) == 29
+    assert all(0.0 < m["valeur"] < 9.0 for m in payload["mesures"])

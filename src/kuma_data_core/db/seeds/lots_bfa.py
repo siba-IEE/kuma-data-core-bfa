@@ -1,4 +1,4 @@
-"""Lots de séries solaires mensuelles : points et contrats (ADR-0009).
+"""Lots de séries solaires : points et contrats (ADR-0009, ADR-0010).
 
 Un **lot** est un ensemble de localités du référentiel dont les séries sont
 demandées aux sources solaires sous le même contrat :
@@ -7,13 +7,16 @@ demandées aux sources solaires sous le même contrat :
 - ``communes`` : les 350 départements et la commune de Ouagadougou (niveau
   ``commune``, migration 0004).
 
-Chaque série couvre toute la période servie par sa source à la date de
-l'ingestion (octobre 2026). Ces contrats sont figés par la migration 0006 : une
-autre source ou une autre période passera par de nouveaux contrats et de
-nouveaux fichiers.
+Les séries mensuelles portent sur les deux lots, les séries journalières NASA
+POWER sur le seul lot ``provinces``. Chaque série couvre toute la période servie
+par sa source à la date de l'ingestion (octobre 2026). Ces contrats sont figés
+par les migrations 0006 (mensuel) et 0007 (journalier) : une autre source ou une
+autre période passera par de nouveaux contrats et de nouveaux fichiers.
 """
 
 from __future__ import annotations
+
+from typing import Literal
 
 from kuma_data_core.db.seeds.localites_bfa_departements_seed_data import (
     LOCALITES_SEED as _COMMUNES,
@@ -22,6 +25,7 @@ from kuma_data_core.db.seeds.localites_bfa_seed_data import LOCALITES_SEED as _L
 from kuma_data_core.db.seeds.series_csv import ContratSerie
 
 LOTS: tuple[str, ...] = ("provinces", "communes")
+LOTS_JOURNALIERS: tuple[str, ...] = ("provinces",)
 _NIVEAUX: dict[str, str] = {"provinces": "prefecture", "communes": "commune"}
 
 
@@ -37,17 +41,21 @@ def points_lot(lot: str) -> list[tuple[str, str, float, float]]:
     )
 
 
-def _nasa(grandeur: str, debut: int) -> ContratSerie:
+def _nasa(
+    grandeur: str, debut: int, granularite: Literal["mensuel", "journalier"] = "mensuel"
+) -> ContratSerie:
+    bornes = {"mensuel": BORNES, "journalier": BORNES_JOURNALIERES}[granularite]
     return ContratSerie(
         source_code="nasa_power",
         source_id=1,
         source_libelle="NASA POWER",
-        prefixe_code=f"nasa_power_{grandeur}_mensuel",
+        prefixe_code=f"nasa_power_{grandeur}_{granularite}",
         grandeur_code=grandeur,
         methode_collecte="modele_satellitaire",
         annee_debut=debut,
         annee_fin=2025,
-        borne_max=BORNES[grandeur],
+        borne_max=bornes[grandeur],
+        granularite=granularite,
     )
 
 
@@ -78,6 +86,10 @@ PARAMETRES_NASA: dict[str, str] = {
 # des maxima servis par les sources sur le Burkina Faso (GHI 7,83, DNI 8,20,
 # DHI 3,89) et sous le plafond physique par ciel clair à ces latitudes.
 BORNES: dict[str, float] = {"ghi": 8.5, "dni": 10.0, "dhi": 6.0}
+# Bornes journalières (kWh/m²/jour, total du jour) : au-dessus des maxima servis
+# par NASA POWER aux provinces (GHI 8,39, DNI 9,29, DHI 5,14) et sous le plafond
+# physique d'une journée claire à ces latitudes.
+BORNES_JOURNALIERES: dict[str, float] = {"ghi": 9.0, "dni": 11.0, "dhi": 6.5}
 
 # NASA POWER : GHI depuis 1991 (normale 1991-2020) ; DNI servi depuis 2001 ;
 # DHI en rupture avant 2001. Fin : 2025, dernière année complète servie.
@@ -95,7 +107,14 @@ CONTRATS_ERA5: dict[str, ContratSerie] = {
     g: _pvgis("era5_pvgis", 16, "ERA5 (PVGIS)", "era5", "reanalyse", g) for g in ("ghi", "dni")
 }
 
-# Tous les contrats, dans l'ordre d'insertion de la migration.
+# NASA POWER journalier : mêmes périodes que le mensuel.
+CONTRATS_NASA_JOURNALIERS: dict[str, ContratSerie] = {
+    "ghi": _nasa("ghi", 1991, "journalier"),
+    "dni": _nasa("dni", 2001, "journalier"),
+    "dhi": _nasa("dhi", 2001, "journalier"),
+}
+
+# Tous les contrats mensuels, dans l'ordre d'insertion de la migration.
 CONTRATS_MENSUELS: tuple[ContratSerie, ...] = (
     *CONTRATS_NASA.values(),
     *CONTRATS_SARAH3.values(),

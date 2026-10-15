@@ -1,19 +1,24 @@
-"""Seeds des séries mensuelles en CSV compressé (ADR-0009).
+"""Seeds des séries solaires en CSV compressé (ADR-0009, ADR-0010).
 
 Les séries solaires des lots (provinces, communes) sont stockées en **CSV gzip
 committés** sous ``seeds/donnees/``, lus hors ligne par les migrations : aucune
 migration n'accède au réseau et chaque valeur gravée est versionnée.
 
-Un fichier par source, grandeur et lot. Colonnes :
-``localite_code, latitude, longitude, annee, mois, valeur`` (valeur en
-kWh/m²/jour, moyenne journalière du mois, arrondie à 4 décimales).
+Un fichier par source, grandeur, granularité et lot. Colonnes :
+
+- séries mensuelles : ``localite_code, latitude, longitude, annee, mois, valeur``
+  (moyenne journalière du mois) ;
+- séries journalières : ``localite_code, latitude, longitude, date, valeur``
+  (date ISO 8601, total du jour).
+
+Valeurs en kWh/m²/jour, arrondies à 4 décimales.
 
 L'écriture est **déterministe** (lignes triées, horodatage gzip nul) : régénérer
 un fichier depuis les mêmes données produit les mêmes octets. Elle passe par un
 fichier temporaire, validé avant de remplacer le fichier versionné. La lecture
-**valide** tout : complétude (12 mois × années du contrat, par localité), bornes
-de plausibilité, doublons, coordonnées constantes par localité, localités
-connues du référentiel.
+**valide** tout : complétude (tous les mois, ou tous les jours civils, de la
+période du contrat, par localité), bornes de plausibilité, doublons,
+coordonnées constantes par localité, localités connues du référentiel.
 """
 
 from __future__ import annotations
@@ -21,9 +26,11 @@ from __future__ import annotations
 import csv
 import gzip
 import io
+from collections.abc import Callable, Hashable
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from kuma_data_core.db.seeds.localites_bfa_departements_seed_data import (
     LOCALITES_SEED as _COMMUNES,
@@ -32,13 +39,20 @@ from kuma_data_core.db.seeds.localites_bfa_seed_data import LOCALITES_SEED as _L
 
 DOSSIER_DONNEES: Path = Path(__file__).resolve().parent / "donnees"
 COLONNES: tuple[str, ...] = ("localite_code", "latitude", "longitude", "annee", "mois", "valeur")
+COLONNES_JOURNALIERES: tuple[str, ...] = (
+    "localite_code",
+    "latitude",
+    "longitude",
+    "date",
+    "valeur",
+)
 
 NOMS_LOCALITES: dict[str, str] = {e["code"]: e["nom"] for e in (*_LOCALITES, *_COMMUNES)}
 
 
 @dataclass(frozen=True)
 class ContratSerie:
-    """Contrat d'une famille de séries (une source × une grandeur)."""
+    """Contrat d'une famille de séries (une source × une grandeur × une granularité)."""
 
     source_code: str
     source_id: int
@@ -50,7 +64,7 @@ class ContratSerie:
     annee_fin: int
     borne_max: float  # kWh/m²/jour, borne de plausibilité
     niveau_confiance: str = "B"
-    granularite: str = "mensuel"
+    granularite: Literal["mensuel", "journalier"] = "mensuel"
 
     @property
     def periode_debut(self) -> str:
@@ -64,6 +78,10 @@ class ContratSerie:
     def nb_mois(self) -> int:
         return (self.annee_fin - self.annee_debut + 1) * 12
 
+    @property
+    def nb_jours(self) -> int:
+        return (date(self.annee_fin, 12, 31) - date(self.annee_debut, 1, 1)).days + 1
+
     def nom_fichier(self, lot: str) -> str:
         return f"{self.prefixe_code}_{lot}.csv.gz"
 
@@ -76,81 +94,178 @@ def ecrire_series(
     lot: str,
     series: list[tuple[str, float, float, list[tuple[int, int, float]]]],
 ) -> Path:
-    """Écrit ``(localite_code, lat, lon, mesures)`` en CSV gzip déterministe."""
-    lignes: list[tuple[Any, ...]] = []
-    for code, lat, lon, mesures in series:
-        for annee, mois, valeur in mesures:
-            lignes.append((code, lat, lon, annee, mois, round(valeur, 4)))
+    """Écrit des séries mensuelles ``(localite_code, lat, lon, mesures)`` en CSV gzip."""
+    lignes: list[tuple[Any, ...]] = [
+        (code, lat, lon, annee, mois, round(valeur, 4))
+        for code, lat, lon, mesures in series
+        for annee, mois, valeur in mesures
+    ]
     lignes.sort(key=lambda r: (r[0], r[3], r[4]))
-    tampon = io.StringIO()
-    ecrivain = csv.writer(tampon, lineterminator="\n")
-    ecrivain.writerow(COLONNES)
-    ecrivain.writerows(lignes)
-    DOSSIER_DONNEES.mkdir(parents=True, exist_ok=True)
-    cible = DOSSIER_DONNEES / contrat.nom_fichier(lot)
-    provisoire = cible.with_name(f"{cible.name}.tmp")
-    with (
-        provisoire.open("wb") as brut,
-        gzip.GzipFile(filename="", mode="wb", fileobj=brut, mtime=0, compresslevel=9) as gz,
-    ):
-        gz.write(tampon.getvalue().encode("utf-8"))
-    try:
-        _lire(contrat, provisoire)
-    except ValueError:
-        provisoire.unlink()
-        raise
-    provisoire.replace(cible)
-    return cible
+    return _ecrire(contrat, lot, COLONNES, lignes, _lire_mensuel)
+
+
+def ecrire_series_journalieres(
+    contrat: ContratSerie,
+    lot: str,
+    series: list[tuple[str, float, float, list[tuple[date, float]]]],
+) -> Path:
+    """Écrit des séries journalières ``(localite_code, lat, lon, mesures)`` en CSV gzip."""
+    lignes: list[tuple[Any, ...]] = [
+        (code, lat, lon, jour.isoformat(), round(valeur, 4))
+        for code, lat, lon, mesures in series
+        for jour, valeur in mesures
+    ]
+    lignes.sort(key=lambda r: (r[0], r[3]))
+    return _ecrire(contrat, lot, COLONNES_JOURNALIERES, lignes, _lire_journalier)
 
 
 def lire_series(contrat: ContratSerie, lot: str) -> list[dict[str, Any]]:
-    """Relit un lot : une entrée par série, triée par localité.
+    """Relit un lot mensuel : une entrée par série, triée par localité.
 
     Chaque série : ``code``, ``libelle``, ``localite_code``, ``latitude``,
     ``longitude``, ``mesures`` [(annee, mois, valeur)]. Lève ``ValueError`` si le
     fichier viole le contrat.
     """
-    return _lire(contrat, DOSSIER_DONNEES / contrat.nom_fichier(lot))
+    return _lire_mensuel(contrat, DOSSIER_DONNEES / contrat.nom_fichier(lot))
 
 
-def _lire(contrat: ContratSerie, chemin: Path) -> list[dict[str, Any]]:
+def lire_series_journalieres(contrat: ContratSerie, lot: str) -> list[dict[str, Any]]:
+    """Relit un lot journalier : comme ``lire_series``, ``mesures`` [(date, valeur)]."""
+    return _lire_journalier(contrat, DOSSIER_DONNEES / contrat.nom_fichier(lot))
+
+
+def _ecrire(
+    contrat: ContratSerie,
+    lot: str,
+    entete: tuple[str, ...],
+    lignes: list[tuple[Any, ...]],
+    relire: Callable[[ContratSerie, Path], object],
+) -> Path:
+    tampon = io.StringIO()
+    ecrivain = csv.writer(tampon, lineterminator="\n")
+    ecrivain.writerow(entete)
+    ecrivain.writerows(lignes)
+    DOSSIER_DONNEES.mkdir(parents=True, exist_ok=True)
+    cible = DOSSIER_DONNEES / contrat.nom_fichier(lot)
+    provisoire = cible.with_name(f"{cible.name}.tmp")
+    try:
+        with (
+            provisoire.open("wb") as brut,
+            gzip.GzipFile(filename="", mode="wb", fileobj=brut, mtime=0, compresslevel=9) as gz,
+        ):
+            gz.write(tampon.getvalue().encode("utf-8"))
+        relire(contrat, provisoire)
+    except BaseException:
+        provisoire.unlink(missing_ok=True)
+        raise
+    provisoire.replace(cible)
+    return cible
+
+
+def _lire_mensuel(contrat: ContratSerie, chemin: Path) -> list[dict[str, Any]]:
+    def cle(champs: list[str]) -> tuple[int, int] | None:
+        annee, mois = int(champs[0]), int(champs[1])
+        if contrat.annee_debut <= annee <= contrat.annee_fin and 1 <= mois <= 12:
+            return annee, mois
+        return None
+
+    par_loc = _lire_lignes(contrat, chemin, COLONNES, cle)
+    return _series(
+        contrat,
+        chemin,
+        par_loc,
+        nombre=contrat.nb_mois,
+        unite="mois",
+        trier=lambda mesures: sorted((a, m, v) for (a, m), v in mesures.items()),
+    )
+
+
+def _lire_journalier(contrat: ContratSerie, chemin: Path) -> list[dict[str, Any]]:
+    debut, fin = date(contrat.annee_debut, 1, 1), date(contrat.annee_fin, 12, 31)
+
+    def cle(champs: list[str]) -> date | None:
+        try:
+            jour = date.fromisoformat(champs[0])
+        except ValueError:
+            jour = None
+        if jour is None or jour.isoformat() != champs[0]:
+            raise ValueError(f"{chemin.name} : date invalide {champs[0]!r}.")
+        return jour if debut <= jour <= fin else None
+
+    par_loc = _lire_lignes(contrat, chemin, COLONNES_JOURNALIERES, cle)
+    return _series(
+        contrat,
+        chemin,
+        par_loc,
+        nombre=contrat.nb_jours,
+        unite="jours",
+        trier=lambda mesures: sorted(mesures.items()),
+    )
+
+
+def _lire_lignes(
+    contrat: ContratSerie,
+    chemin: Path,
+    colonnes: tuple[str, ...],
+    cle: Callable[[list[str]], Hashable | None],
+) -> dict[str, dict[str, Any]]:
+    """Lit un fichier : par localité, coordonnées et mesures ``{clé: valeur}``."""
     with gzip.open(chemin, "rt", encoding="utf-8", newline="") as f:
         lecteur = csv.reader(f)
         entete = tuple(next(lecteur))
-        if entete != COLONNES:
-            raise ValueError(f"{chemin.name} : en-tête {entete!r}, {COLONNES!r} attendu.")
+        if entete != colonnes:
+            raise ValueError(f"{chemin.name} : en-tête {entete!r}, {colonnes!r} attendu.")
         par_loc: dict[str, dict[str, Any]] = {}
-        for code, lat, lon, annee_s, mois_s, valeur_s in lecteur:
-            annee, mois, valeur = int(annee_s), int(mois_s), float(valeur_s)
-            if not (contrat.annee_debut <= annee <= contrat.annee_fin and 1 <= mois <= 12):
-                raise ValueError(f"{chemin.name} : période hors contrat {code} {annee}-{mois}.")
+        for ligne in lecteur:
+            if len(ligne) != len(colonnes):
+                raise ValueError(
+                    f"{chemin.name} : ligne {lecteur.line_num}, {len(ligne)} champs, "
+                    f"{len(colonnes)} attendus."
+                )
+            code, lat, lon, *champs, valeur_s = ligne
+            instant = "-".join(champs)
+            k = cle(champs)
+            if k is None:
+                raise ValueError(f"{chemin.name} : période hors contrat {code} {instant}.")
+            valeur = float(valeur_s)
             if not (0.0 < valeur <= contrat.borne_max):
-                raise ValueError(f"{chemin.name} : valeur hors bornes {code} {annee}-{mois}.")
+                raise ValueError(f"{chemin.name} : valeur hors bornes {code} {instant}.")
             serie = par_loc.setdefault(
                 code,
                 {"latitude": float(lat), "longitude": float(lon), "mesures": {}},
             )
             if (serie["latitude"], serie["longitude"]) != (float(lat), float(lon)):
                 raise ValueError(f"{chemin.name} : coordonnées incohérentes pour {code}.")
-            if (annee, mois) in serie["mesures"]:
-                raise ValueError(f"{chemin.name} : doublon {code} {annee}-{mois}.")
-            serie["mesures"][(annee, mois)] = valeur
+            if k in serie["mesures"]:
+                raise ValueError(f"{chemin.name} : doublon {code} {instant}.")
+            serie["mesures"][k] = valeur
+    return par_loc
 
+
+def _series(
+    contrat: ContratSerie,
+    chemin: Path,
+    par_loc: dict[str, dict[str, Any]],
+    *,
+    nombre: int,
+    unite: str,
+    trier: Callable[[dict[Any, float]], list[Any]],
+) -> list[dict[str, Any]]:
+    """Assemble les séries d'un fichier lu, triées par localité, complètes."""
     sortie: list[dict[str, Any]] = []
     for code in sorted(par_loc):
         if code not in NOMS_LOCALITES:
             raise ValueError(f"{chemin.name} : localité inconnue {code!r}.")
-        mesures = sorted((a, m, v) for (a, m), v in par_loc[code]["mesures"].items())
-        if len(mesures) != contrat.nb_mois:
-            raise ValueError(
-                f"{chemin.name} : {code} a {len(mesures)} mois, {contrat.nb_mois} attendus."
-            )
+        mesures = trier(par_loc[code]["mesures"])
+        if len(mesures) != nombre:
+            raise ValueError(f"{chemin.name} : {code} a {len(mesures)} {unite}, {nombre} attendus.")
         sortie.append(
             {
                 "code": contrat.code_serie(code),
                 "libelle": (
-                    f"{contrat.grandeur_code.upper()} mensuel {contrat.source_libelle}, "
-                    f"{NOMS_LOCALITES[code]} ({contrat.annee_debut}-{contrat.annee_fin})"
+                    f"{contrat.grandeur_code.upper()} {contrat.granularite} "
+                    f"{contrat.source_libelle}, {NOMS_LOCALITES[code]} "
+                    f"({contrat.annee_debut}-{contrat.annee_fin})"
                 ),
                 "localite_code": code,
                 "latitude": par_loc[code]["latitude"],

@@ -103,8 +103,9 @@ jobs:
   tests-integration:
     name: Tests d'intégration
     runs-on: ubuntu-latest
-    # Migration 0006 (768 936 mesures solaires lues dans les CSV committés) :
-    # 40 s en local, upgrade head complet sous la minute.
+    # Migrations 0006 et 0007 (768 936 mesures mensuelles et 1 459 162
+    # journalières, lues dans les CSV committés) : upgrade head en 2 min 30
+    # environ en local.
     timeout-minutes: 10
     needs: [lint, type-check]
 
@@ -164,9 +165,9 @@ jobs:
 
       - name: Appliquer les migrations Alembic
         # Instance Burkina Faso : baseline schéma squashée + référentiels +
-        # localités + séries solaires mensuelles. Les mesures sont lues dans
-        # les CSV gzip committés -> `alembic upgrade head` n'exige aucun
-        # accès réseau.
+        # localités + séries solaires mensuelles et journalières. Les mesures
+        # sont lues dans les CSV gzip committés -> `alembic upgrade head`
+        # n'exige aucun accès réseau.
         run: uv run alembic upgrade head
 
       - name: Vérifier la cohérence Alembic / modèles SQLAlchemy

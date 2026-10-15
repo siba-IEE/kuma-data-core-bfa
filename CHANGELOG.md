@@ -3,6 +3,14 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.4.0
+
+- Séries journalières NASA POWER aux 47 provinces, en confiance B : GHI
+  1991-2025, DNI et DHI 2001-2025, soit 141 séries et 1 459 162 mesures relues
+  dans des CSV versionnés (ADR-0010).
+- Ingesteur `scripts/ingest_nasa_power_journalier.py` ; lecture et écriture des
+  CSV journaliers dans `series_csv.py`.
+
 ## 0.3.0
 
 - Donnée solaire brute : 2 786 séries mensuelles aux 47 provinces et aux

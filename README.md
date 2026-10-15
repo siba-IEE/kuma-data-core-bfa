@@ -32,13 +32,16 @@ Socle en place. La donnée nationale se construit par lots.
   en confiance B : NASA POWER (GHI 1991-2025, DNI et DHI 2001-2025), SARAH-3 et
   ERA5 via PVGIS (GHI et DNI 2005-2023). Voir
   l'[ADR-0009](docs/decisions/0009-series-solaires-mensuelles.md).
+- Séries journalières NASA POWER aux 47 provinces, en confiance B (GHI
+  1991-2025, DNI et DHI 2001-2025). Voir
+  l'[ADR-0010](docs/decisions/0010-series-journalieres-nasa-power.md).
 
 `alembic upgrade head` n'exige aucun accès réseau : les valeurs sont relues dans
 des CSV versionnés, produits par les scripts d'ingestion.
 
 ### À faire
 
-- CAMS Radiation (compte Copernicus ADS requis) et séries journalières.
+- CAMS Radiation (compte Copernicus ADS requis).
 - Grandeurs métier calculées et contrôle qualité.
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A.
 - Adaptation de la documentation `docs/` au contexte burkinabè.
@@ -51,11 +54,11 @@ OCHA sur HDX (CC BY-IGO, « IGB / OCHA, via HDX »).
 
 Les séries solaires proviennent de :
 
-- **NASA POWER** (CC BY 4.0), POWER Monthly and Annual API v2.10.0, consultée
-  le 15 octobre 2026 : « The data was obtained from National Aeronautics and
-  Space Administration (NASA) Langley Research Center's Prediction Of
-  Worldwide Energy Resources (POWER) project funded through the NASA Earth
-  Science Division. »
+- **NASA POWER** (CC BY 4.0), POWER Monthly and Annual API et POWER Daily API
+  v2.10.0, consultées le 15 octobre 2026 : « The data was obtained from
+  National Aeronautics and Space Administration (NASA) Langley Research
+  Center's Prediction Of Worldwide Energy Resources (POWER) project funded
+  through the NASA Earth Science Division. »
 - **PVGIS** (Joint Research Centre de la Commission européenne), API v5_3
   `MRcalc`, consultée le 15 octobre 2026 : « PVGIS © Union européenne,
   2001-2026 ». Réutilisation autorisée sous réserve de citer la source

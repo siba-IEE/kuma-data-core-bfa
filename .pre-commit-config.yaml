@@ -8,6 +8,9 @@ repos:
         exclude: ^migrations/sql/
       - id: check-added-large-files
         args: ["--maxkb=1024"]
+        # Seeds de séries (ADR-0009, ADR-0010) : CSV gzip versionnés par
+        # construction, le journalier dépasse 1 Mo par fichier.
+        exclude: ^src/kuma_data_core/db/seeds/donnees/.*\.csv\.gz$
       - id: check-yaml
       - id: check-toml
       - id: check-merge-conflict

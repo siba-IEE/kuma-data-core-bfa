@@ -41,6 +41,7 @@ def test_series_par_famille(db_session: Session) -> None:
             FROM series_metadonnees s
             JOIN sources so ON so.id = s.source_id
             JOIN localites l ON l.id = s.localite_id
+            WHERE s.granularite = 'mensuel'
             GROUP BY 1, 2, 3, 4, 5, 6, 7
             """
         )
@@ -68,6 +69,7 @@ def test_mesures_completes_et_bornees(db_session: Session) -> None:
             FROM series_metadonnees s
             JOIN sources so ON so.id = s.source_id
             LEFT JOIN mesures_ressource_mensuelles m ON m.serie_id = s.id
+            WHERE s.granularite = 'mensuel'
             GROUP BY 1, 2, 3
             """
         )
