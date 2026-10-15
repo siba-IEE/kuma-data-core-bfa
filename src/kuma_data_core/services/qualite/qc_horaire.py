@@ -32,7 +32,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 import pandas as pd  # type: ignore[import-untyped]
@@ -273,6 +273,7 @@ def executer_qc_horaire(
     serie_ids_par_grandeur: dict[str, int],
     latitude: float,
     longitude: float,
+    decalage: timedelta,
 ) -> list[VerdictLigne]:
     """Applique le QC BSRN aux lignes horaires courantes d'un jeu de séries.
 
@@ -287,6 +288,9 @@ def executer_qc_horaire(
             séries horaires à évaluer (ex. ``{"ghi": 421, ...}``).
         latitude, longitude : coordonnées WGS84 de la localité (UTC pour
             la position solaire).
+        decalage : écart entre l'instant stocké et l'instant où calculer la
+            géométrie solaire. Pour ``mesures_ressource_horaires``, c'est
+            ``services.horaire.DECALAGE_MILIEU_HEURE`` (milieu de l'heure).
 
     Returns:
         Liste de :class:`VerdictLigne`, un par ligne horaire courante.
@@ -315,9 +319,10 @@ def executer_qc_horaire(
             MesureHoraire(row_id=int(r.id), grandeur=grandeur, valeur=float(r.valeur))
         )
 
-    # Géométrie solaire vectorisée sur les instants uniques (UTC).
+    # Géométrie solaire vectorisée sur les instants uniques (UTC), décalés au
+    # moment que représente la valeur.
     instants = sorted(mesures_par_instant)
-    times = pd.DatetimeIndex(instants)
+    times = pd.DatetimeIndex(instants) + pd.Timedelta(decalage)
     zenith_values = pvlib.solarposition.get_solarposition(times, latitude, longitude)[
         "zenith"
     ].to_numpy()

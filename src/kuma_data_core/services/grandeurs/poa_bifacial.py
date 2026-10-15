@@ -45,7 +45,10 @@ from kuma_data_core.api.v1.schemas.grandeurs import (
 # (géométrie du midi appliquée aux totaux du jour, biais de moyennage acté). Import
 # privé cross-module assumé (pattern déjà utilisé : productible_pr_fourni importe
 # _temperature_cellule_noct). Aucune duplication de formule.
-from kuma_data_core.services.grandeurs.poa_parametrable import _midi_solaire_utc
+from kuma_data_core.services.grandeurs.poa_parametrable import (
+    _midi_solaire_utc,
+    geometrie_et_direct_horaires,
+)
 
 # === Constantes module ====================================================
 
@@ -72,13 +75,13 @@ class MesureJourBifacial(TypedDict):
 class MesureHeureBifacial(TypedDict):
     """Mesure horaire consommée par le POA bifacial en intégration horaire.
 
-    GHI/DNI/DHI horaires (W/m²) ; ``albedo`` est l'albedo **du jour** (broadcast
-    intra-journée : l'albedo n'existe qu'en journalier).
+    GHI et DHI horaires (W/m²), le direct étant reconstruit ; ``albedo`` est
+    l'albedo **du jour** (broadcast intra-journée : l'albedo n'existe qu'en
+    journalier).
     """
 
     instant_mesure: datetime
     ghi: float
-    dni: float
     dhi: float
     albedo: float
 
@@ -101,22 +104,20 @@ def albedo_du_jour(albedo_par_jour: dict[date, float], jour: date, albedo_repli:
 
 
 def _poa_global_infinite_sheds(
-    index: pd.DatetimeIndex,
+    solpos: pd.DataFrame,
     ghi: pd.Series,
     dni: pd.Series,
     dhi: pd.Series,
     albedo: pd.Series,
-    latitude_deg: float,
-    longitude_deg: float,
     parametres: ParametresBifacial,
 ) -> pd.Series:
     """Applique infinite-sheds vectorisé -> Series ``poa_global``.
 
     Sortie dans la **même unité** que les irradiances d'entrée (le modèle est
     linéaire en irradiance) : kWh/m²/jour pour des entrées journalières au midi
-    solaire, W/m² pour des entrées horaires.
+    solaire, W/m² pour des entrées horaires. ``solpos`` est la position
+    solaire pvlib, indexée comme les irradiances.
     """
-    solpos = pvlib.solarposition.get_solarposition(index, latitude_deg, longitude_deg)
     resultat = infinite_sheds.get_irradiance(
         surface_tilt=parametres.inclinaison_deg,
         surface_azimuth=parametres.orientation_deg,
@@ -160,9 +161,8 @@ def calculer_poa_bifacial(
     dhi = pd.Series([m["dhi"] for m in mesures], index=index, dtype=float)
     albedo = pd.Series([m["albedo"] for m in mesures], index=index, dtype=float)
 
-    poa = _poa_global_infinite_sheds(
-        index, ghi, dni, dhi, albedo, latitude_deg, longitude_deg, parametres
-    )
+    solpos = pvlib.solarposition.get_solarposition(index, latitude_deg, longitude_deg)
+    poa = _poa_global_infinite_sheds(solpos, ghi, dni, dhi, albedo, parametres)
     valeurs = poa.clip(lower=0).fillna(0.0).to_numpy()
     return [
         ResultatJournalier(
@@ -183,9 +183,11 @@ def calculer_poa_bifacial_horaire(
 ) -> list[ResultatJournalier]:
     """POA bifacial par **intégration horaire** (infinite-sheds par heure, somme/jour).
 
-    Applique infinite-sheds heure par heure (géométrie solaire réelle) puis somme
-    sur la journée calendaire (UTC). Lève le biais de moyennage.
-    L'``albedo`` est fourni **par jour** (broadcast intra-journée).
+    Applique infinite-sheds heure par heure puis somme sur la journée
+    calendaire (UTC). Lève le biais de moyennage. Géométrie au milieu de
+    l'heure et direct reconstruit sur GHI et DHI, comme le POA mono-plan
+    (``poa_parametrable.geometrie_et_direct_horaires``). L'``albedo`` est
+    fourni **par jour** (broadcast intra-journée).
 
     Pure, idempotente. Niveau de confiance uniforme ``'B'``.
     """
@@ -193,13 +195,11 @@ def calculer_poa_bifacial_horaire(
         return []
     index = pd.DatetimeIndex([m["instant_mesure"] for m in mesures])
     ghi = pd.Series([m["ghi"] for m in mesures], index=index, dtype=float)
-    dni = pd.Series([m["dni"] for m in mesures], index=index, dtype=float)
     dhi = pd.Series([m["dhi"] for m in mesures], index=index, dtype=float)
     albedo = pd.Series([m["albedo"] for m in mesures], index=index, dtype=float)
 
-    poa = _poa_global_infinite_sheds(
-        index, ghi, dni, dhi, albedo, latitude_deg, longitude_deg, parametres
-    )
+    solpos, dni = geometrie_et_direct_horaires(index, ghi, dhi, latitude_deg, longitude_deg)
+    poa = _poa_global_infinite_sheds(solpos, ghi, dni, dhi, albedo, parametres)
     # W/m² horaires (≈ Wh/m² par heure ; nuit/horizon clampé à 0) sommés par jour
     # -> Wh/m²/jour ; /1000 -> kWh/m²/jour.
     poa_horaire = poa.clip(lower=0).fillna(0.0)

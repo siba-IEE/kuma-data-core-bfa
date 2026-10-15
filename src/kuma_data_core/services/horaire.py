@@ -19,10 +19,23 @@ codes de la source amont n'est pas exposé au consommateur final.
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from kuma_data_core.api.v1.schemas.horaire import ResultatHoraire
 from kuma_data_core.external.nasa_power import SENTINELLE_VALEUR_MANQUANTE
+
+# === Convention de stockage ===============================================
+
+DECALAGE_MILIEU_HEURE: timedelta = timedelta(minutes=30)
+"""Convention de stockage des mesures horaires (ADR-0014).
+
+L'instant d'une ligne de ``mesures_ressource_horaires`` désigne le début de
+l'heure dont la valeur est la moyenne, comme chez NASA POWER : la valeur se
+rapporte au milieu de l'heure, une demi-heure plus tard. Le contrôle qualité
+et le POA horaire calculent la géométrie solaire à cet instant. Une autre
+source horaire (stations sol, jalon 4) se ramène à cette convention à
+l'ingestion.
+"""
 
 # === Mapping grandeur Kuma -> (code amont, unité cible) ===================
 

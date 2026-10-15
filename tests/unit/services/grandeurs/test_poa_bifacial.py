@@ -54,12 +54,11 @@ _PROFIL_GHI = [0.0] * 6 + [150, 350, 550, 750, 900, 980, 980, 900, 750, 550, 350
 
 
 def _mesures_horaires(jour: date, albedo: float = 0.2) -> list[MesureHeureBifacial]:
-    """24 mesures horaires (GHI cloche, DNI/DHI split 0.8/0.2, albedo constant)."""
+    """24 mesures horaires (GHI cloche, DHI à 15 % du GHI, albedo constant)."""
     return [
         MesureHeureBifacial(
             instant_mesure=datetime(jour.year, jour.month, jour.day, h, tzinfo=UTC),
             ghi=_PROFIL_GHI[h],
-            dni=_PROFIL_GHI[h] * 0.85,
             dhi=_PROFIL_GHI[h] * 0.15,
             albedo=albedo,
         )
@@ -91,7 +90,9 @@ def test_t_bif_3_invariance_bifacialite_zero_egal_poa_front() -> None:
     """INVARIANCE : ``bifaciality=0`` -> ``poa_global == poa_front`` (aucun gain arriere).
 
     Le service (qui sort ``poa_global``) a bifacialite=0 doit egaler le
-    ``poa_front`` du modele sur les memes entrees/geometrie.
+    ``poa_front`` du modele sur les memes entrees/geometrie : position solaire
+    au milieu de l'heure, direct reconstruit sur GHI et DHI et borné à
+    l'éclairement extraterrestre.
     """
     jour = date(2024, 6, 15)
     mesures = _mesures_horaires(jour)
@@ -101,7 +102,10 @@ def test_t_bif_3_invariance_bifacialite_zero_egal_poa_front() -> None:
     )
 
     index = pd.DatetimeIndex([m["instant_mesure"] for m in mesures])
-    solpos = pvlib.solarposition.get_solarposition(index, _LAT, _LON)
+    solpos = pvlib.solarposition.get_solarposition(index + pd.Timedelta(minutes=30), _LAT, _LON)
+    solpos.index = index
+    ghi = pd.Series([m["ghi"] for m in mesures], index=index, dtype=float)
+    dhi = pd.Series([m["dhi"] for m in mesures], index=index, dtype=float)
     front = infinite_sheds.get_irradiance(
         surface_tilt=20,
         surface_azimuth=180,
@@ -110,9 +114,11 @@ def test_t_bif_3_invariance_bifacialite_zero_egal_poa_front() -> None:
         gcr=0.4,
         height=1.5,
         pitch=5.0,
-        ghi=pd.Series([m["ghi"] for m in mesures], index=index, dtype=float),
-        dhi=pd.Series([m["dhi"] for m in mesures], index=index, dtype=float),
-        dni=pd.Series([m["dni"] for m in mesures], index=index, dtype=float),
+        ghi=ghi,
+        dhi=dhi,
+        dni=pvlib.irradiance.dni(ghi, dhi, solpos["zenith"])
+        .fillna(0.0)
+        .clip(upper=pvlib.irradiance.get_extra_radiation(index)),
         albedo=pd.Series([m["albedo"] for m in mesures], index=index, dtype=float),
         bifaciality=0.0,
     )["poa_front"]

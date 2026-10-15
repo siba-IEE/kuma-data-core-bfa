@@ -34,7 +34,8 @@ l'amorçage et la montée en charge de la donnée burkinabè.
       température (ADR-0013).
 - [ ] Salissure et PR réaliste corrigé de la salissure (particules fines CAMS
       EAC4).
-- [ ] Contrôle qualité horaire.
+- [x] Séries horaires aux cinq points pilotes et contrôle qualité horaire
+      (ADR-0014).
 
 ## Jalon 4 : terrain (confiance A)
 

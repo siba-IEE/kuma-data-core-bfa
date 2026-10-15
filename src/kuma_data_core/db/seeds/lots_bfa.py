@@ -1,4 +1,4 @@
-"""Lots de séries solaires : points et contrats (ADR-0009 à ADR-0011).
+"""Lots de séries : points et contrats (ADR-0009 à ADR-0011, ADR-0013, ADR-0014).
 
 Un **lot** est un ensemble de localités du référentiel dont les séries sont
 demandées aux sources solaires sous le même contrat :
@@ -8,11 +8,13 @@ demandées aux sources solaires sous le même contrat :
   ``commune``, migration 0004).
 
 Les séries mensuelles portent sur les deux lots, les séries journalières NASA
-POWER sur le seul lot ``provinces``. Chaque série couvre toute la période servie
-par sa source à la date de l'ingestion (octobre 2026). Ces contrats sont figés
-par les migrations 0006 (mensuel), 0007 (journalier) et 0008 (CAMS) : une autre
-source ou une autre période passera par de nouveaux contrats et de nouveaux
-fichiers.
+POWER sur le seul lot ``provinces``, les séries horaires sur cinq points
+pilotes du lot ``communes`` (la commune de Ouagadougou et quatre
+départements). Chaque série couvre toute la période servie par sa source à
+la date de l'ingestion (octobre 2026). Ces contrats sont figés
+par les migrations 0006 (mensuel), 0007 et 0010 (journalier), 0008 (CAMS) et
+0011 (horaire) : une autre source ou une autre période passera par de nouveaux
+contrats et de nouveaux fichiers.
 """
 
 from __future__ import annotations
@@ -157,6 +159,47 @@ CONTRATS_METEO_JOURNALIERS: dict[str, ContratSerie] = {
     )
     for grandeur, (_, borne_min, borne_max) in METEO_NASA.items()
 }
+
+# Séries horaires NASA POWER (ADR-0014) aux cinq points pilotes : Ouagadougou et
+# les quatre villes des stations sol ESMAP/WAPP. 2021-2025, valeur moyenne de
+# l'heure qui commence à l'instant (UTC). Paramètre, méthode, bornes basse et
+# haute (W/m² pour le rayonnement, °C pour la température).
+LOT_HORAIRE: str = "pilotes"
+PILOTES_HORAIRES: tuple[str, ...] = (
+    "bfa_com_ouagadougou",
+    "bfa_dep_dedougou",
+    "bfa_dep_dori",
+    "bfa_dep_kaya",
+    "bfa_dep_koupela",
+)
+HORAIRE_NASA: dict[str, tuple[str, str, float, float]] = {
+    "ghi": ("ALLSKY_SFC_SW_DWN", "modele_satellitaire", 0.0, 1400.0),
+    "dni": ("ALLSKY_SFC_SW_DNI", "modele_satellitaire", 0.0, 1400.0),
+    "dhi": ("ALLSKY_SFC_SW_DIFF", "modele_satellitaire", 0.0, 900.0),
+    "t2m": ("T2M", "reanalyse", -5.0, 55.0),
+}
+CONTRATS_HORAIRES: dict[str, ContratSerie] = {
+    grandeur: ContratSerie(
+        source_code="nasa_power",
+        source_id=1,
+        source_libelle="NASA POWER",
+        prefixe_code=f"nasa_power_{grandeur}_horaire",
+        grandeur_code=grandeur,
+        methode_collecte=methode,
+        annee_debut=2021,
+        annee_fin=2025,
+        borne_max=borne_max,
+        granularite="horaire",
+        borne_min=borne_min,
+    )
+    for grandeur, (_, methode, borne_min, borne_max) in HORAIRE_NASA.items()
+}
+
+
+def points_pilotes() -> list[tuple[str, str, float, float]]:
+    """Points pilotes de l'horaire : ``(code, nom, latitude, longitude)``, triés par code."""
+    return [p for p in points_lot("communes") if p[0] in PILOTES_HORAIRES]
+
 
 # Contrats mensuels de la migration 0006, dans son ordre d'insertion.
 CONTRATS_MENSUELS: tuple[ContratSerie, ...] = (

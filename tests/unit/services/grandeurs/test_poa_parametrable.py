@@ -34,6 +34,7 @@ from kuma_data_core.services.grandeurs.poa_parametrable import (
     _irradiation_extraterrestre_jour,
     calculer_poa_parametrable,
     calculer_poa_parametrable_horaire,
+    geometrie_et_direct_horaires,
 )
 
 pytestmark = pytest.mark.unit
@@ -302,16 +303,16 @@ def test_t_poa_7_inclinaison_optimale_sud() -> None:
 def _mesures_horaires_journee(
     jour: date, heures_utc: range, dni: float = 800.0, dhi: float = 120.0
 ) -> list[MesureHeurePOA]:
-    """Mesures horaires closure-consistantes (GHI = DNI·cos z + DHI) pour
-    des heures diurnes Conakry (zenith modere, Perez sans NaN)."""
+    """Mesures horaires closure-consistantes (GHI = DNI·cos z + DHI, z au milieu
+    de l'heure) pour des heures diurnes Conakry (zenith modere, Perez sans NaN)."""
     instants = [datetime(jour.year, jour.month, jour.day, h, tzinfo=UTC) for h in heures_utc]
     zeniths = pvlib.solarposition.get_solarposition(
-        pd.DatetimeIndex(instants), _CONAKRY_LAT, _CONAKRY_LON
+        pd.DatetimeIndex(instants) + pd.Timedelta(minutes=30), _CONAKRY_LAT, _CONAKRY_LON
     )["zenith"]
     mesures: list[MesureHeurePOA] = []
     for instant, z in zip(instants, zeniths, strict=True):
         cosz = max(0.0, math.cos(math.radians(float(z))))
-        mesures.append({"instant_mesure": instant, "ghi": dni * cosz + dhi, "dni": dni, "dhi": dhi})
+        mesures.append({"instant_mesure": instant, "ghi": dni * cosz + dhi, "dhi": dhi})
     return mesures
 
 
@@ -367,3 +368,57 @@ def test_poa_h4_multi_jours() -> None:
     assert len(r) == 2
     assert r[0].instant == date(2024, 6, 15)
     assert r[1].instant == date(2024, 6, 16)
+
+
+def _journee_ciel_clair(jour: date) -> list[MesureHeurePOA]:
+    """24 heures de ciel clair (Haurwitz au milieu de l'heure), DHI = 30 % du GHI."""
+    index = pd.date_range(
+        datetime(jour.year, jour.month, jour.day, tzinfo=UTC), periods=24, freq="h"
+    )
+    zenith = pvlib.solarposition.get_solarposition(
+        index + pd.Timedelta(minutes=30), _CONAKRY_LAT, _CONAKRY_LON
+    )["apparent_zenith"]
+    ghi = pvlib.clearsky.haurwitz(zenith)["ghi"].to_numpy()
+    return [
+        {"instant_mesure": instant.to_pydatetime(), "ghi": float(g), "dhi": 0.3 * float(g)}
+        for instant, g in zip(index, ghi, strict=True)
+    ]
+
+
+def test_poa_h5_journee_complete_horizontal_egale_ghi() -> None:
+    """Sur 24 heures, lever et coucher compris, le plan horizontal retrouve le GHI du jour.
+
+    Le direct est reconstruit sur GHI et DHI : tant que le DHI reste sous le GHI
+    et que le soleil est levé au milieu de l'heure, chaque heure garde son
+    énergie, quel que soit le DNI de la source (ADR-0014).
+    """
+    mesures = _journee_ciel_clair(date(2024, 6, 15))
+    r = calculer_poa_parametrable_horaire(mesures, _CONAKRY_LAT, _CONAKRY_LON, _params_horaire(0))
+    ghi_jour_kwh = sum(m["ghi"] for m in mesures) / 1000.0
+    assert abs(r[0].valeur - ghi_jour_kwh) < 1e-3 * ghi_jour_kwh
+
+
+def test_poa_h6_geometrie_au_milieu_de_l_heure() -> None:
+    """La position solaire d'un instant HH:00 est celle de HH:30 (NASA POWER, ADR-0014)."""
+    index = pd.DatetimeIndex([datetime(2024, 6, 15, h, tzinfo=UTC) for h in (7, 12, 18)])
+    nul = pd.Series(0.0, index=index)
+    solpos, _ = geometrie_et_direct_horaires(index, nul, nul, _CONAKRY_LAT, _CONAKRY_LON)
+    attendu = pvlib.solarposition.get_solarposition(
+        index + pd.Timedelta(minutes=30), _CONAKRY_LAT, _CONAKRY_LON
+    )["zenith"].to_numpy()
+    assert list(solpos.index) == list(index)
+    assert solpos["zenith"].to_numpy() == pytest.approx(attendu)
+
+
+def test_poa_h7_direct_reconstruit() -> None:
+    """DNI = (GHI - DHI) / cos z ; nul sous l'horizon ou si DHI > GHI, borné à l'extraterrestre."""
+    index = pd.DatetimeIndex([datetime(2024, 6, 15, h, tzinfo=UTC) for h in (2, 12, 13, 7)])
+    ghi = pd.Series([0.0, 900.0, 300.0, 1000.0], index=index)
+    dhi = pd.Series([0.0, 200.0, 350.0, 0.0], index=index)
+    solpos, dni = geometrie_et_direct_horaires(index, ghi, dhi, _CONAKRY_LAT, _CONAKRY_LON)
+    cosz = math.cos(math.radians(float(solpos["zenith"].iloc[1])))
+    assert dni.iloc[0] == 0.0
+    assert dni.iloc[1] == pytest.approx(700.0 / cosz)
+    assert dni.iloc[2] == 0.0
+    # 7 h 30 UTC, soleil bas : 1 000 W/m² de direct horizontal donneraient un DNI impossible.
+    assert dni.iloc[3] == pytest.approx(pvlib.irradiance.get_extra_radiation(index[3:]).iloc[0])

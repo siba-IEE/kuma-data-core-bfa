@@ -64,6 +64,9 @@ alignées verbatim sur BSRN (Long & Dutton) :
   `pvlib` (`solarposition.get_solarposition`) à partir de (latitude,
   longitude, instant **UTC**). **Convention BSRN** : si SZA > 90°, μ₀
   est forcé à **0,0** dans les formules.
+- Une valeur moyenne de l'heure se juge au **milieu de l'heure** : NASA
+  POWER date chaque valeur du début de l'heure qu'elle moyenne, la
+  géométrie est donc calculée 30 min après l'instant stocké (ADR-0014).
 - **Constante solaire ajustée distance Terre-Soleil** :
   **Sₐ = S₀ / AU²** (S₀ = constante solaire à distance moyenne Terre-
   Soleil ; AU = distance Terre-Soleil en unités astronomiques). Obtenue
@@ -169,6 +172,9 @@ Attribution **par point horaire** (chaque ligne porte son verdict) :
   destructif `valide_du`/`valide_au`) ou **exclus** ? Recommandation :
   conservation flaggée, jamais de suppression silencieuse.
 - Le niveau `B` est uniforme ; le QC ne crée pas de `A`.
+- **Tranché pour le Burkina Faso (ADR-0014)** : une ligne rejetée reste
+  `brut`, conservée avec son motif ; une ligne seulement signalée reste
+  `valide_auto` en niveau `B`.
 
 ## 6. Versionnement et traçabilité
 
@@ -218,3 +224,4 @@ les seuils des tests temporels (§4.4, complément hors BSRN).
 |---|---|
 | 2026-06-14 | Cadre algorithmique des 4 familles de tests + attribution ; coefficients BSRN à sourcer verbatim |
 | 2026-06-14 | Limites §4.1-§4.3 remplacées par les valeurs verbatim BSRN V2.0 (Long & Dutton) ; restent à acter : S₀ (§3) et tests temporels (§4.4) |
+| 2026-10-15 | Géométrie au milieu de l'heure pour les moyennes horaires (§3) ; arbitrages du §5 tranchés pour le Burkina Faso (ADR-0014) |

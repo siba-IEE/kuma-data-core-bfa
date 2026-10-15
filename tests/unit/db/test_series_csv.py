@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import gzip
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -12,8 +12,10 @@ from kuma_data_core.db.seeds import series_csv
 from kuma_data_core.db.seeds.series_csv import (
     ContratSerie,
     ecrire_series,
+    ecrire_series_horaires,
     ecrire_series_journalieres,
     lire_series,
+    lire_series_horaires,
     lire_series_journalieres,
 )
 
@@ -194,3 +196,47 @@ def test_borne_basse_incluse() -> None:
     assert all(valeur == 0.0 for _, valeur in serie["mesures"])
     with pytest.raises(ValueError, match="bornes"):
         ecrire_series_journalieres(pluie, "test", [(*_POINT, [*jours[:-1], (jours[-1][0], -0.1)])])
+
+
+_HORAIRE = ContratSerie(
+    source_code="nasa_power",
+    source_id=1,
+    source_libelle="NASA POWER",
+    prefixe_code="nasa_power_ghi_horaire",
+    grandeur_code="ghi",
+    methode_collecte="modele_satellitaire",
+    annee_debut=2020,
+    annee_fin=2020,
+    borne_max=1400.0,
+    granularite="horaire",
+    borne_min=0.0,
+)
+
+
+def _heures() -> list[tuple[datetime, float]]:
+    debut = datetime(2020, 1, 1, tzinfo=UTC)
+    return [(debut + timedelta(hours=i), float(i % 24 * 40)) for i in range(8784)]
+
+
+def test_horaire_aller_retour() -> None:
+    """Séries horaires : 8 784 heures en 2020, instants UTC au format AAAA-MM-JJTHH:00Z."""
+    cible = ecrire_series_horaires(_HORAIRE, "test", [(*_POINT, _heures())])
+    (serie,) = lire_series_horaires(_HORAIRE, "test")
+    assert serie["libelle"] == "GHI horaire NASA POWER, Fô (2020-2020)"
+    assert serie["mesures"] == _heures()
+    with gzip.open(cible, "rt") as f:
+        assert f.readlines()[1].startswith("bfa_dep_fo,11.11666667,-4.4,2020-01-01T00:00Z,0.0")
+
+
+@pytest.mark.parametrize(
+    ("mesures", "message"),
+    [
+        (_heures()[:-1], "heures"),  # 31 décembre 23 h manquante
+        ([*_heures()[:-1], (datetime(2021, 1, 1, tzinfo=UTC), 0.0)], "période"),
+        ([*_heures()[:-1], (datetime(2020, 12, 31, 23, 30, tzinfo=UTC), 0.0)], "aligné"),
+    ],
+)
+def test_horaire_rejets(mesures: list[tuple[datetime, float]], message: str) -> None:
+    """Heure manquante, hors période ou non alignée sur l'heure : écriture refusée."""
+    with pytest.raises(ValueError, match=message):
+        ecrire_series_horaires(_HORAIRE, "test", [(*_POINT, mesures)])

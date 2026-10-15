@@ -48,6 +48,11 @@ Socle en place. La donnée nationale se construit par lots.
   énergie utile ECS, degrés-jours, P50/P90, PR réaliste corrigé de la
   température. Voir
   l'[ADR-0013](docs/decisions/0013-meteo-journaliere-et-grandeurs-calculees.md).
+- Séries horaires NASA POWER (GHI, DNI, DHI, température, 2021-2025) à cinq
+  points pilotes, Ouagadougou et les quatre sites des stations sol, contrôlées
+  par la doctrine QC v1 et servies par `/v1/horaire` ; grandeurs métier en
+  intégration horaire. Voir
+  l'[ADR-0014](docs/decisions/0014-series-horaires-et-controle-qualite.md).
 
 `alembic upgrade head` n'exige aucun accès réseau : les valeurs sont relues dans
 des CSV versionnés, produits par les scripts d'ingestion.
@@ -55,7 +60,7 @@ des CSV versionnés, produits par les scripts d'ingestion.
 ### À faire
 
 - Salissure et PR réaliste corrigé de la salissure (particules fines CAMS
-  EAC4), séries horaires et contrôle qualité.
+  EAC4).
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A.
 - Adaptation de la documentation `docs/` au contexte burkinabè.
 
@@ -67,12 +72,12 @@ OCHA sur HDX (CC BY-IGO, « IGB / OCHA, via HDX »).
 
 Les séries proviennent de :
 
-- **NASA POWER** (CC BY 4.0), POWER Monthly and Annual API et POWER Daily API
-  v2.10.0, consultées le 15 octobre 2026 : « The data was obtained from
-  National Aeronautics and Space Administration (NASA) Langley Research
-  Center's Prediction Of Worldwide Energy Resources (POWER) project funded
-  through the NASA Earth Science Division. » NASA POWER tire sa météo de la
-  réanalyse MERRA-2 du GMAO (NASA).
+- **NASA POWER** (CC BY 4.0), POWER Monthly and Annual API, POWER Daily API
+  v2.10.0 et POWER Hourly API v2.10.2, consultées le 15 octobre 2026 : « The
+  data was obtained from National Aeronautics and Space Administration (NASA)
+  Langley Research Center's Prediction Of Worldwide Energy Resources (POWER)
+  project funded through the NASA Earth Science Division. » NASA POWER tire sa
+  météo de la réanalyse MERRA-2 du GMAO (NASA).
 - **PVGIS** (Joint Research Centre de la Commission européenne), API v5_3
   `MRcalc`, consultée le 15 octobre 2026 : « PVGIS © Union européenne,
   2001-2026 ». Réutilisation autorisée sous réserve de citer la source

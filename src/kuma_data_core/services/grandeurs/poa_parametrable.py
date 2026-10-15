@@ -70,6 +70,7 @@ from kuma_data_core.api.v1.schemas.grandeurs import (
     ParametresPOA,
     ResultatJournalier,
 )
+from kuma_data_core.services.horaire import DECALAGE_MILIEU_HEURE
 
 # === Constantes module ====================================================
 
@@ -110,13 +111,12 @@ class MesureJourPOA(TypedDict):
 class MesureHeurePOA(TypedDict):
     """Mesure d'irradiance horaire consommée par le POA en intégration horaire.
 
-    GHI/DNI/DHI tous obligatoires (l'appelant n'aligne que les instants
-    complets ; cf. ``calculer_poa_parametrable_horaire``).
+    GHI et DHI obligatoires (l'appelant n'aligne que les instants complets) ;
+    le direct est reconstruit (cf. :func:`geometrie_et_direct_horaires`).
     """
 
     instant_mesure: datetime
     ghi: float
-    dni: float
     dhi: float
 
 
@@ -304,6 +304,35 @@ def calculer_poa_parametrable(
     return resultats
 
 
+def geometrie_et_direct_horaires(
+    index: pd.DatetimeIndex,
+    ghi: pd.Series,
+    dhi: pd.Series,
+    latitude_deg: float,
+    longitude_deg: float,
+) -> tuple[pd.DataFrame, pd.Series]:
+    """Position solaire au milieu de chaque heure et DNI refermé sur GHI et DHI.
+
+    Le DNI horaire de NASA POWER ne referme pas ``GHI = DHI + DNI·cos z`` :
+    aux cinq points pilotes, sur 2021-2025, ``DHI + DNI·cos z`` reste de 5,9 à
+    6,9 % sous le GHI (ADR-0014). Le direct est donc reconstruit,
+    ``(GHI - DHI) / cos z``, par ``pvlib.irradiance.dni`` : nul au-delà de 88°
+    de zénith ou si le DHI dépasse le GHI, borné à l'éclairement
+    extraterrestre. Un plan horizontal retrouve ainsi le GHI.
+
+    Les instants suivent la convention de stockage horaire
+    (``services.horaire.DECALAGE_MILIEU_HEURE``) : la géométrie est celle du
+    milieu de l'heure. Renvoie la position solaire (indexée sur ``index``) et
+    le DNI en W/m².
+    """
+    solpos = pvlib.solarposition.get_solarposition(
+        index + DECALAGE_MILIEU_HEURE, latitude_deg, longitude_deg
+    )
+    solpos.index = index
+    dni = pvlib.irradiance.dni(ghi, dhi, solpos["zenith"]).fillna(0.0)
+    return solpos, dni.clip(upper=pvlib.irradiance.get_extra_radiation(index))
+
+
 def calculer_poa_parametrable_horaire(
     mesures: Sequence[MesureHeurePOA],
     latitude_deg: float,
@@ -320,8 +349,9 @@ def calculer_poa_parametrable_horaire(
     (+16 % mesuré pour un plan incliné).
 
     Vectorisé via ``pvlib`` (position solaire + transposition sur tous les
-    instants en une passe). GHI/DNI/DHI horaires obligatoires (l'appelant
-    n'aligne que les instants complets). Sortie : un :class:`ResultatJournalier`
+    instants en une passe). Géométrie au milieu de l'heure et direct
+    reconstruit sur GHI et DHI (:func:`geometrie_et_direct_horaires`) : un
+    plan horizontal retrouve le GHI. Sortie : un :class:`ResultatJournalier`
     par jour présent (unité ``kWh/m²/jour``, identique à la méthode
     journalière).
 
@@ -333,10 +363,9 @@ def calculer_poa_parametrable_horaire(
 
     index = pd.DatetimeIndex([m["instant_mesure"] for m in mesures])
     ghi = pd.Series([m["ghi"] for m in mesures], index=index, dtype=float)
-    dni = pd.Series([m["dni"] for m in mesures], index=index, dtype=float)
     dhi = pd.Series([m["dhi"] for m in mesures], index=index, dtype=float)
 
-    solpos = pvlib.solarposition.get_solarposition(index, latitude_deg, longitude_deg)
+    solpos, dni = geometrie_et_direct_horaires(index, ghi, dhi, latitude_deg, longitude_deg)
     dni_extra = pvlib.irradiance.get_extra_radiation(index)
     poa_global = pvlib.irradiance.get_total_irradiance(
         surface_tilt=parametres.inclinaison_deg,

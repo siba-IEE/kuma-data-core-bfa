@@ -35,7 +35,7 @@ import csv
 import io
 from collections import Counter
 from collections.abc import Sequence
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Annotated, Literal, NamedTuple
 
 from fastapi import APIRouter, Depends, Query, status
@@ -381,6 +381,20 @@ def _lire_mesures_horaires_par_serie_id(
     return {r.instant_mesure: float(r.valeur) for r in rows}
 
 
+def _instants_complets(*series: dict[datetime, float]) -> list[datetime]:
+    """Instants présents dans toutes les séries, en UTC, limités aux jours complets.
+
+    Une heure absente ou rejetée par le contrôle qualité fausserait le cumul de
+    son jour (une heure de midi pèse 15 % du POA journalier) : l'intégration
+    horaire écarte alors le jour entier. Les instants sont rendus en UTC, pour
+    que les calculs les regroupent par jour UTC quel que soit le fuseau de la
+    session PostgreSQL.
+    """
+    communs = sorted(i.astimezone(UTC) for i in set(series[0]).intersection(*series[1:]))
+    heures = Counter(instant.date() for instant in communs)
+    return [i for i in communs if heures[i.date()] == 24]
+
+
 def _lire_mesures_mensuel_par_serie_id(
     session: Session,
     serie_id: int,
@@ -493,6 +507,10 @@ def grandeur_poa_parametrable(
       Au Kadiogo, le rapport POA/GHI saute de 9 % (plan horizontal) à 12 %
       (15° plein sud) le 1er janvier 2001 : ne pas moyenner à cheval sur
       cette date.
+    - **Intégration horaire** (``methode='integration_horaire'``) : Perez
+      heure par heure, géométrie au milieu de l'heure ; le direct est
+      reconstruit sur GHI et DHI, le DNI de NASA POWER ne refermant pas le
+      GHI (ADR-0014). Seule la compagne DHI horaire est requise.
     - **Traçabilité limitée v1** : la réponse JSON n'indique pas
       explicitement quel modèle a été appliqué.
     """
@@ -501,18 +519,9 @@ def grandeur_poa_parametrable(
 
     latitude, longitude = _resoudre_coordonnees(session, serie.localite_id)
 
-    # Compagnes DNI / DHI : mêmes localité, source et granularité, période
-    # recouvrant celle du GHI (en horaire, la recherche trouve les séries
-    # DNI/DHI horaires).
-    dni_serie_id = _chercher_serie_compagne(
-        session,
-        serie.localite_id,
-        serie.source_id,
-        "dni",
-        serie.periode_debut,
-        serie.granularite,
-        serie.periode_fin,
-    )
+    # Compagne DHI (et DNI en journalier) : mêmes localité, source et
+    # granularité, période recouvrant celle du GHI (en horaire, la recherche
+    # trouve la série DHI horaire).
     dhi_serie_id = _chercher_serie_compagne(
         session,
         serie.localite_id,
@@ -525,8 +534,9 @@ def grandeur_poa_parametrable(
 
     if params.methode == "integration_horaire":
         # Perez intégré par heure : lève le biais de moyennage
-        # (+16 % sur plan incliné). Exige une série source horaire ET les
-        # compagnes DNI/DHI horaires (pas de fallback Liu-Jordan en horaire).
+        # (+16 % sur plan incliné). Exige une série source horaire ET la
+        # compagne DHI horaire (le direct est reconstruit, pas de fallback
+        # Liu-Jordan en horaire).
         if serie.granularite != "horaire":
             raise ExceptionKuma(
                 code=CodeErreur.VALIDATION_VALEUR_INVALIDE,
@@ -537,28 +547,24 @@ def grandeur_poa_parametrable(
                 ),
                 statut_http=status.HTTP_400_BAD_REQUEST,
             )
-        if dni_serie_id is None or dhi_serie_id is None:
+        if dhi_serie_id is None:
             raise ExceptionKuma(
                 code=CodeErreur.VALIDATION_VALEUR_INVALIDE,
                 message=(
-                    "Le POA horaire (Perez) exige des series compagnes DNI et DHI "
-                    f"horaires pour la localite de {params.code_serie_source!r} ; absentes."
+                    "Le POA horaire (Perez) exige une serie compagne DHI horaire "
+                    f"pour la localite de {params.code_serie_source!r} ; absente."
                 ),
                 statut_http=status.HTTP_400_BAD_REQUEST,
             )
         ghi_h = _lire_mesures_horaires_par_serie_id(
             session, serie.serie_id, params.periode_debut, params.periode_fin
         )
-        dni_h = _lire_mesures_horaires_par_serie_id(
-            session, dni_serie_id, params.periode_debut, params.periode_fin
-        )
         dhi_h = _lire_mesures_horaires_par_serie_id(
             session, dhi_serie_id, params.periode_debut, params.periode_fin
         )
         mesures_horaires: list[MesureHeurePOA] = [
-            {"instant_mesure": instant, "ghi": ghi, "dni": dni_h[instant], "dhi": dhi_h[instant]}
-            for instant, ghi in ghi_h.items()
-            if instant in dni_h and instant in dhi_h
+            {"instant_mesure": instant, "ghi": ghi_h[instant], "dhi": dhi_h[instant]}
+            for instant in _instants_complets(ghi_h, dhi_h)
         ]
         resultats = calculer_poa_parametrable_horaire(
             mesures=mesures_horaires,
@@ -567,6 +573,15 @@ def grandeur_poa_parametrable(
             parametres=params,
         )
     else:
+        dni_serie_id = _chercher_serie_compagne(
+            session,
+            serie.localite_id,
+            serie.source_id,
+            "dni",
+            serie.periode_debut,
+            serie.granularite,
+            serie.periode_fin,
+        )
         ghi_par_jour = _lire_mesures_par_serie_id(
             session, serie.serie_id, params.periode_debut, params.periode_fin
         )
@@ -661,7 +676,9 @@ def grandeur_poa_bifacial(
     **Distinct du `poa_parametrable` mono-plan** : modèle de champ de rangées
     avec face arrière (gcr, hauteur, pitch, bifacialité). Série principale
     attendue : `grandeur_code='ghi'`. Compagnes **DNI + DHI obligatoires**
-    (granularité-aware ; pas de fallback Liu-Jordan) → 400 si absentes. Albédo :
+    (granularité-aware ; pas de fallback Liu-Jordan) → 400 si absentes ; en
+    intégration horaire, seule la DHI est requise, le direct étant reconstruit
+    sur GHI et DHI (ADR-0014). Albédo :
     série `albedo_surface` journalière (réel par localité ; repli `albedo_sol` si
     absente ; broadcast aux heures en mode horaire).
     """
@@ -669,14 +686,20 @@ def grandeur_poa_bifacial(
     _exiger_grandeur(serie.grandeur_code, "ghi", params.code_serie_source, "poa_bifacial")
     latitude, longitude = _resoudre_coordonnees(session, serie.localite_id)
 
-    dni_serie_id = _chercher_serie_compagne(
-        session,
-        serie.localite_id,
-        serie.source_id,
-        "dni",
-        serie.periode_debut,
-        serie.granularite,
-        serie.periode_fin,
+    # En intégration horaire, le direct est reconstruit : seule la DHI sert.
+    horaire = params.methode == "integration_horaire"
+    dni_serie_id = (
+        None
+        if horaire
+        else _chercher_serie_compagne(
+            session,
+            serie.localite_id,
+            serie.source_id,
+            "dni",
+            serie.periode_debut,
+            serie.granularite,
+            serie.periode_fin,
+        )
     )
     dhi_serie_id = _chercher_serie_compagne(
         session,
@@ -687,12 +710,17 @@ def grandeur_poa_bifacial(
         serie.granularite,
         serie.periode_fin,
     )
-    if dni_serie_id is None or dhi_serie_id is None:
+    if dhi_serie_id is None or (dni_serie_id is None and not horaire):
+        requises = (
+            "une serie compagne DHI horaire, absente"
+            if horaire
+            else "des series compagnes DNI et DHI, absentes"
+        )
         raise ExceptionKuma(
             code=CodeErreur.INCOMPATIBILITE_SOURCE_GRANDEUR,
             message=(
-                "Le POA bifacial (infinite-sheds) exige des series compagnes DNI et DHI "
-                f"pour la localite de {params.code_serie_source!r} (pas de fallback) ; absentes."
+                f"Le POA bifacial (infinite-sheds) exige {requises}, pour la localite "
+                f"de {params.code_serie_source!r} (pas de fallback)."
             ),
             statut_http=status.HTTP_400_BAD_REQUEST,
         )
@@ -706,7 +734,7 @@ def grandeur_poa_bifacial(
         else {}
     )
 
-    if params.methode == "integration_horaire":
+    if horaire:
         if serie.granularite != "horaire":
             raise ExceptionKuma(
                 code=CodeErreur.VALIDATION_VALEUR_INVALIDE,
@@ -720,22 +748,17 @@ def grandeur_poa_bifacial(
         ghi_h = _lire_mesures_horaires_par_serie_id(
             session, serie.serie_id, params.periode_debut, params.periode_fin
         )
-        dni_h = _lire_mesures_horaires_par_serie_id(
-            session, dni_serie_id, params.periode_debut, params.periode_fin
-        )
         dhi_h = _lire_mesures_horaires_par_serie_id(
             session, dhi_serie_id, params.periode_debut, params.periode_fin
         )
         mesures_horaires: list[MesureHeureBifacial] = [
             {
                 "instant_mesure": instant,
-                "ghi": ghi,
-                "dni": dni_h[instant],
+                "ghi": ghi_h[instant],
                 "dhi": dhi_h[instant],
                 "albedo": albedo_du_jour(albedo_jour, instant.date(), params.albedo_sol),
             }
-            for instant, ghi in ghi_h.items()
-            if instant in dni_h and instant in dhi_h
+            for instant in _instants_complets(ghi_h, dhi_h)
         ]
         resultats = calculer_poa_bifacial_horaire(
             mesures=mesures_horaires,
@@ -744,6 +767,7 @@ def grandeur_poa_bifacial(
             parametres=params,
         )
     else:
+        assert dni_serie_id is not None  # garde ci-dessus, hors intégration horaire
         ghi_j = _lire_mesures_par_serie_id(
             session, serie.serie_id, params.periode_debut, params.periode_fin
         )
@@ -907,9 +931,12 @@ def grandeur_productible_correction_thermique(
             session, t2m_serie_id, params.periode_debut, params.periode_fin
         )
         mesures_horaires: list[MesureHeureThermique] = [
-            {"instant_mesure": instant, "t_amb_degc": t2m_h[instant], "irradiance_w_par_m2": ghi}
-            for instant, ghi in ghi_h.items()
-            if instant in t2m_h
+            {
+                "instant_mesure": instant,
+                "t_amb_degc": t2m_h[instant],
+                "irradiance_w_par_m2": ghi_h[instant],
+            }
+            for instant in _instants_complets(ghi_h, t2m_h)
         ]
         resultats = calculer_productible_correction_thermique_horaire(
             mesures=mesures_horaires, parametres=params
@@ -1071,16 +1098,19 @@ def grandeur_productible_pr_fourni(
             mesures_horaires = [
                 {
                     "instant_mesure": instant,
-                    "irradiance_w_par_m2": ghi,
+                    "irradiance_w_par_m2": ghi_h[instant],
                     "t_amb_degc": t2m_h[instant],
                 }
-                for instant, ghi in ghi_h.items()
-                if instant in t2m_h
+                for instant in _instants_complets(ghi_h, t2m_h)
             ]
         else:
             mesures_horaires = [
-                {"instant_mesure": instant, "irradiance_w_par_m2": ghi, "t_amb_degc": None}
-                for instant, ghi in ghi_h.items()
+                {
+                    "instant_mesure": instant,
+                    "irradiance_w_par_m2": ghi_h[instant],
+                    "t_amb_degc": None,
+                }
+                for instant in _instants_complets(ghi_h)
             ]
         resultats = calculer_productible_pr_fourni_horaire(
             mesures=mesures_horaires, parametres=params
@@ -1262,9 +1292,12 @@ def grandeur_energie_utile_ecs(
             session, t2m_serie_id, params.periode_debut, params.periode_fin
         )
         mesures_horaires: list[MesureHeureECS] = [
-            {"instant_mesure": instant, "t_amb_degc": t2m_h[instant], "irradiance_w_par_m2": ghi}
-            for instant, ghi in ghi_h.items()
-            if instant in t2m_h
+            {
+                "instant_mesure": instant,
+                "t_amb_degc": t2m_h[instant],
+                "irradiance_w_par_m2": ghi_h[instant],
+            }
+            for instant in _instants_complets(ghi_h, t2m_h)
         ]
         resultats = calculer_energie_utile_ecs_horaire(mesures=mesures_horaires, parametres=params)
         return _construire_reponse(
@@ -1372,8 +1405,8 @@ def grandeur_degre_jour_climatisation(
             session, serie.serie_id, params.periode_debut, params.periode_fin
         )
         mesures_horaires: list[MesureHeureTemperature] = [
-            {"instant_mesure": instant, "t_degc": valeur}
-            for instant, valeur in t2m_par_heure.items()
+            {"instant_mesure": instant, "t_degc": t2m_par_heure[instant]}
+            for instant in _instants_complets(t2m_par_heure)
         ]
         resultats = calculer_degre_jour_climatisation_horaire(
             mesures=mesures_horaires, parametres=params

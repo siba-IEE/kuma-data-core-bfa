@@ -27,7 +27,8 @@ def test_series_meteo(db_session: Session) -> None:
             FROM series_metadonnees s
             JOIN sources so ON so.id = s.source_id
             JOIN localites l ON l.id = s.localite_id
-            WHERE s.grandeur_code IN ('t2m', 'rh2m', 'precipitation')
+            WHERE s.granularite = 'journalier'
+              AND s.grandeur_code IN ('t2m', 'rh2m', 'precipitation')
             GROUP BY 1, 2, 3, 4, 5, 6, 7
             """
         )
@@ -50,7 +51,8 @@ def test_mesures_completes_et_bornees(db_session: Session) -> None:
                    bool_and(m.statut = 'brut' AND m.niveau_confiance_derive = 'B') AS invariants
             FROM series_metadonnees s
             LEFT JOIN mesures_ressource m ON m.serie_id = s.id
-            WHERE s.grandeur_code IN ('t2m', 'rh2m', 'precipitation')
+            WHERE s.granularite = 'journalier'
+              AND s.grandeur_code IN ('t2m', 'rh2m', 'precipitation')
             GROUP BY 1, 2
             """
         )

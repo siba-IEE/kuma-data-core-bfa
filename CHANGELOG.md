@@ -3,6 +3,21 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.8.0
+
+- Séries horaires NASA POWER aux cinq points pilotes (ADR-0014) : Ouagadougou,
+  Dédougou, Dori, Kaya et Koupéla, GHI, DNI, DHI et température 2021-2025,
+  soit 20 séries et 876 480 mesures relues dans des CSV versionnés (migration
+  0011). Ingesteur `scripts/ingest_nasa_power_horaire.py`.
+- Contrôle qualité horaire, doctrine v1 (migration 0012) : toutes les lignes
+  passent en `valide_auto`, drapeaux en commentaire ; géométrie solaire au
+  milieu de l'heure. `/v1/horaire` sert ces séries validées.
+- POA horaire, mono-plan et bifacial : géométrie au milieu de l'heure et
+  direct reconstruit sur le GHI et le DHI, borné à l'éclairement
+  extraterrestre ; seule la compagne DHI horaire est requise.
+- Intégration horaire : seuls les jours UTC complets (24 heures présentes et
+  validées) entrent dans le calcul.
+
 ## 0.7.0
 
 - Météo journalière NASA POWER aux 47 provinces (ADR-0013) : température,

@@ -1,4 +1,4 @@
-"""Seeds des séries en CSV compressé (ADR-0009, ADR-0010, ADR-0013).
+"""Seeds des séries en CSV compressé (ADR-0009, ADR-0010, ADR-0013, ADR-0014).
 
 Les séries des lots (provinces, communes) sont stockées en **CSV gzip
 committés** sous ``seeds/donnees/``, lus hors ligne par les migrations : aucune
@@ -9,15 +9,18 @@ Un fichier par source, grandeur, granularité et lot. Colonnes :
 - séries mensuelles : ``localite_code, latitude, longitude, annee, mois, valeur``
   (moyenne journalière du mois) ;
 - séries journalières : ``localite_code, latitude, longitude, date, valeur``
-  (date ISO 8601, total du jour).
+  (date ISO 8601, total du jour) ;
+- séries horaires : ``localite_code, latitude, longitude, instant, valeur``
+  (début de l'heure en UTC, ``AAAA-MM-JJTHH:00Z`` ; moyenne de l'heure).
 
-Valeurs dans l'unité de la grandeur (kWh/m²/jour pour le rayonnement, °C, %,
-mm/jour pour la météo), arrondies à 4 décimales.
+Valeurs dans l'unité de la grandeur (kWh/m²/jour pour le rayonnement mensuel
+et journalier, W/m² pour le rayonnement horaire, °C, % et mm/jour pour la
+météo), arrondies à 4 décimales.
 
 L'écriture est **déterministe** (lignes triées, horodatage gzip nul) : régénérer
 un fichier depuis les mêmes données produit les mêmes octets. Elle passe par un
 fichier temporaire, validé avant de remplacer le fichier versionné. La lecture
-**valide** tout : complétude (tous les mois, ou tous les jours civils, de la
+**valide** tout : complétude (tous les mois, jours civils ou heures de la
 période du contrat, par localité), bornes de plausibilité, doublons,
 coordonnées constantes par localité, localités connues du référentiel.
 """
@@ -29,7 +32,7 @@ import gzip
 import io
 from collections.abc import Callable, Hashable
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Literal
 
@@ -48,6 +51,15 @@ COLONNES_JOURNALIERES: tuple[str, ...] = (
     "valeur",
 )
 
+COLONNES_HORAIRES: tuple[str, ...] = (
+    "localite_code",
+    "latitude",
+    "longitude",
+    "instant",
+    "valeur",
+)
+FORMAT_INSTANT: str = "%Y-%m-%dT%H:00Z"
+
 NOMS_LOCALITES: dict[str, str] = {e["code"]: e["nom"] for e in (*_LOCALITES, *_COMMUNES)}
 
 
@@ -65,7 +77,7 @@ class ContratSerie:
     annee_fin: int
     borne_max: float  # borne de plausibilité, dans l'unité de la grandeur
     niveau_confiance: str = "B"
-    granularite: Literal["mensuel", "journalier"] = "mensuel"
+    granularite: Literal["mensuel", "journalier", "horaire"] = "mensuel"
     # Borne basse incluse ; sans elle, la valeur doit être strictement positive
     # (rayonnement). La pluie, par exemple, vaut souvent zéro.
     borne_min: float | None = None
@@ -85,6 +97,10 @@ class ContratSerie:
     @property
     def nb_jours(self) -> int:
         return (date(self.annee_fin, 12, 31) - date(self.annee_debut, 1, 1)).days + 1
+
+    @property
+    def nb_heures(self) -> int:
+        return self.nb_jours * 24
 
     def nom_fichier(self, lot: str) -> str:
         return f"{self.prefixe_code}_{lot}.csv.gz"
@@ -106,6 +122,21 @@ def ecrire_series(
     ]
     lignes.sort(key=lambda r: (r[0], r[3], r[4]))
     return _ecrire(contrat, lot, COLONNES, lignes, _lire_mensuel)
+
+
+def ecrire_series_horaires(
+    contrat: ContratSerie,
+    lot: str,
+    series: list[tuple[str, float, float, list[tuple[datetime, float]]]],
+) -> Path:
+    """Écrit des séries horaires ``(localite_code, lat, lon, mesures)`` en CSV gzip."""
+    lignes: list[tuple[Any, ...]] = [
+        (code, lat, lon, _format_instant(instant), round(valeur, 4))
+        for code, lat, lon, mesures in series
+        for instant, valeur in mesures
+    ]
+    lignes.sort(key=lambda r: (r[0], r[3]))
+    return _ecrire(contrat, lot, COLONNES_HORAIRES, lignes, _lire_horaire)
 
 
 def ecrire_series_journalieres(
@@ -136,6 +167,18 @@ def lire_series(contrat: ContratSerie, lot: str) -> list[dict[str, Any]]:
 def lire_series_journalieres(contrat: ContratSerie, lot: str) -> list[dict[str, Any]]:
     """Relit un lot journalier : comme ``lire_series``, ``mesures`` [(date, valeur)]."""
     return _lire_journalier(contrat, DOSSIER_DONNEES / contrat.nom_fichier(lot))
+
+
+def lire_series_horaires(contrat: ContratSerie, lot: str) -> list[dict[str, Any]]:
+    """Relit un lot horaire : comme ``lire_series``, ``mesures`` [(instant UTC, valeur)]."""
+    return _lire_horaire(contrat, DOSSIER_DONNEES / contrat.nom_fichier(lot))
+
+
+def _format_instant(instant: datetime) -> str:
+    utc = instant.astimezone(UTC)
+    if (utc.minute, utc.second, utc.microsecond) != (0, 0, 0):
+        raise ValueError(f"Instant horaire non aligné sur l'heure : {instant.isoformat()}.")
+    return utc.strftime(FORMAT_INSTANT)
 
 
 def _ecrire(
@@ -203,6 +246,30 @@ def _lire_journalier(contrat: ContratSerie, chemin: Path) -> list[dict[str, Any]
         par_loc,
         nombre=contrat.nb_jours,
         unite="jours",
+        trier=lambda mesures: sorted(mesures.items()),
+    )
+
+
+def _lire_horaire(contrat: ContratSerie, chemin: Path) -> list[dict[str, Any]]:
+    debut = datetime(contrat.annee_debut, 1, 1, tzinfo=UTC)
+    fin = datetime(contrat.annee_fin, 12, 31, 23, tzinfo=UTC)
+
+    def cle(champs: list[str]) -> datetime | None:
+        try:
+            instant = datetime.strptime(champs[0], FORMAT_INSTANT).replace(tzinfo=UTC)
+        except ValueError:
+            instant = None
+        if instant is None or instant.strftime(FORMAT_INSTANT) != champs[0]:
+            raise ValueError(f"{chemin.name} : instant invalide {champs[0]!r}.")
+        return instant if debut <= instant <= fin else None
+
+    par_loc = _lire_lignes(contrat, chemin, COLONNES_HORAIRES, cle)
+    return _series(
+        contrat,
+        chemin,
+        par_loc,
+        nombre=contrat.nb_heures,
+        unite="heures",
         trier=lambda mesures: sorted(mesures.items()),
     )
 
