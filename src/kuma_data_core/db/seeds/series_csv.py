@@ -1,6 +1,6 @@
-"""Seeds des séries solaires en CSV compressé (ADR-0009, ADR-0010).
+"""Seeds des séries en CSV compressé (ADR-0009, ADR-0010, ADR-0013).
 
-Les séries solaires des lots (provinces, communes) sont stockées en **CSV gzip
+Les séries des lots (provinces, communes) sont stockées en **CSV gzip
 committés** sous ``seeds/donnees/``, lus hors ligne par les migrations : aucune
 migration n'accède au réseau et chaque valeur gravée est versionnée.
 
@@ -11,7 +11,8 @@ Un fichier par source, grandeur, granularité et lot. Colonnes :
 - séries journalières : ``localite_code, latitude, longitude, date, valeur``
   (date ISO 8601, total du jour).
 
-Valeurs en kWh/m²/jour, arrondies à 4 décimales.
+Valeurs dans l'unité de la grandeur (kWh/m²/jour pour le rayonnement, °C, %,
+mm/jour pour la météo), arrondies à 4 décimales.
 
 L'écriture est **déterministe** (lignes triées, horodatage gzip nul) : régénérer
 un fichier depuis les mêmes données produit les mêmes octets. Elle passe par un
@@ -62,9 +63,12 @@ class ContratSerie:
     methode_collecte: str
     annee_debut: int
     annee_fin: int
-    borne_max: float  # kWh/m²/jour, borne de plausibilité
+    borne_max: float  # borne de plausibilité, dans l'unité de la grandeur
     niveau_confiance: str = "B"
     granularite: Literal["mensuel", "journalier"] = "mensuel"
+    # Borne basse incluse ; sans elle, la valeur doit être strictement positive
+    # (rayonnement). La pluie, par exemple, vaut souvent zéro.
+    borne_min: float | None = None
 
     @property
     def periode_debut(self) -> str:
@@ -228,7 +232,9 @@ def _lire_lignes(
             if k is None:
                 raise ValueError(f"{chemin.name} : période hors contrat {code} {instant}.")
             valeur = float(valeur_s)
-            if not (0.0 < valeur <= contrat.borne_max):
+            # Comparaisons positives : une valeur NaN échoue et se trouve refusée.
+            au_dessus = valeur > 0.0 if contrat.borne_min is None else valeur >= contrat.borne_min
+            if not (au_dessus and valeur <= contrat.borne_max):
                 raise ValueError(f"{chemin.name} : valeur hors bornes {code} {instant}.")
             serie = par_loc.setdefault(
                 code,

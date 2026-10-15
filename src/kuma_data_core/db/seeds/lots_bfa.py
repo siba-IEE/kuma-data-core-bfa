@@ -133,6 +133,31 @@ CONTRATS_NASA_JOURNALIERS: dict[str, ContratSerie] = {
     "dhi": _nasa("dhi", 2001, "journalier"),
 }
 
+# Météo journalière NASA POWER (réanalyse MERRA-2, ADR-0013) : paramètre,
+# bornes basse et haute (°C, %, mm/jour). Période 1991-2025, celle du GHI
+# journalier, dont les calculs du moteur font des séries compagnes.
+METEO_NASA: dict[str, tuple[str, float, float]] = {
+    "t2m": ("T2M", 0.0, 50.0),
+    "rh2m": ("RH2M", 0.0, 100.0),
+    "precipitation": ("PRECTOTCORR", 0.0, 500.0),
+}
+CONTRATS_METEO_JOURNALIERS: dict[str, ContratSerie] = {
+    grandeur: ContratSerie(
+        source_code="nasa_power",
+        source_id=1,
+        source_libelle="NASA POWER",
+        prefixe_code=f"nasa_power_{grandeur}_journalier",
+        grandeur_code=grandeur,
+        methode_collecte="reanalyse",
+        annee_debut=1991,
+        annee_fin=2025,
+        borne_max=borne_max,
+        granularite="journalier",
+        borne_min=borne_min,
+    )
+    for grandeur, (_, borne_min, borne_max) in METEO_NASA.items()
+}
+
 # Contrats mensuels de la migration 0006, dans son ordre d'insertion.
 CONTRATS_MENSUELS: tuple[ContratSerie, ...] = (
     *CONTRATS_NASA.values(),

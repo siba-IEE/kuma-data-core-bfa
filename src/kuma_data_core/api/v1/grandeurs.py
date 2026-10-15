@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import csv
 import io
+from collections import Counter
 from collections.abc import Sequence
 from datetime import date, datetime, timedelta
 from typing import Annotated, Literal, NamedTuple
@@ -88,7 +89,6 @@ from kuma_data_core.services.grandeurs.ghi_exceedance import (
     METHODE_PERCENTILE,
     NIVEAU_CONFIANCE_DERIVE,
     NOMBRE_ANNEES_BASE,
-    PAIRES_COLOCALISEES_D29,
     UNITE_GHI_EXCEEDANCE,
     calculer_ghi_exceedance,
     calculer_totaux_annuels,
@@ -242,19 +242,22 @@ def _chercher_serie_compagne(
     grandeur_code_compagne: str,
     periode_debut_source: date,
     granularite_source: str | None,
+    periode_fin_source: date | None,
 ) -> int | None:
     """Cherche une série compagne (même localité + source, grandeur différente).
 
     Deux filtres garantissent que la compagne appartient à la même
     "famille temporelle" que la source :
 
-    - ``periode_debut = :periode_debut_source`` distingue les fenêtres
-      climato (1991/2001) de la journalière (2021).
+    - sa période **recouvre** celle de la source : une compagne
+      climatologique 1991-2020 n'accompagne pas une série 2021-2025, mais un
+      DNI servi depuis 2001 accompagne un GHI servi depuis 1991 (les jours
+      sans compagne sont traités par l'appelant). La compagne de même
+      ``periode_debut`` passe en premier, puis celle qui recouvre le plus
+      longtemps la source ;
     - ``granularite IS NOT DISTINCT FROM :granularite_source`` distingue
-      journalier / mensuel / horaire pour un même ``periode_debut``
-      (séries horaires, periode_debut=2021-01-01 partagé
-      avec les journalières : sans ce filtre une compagne horaire serait
-      sélectionnée pour un calcul journalier et lue dans la mauvaise
+      journalier / mensuel / horaire (sans ce filtre une compagne horaire
+      serait sélectionnée pour un calcul journalier et lue dans la mauvaise
       table).
 
     Renvoie ``serie_id`` ou ``None`` si aucune trouvée.
@@ -266,9 +269,15 @@ def _chercher_serie_compagne(
             WHERE localite_id = :localite_id
               AND source_id = :source_id
               AND grandeur_code = :grandeur_code
-              AND periode_debut = :periode_debut_source
               AND granularite IS NOT DISTINCT FROM :granularite_source
               AND actif = TRUE
+              AND COALESCE(periode_fin, 'infinity'::date) >= :periode_debut_source
+              AND periode_debut <= COALESCE(CAST(:periode_fin_source AS date), 'infinity'::date)
+            ORDER BY periode_debut = :periode_debut_source DESC,
+                     LEAST(COALESCE(periode_fin, DATE '9999-12-31'),
+                           COALESCE(CAST(:periode_fin_source AS date), DATE '9999-12-31'))
+                       - GREATEST(periode_debut, :periode_debut_source) DESC,
+                     id
             LIMIT 1
             """
         ),
@@ -277,6 +286,7 @@ def _chercher_serie_compagne(
             "source_id": source_id,
             "grandeur_code": grandeur_code_compagne,
             "periode_debut_source": periode_debut_source,
+            "periode_fin_source": periode_fin_source,
             "granularite_source": granularite_source,
         },
     ).first()
@@ -474,9 +484,15 @@ def grandeur_poa_parametrable(
     - **Comportement si compagnes présentes** : modèle Perez 1990
       (décomposition diffus en 3 zones, calcul anisotropique).
     - **Comportement si DNI / DHI absentes** : fallback Liu-Jordan
-      isotrope automatique (décomposition Erbs 1982 GHI -> DNI estimé +
-      DHI estimé, puis transposition isotrope) : précision dégradée
+      isotrope automatique, jour par jour (décomposition journalière
+      d'Erbs 1982, puis transposition isotrope) : précision dégradée
       10-15% sous ciel partiellement couvert.
+    - **Rupture de méthode** : quand les compagnes commencent après la
+      série source (NASA POWER : GHI depuis 1991, DNI et DHI depuis 2001),
+      les jours antérieurs passent par le repli et les suivants par Perez.
+      Au Kadiogo, le rapport POA/GHI saute de 9 % (plan horizontal) à 12 %
+      (15° plein sud) le 1er janvier 2001 : ne pas moyenner à cheval sur
+      cette date.
     - **Traçabilité limitée v1** : la réponse JSON n'indique pas
       explicitement quel modèle a été appliqué.
     """
@@ -485,14 +501,26 @@ def grandeur_poa_parametrable(
 
     latitude, longitude = _resoudre_coordonnees(session, serie.localite_id)
 
-    # Compagnes DNI / DHI : mêmes localité + source + periode_debut +
-    # granularité (la recherche est granularité-aware ; en horaire elle
-    # trouve les séries DNI/DHI horaires).
+    # Compagnes DNI / DHI : mêmes localité, source et granularité, période
+    # recouvrant celle du GHI (en horaire, la recherche trouve les séries
+    # DNI/DHI horaires).
     dni_serie_id = _chercher_serie_compagne(
-        session, serie.localite_id, serie.source_id, "dni", serie.periode_debut, serie.granularite
+        session,
+        serie.localite_id,
+        serie.source_id,
+        "dni",
+        serie.periode_debut,
+        serie.granularite,
+        serie.periode_fin,
     )
     dhi_serie_id = _chercher_serie_compagne(
-        session, serie.localite_id, serie.source_id, "dhi", serie.periode_debut, serie.granularite
+        session,
+        serie.localite_id,
+        serie.source_id,
+        "dhi",
+        serie.periode_debut,
+        serie.granularite,
+        serie.periode_fin,
     )
 
     if params.methode == "integration_horaire":
@@ -642,10 +670,22 @@ def grandeur_poa_bifacial(
     latitude, longitude = _resoudre_coordonnees(session, serie.localite_id)
 
     dni_serie_id = _chercher_serie_compagne(
-        session, serie.localite_id, serie.source_id, "dni", serie.periode_debut, serie.granularite
+        session,
+        serie.localite_id,
+        serie.source_id,
+        "dni",
+        serie.periode_debut,
+        serie.granularite,
+        serie.periode_fin,
     )
     dhi_serie_id = _chercher_serie_compagne(
-        session, serie.localite_id, serie.source_id, "dhi", serie.periode_debut, serie.granularite
+        session,
+        serie.localite_id,
+        serie.source_id,
+        "dhi",
+        serie.periode_debut,
+        serie.granularite,
+        serie.periode_fin,
     )
     if dni_serie_id is None or dhi_serie_id is None:
         raise ExceptionKuma(
@@ -762,6 +802,7 @@ def _lire_t2m_compagne(
     periode_fin: date,
     periode_debut_source: date,
     granularite_source: str | None,
+    periode_fin_source: date | None,
 ) -> dict[date, float]:
     """Cherche et lit la série T2M compagne d'une série source (même loc/source).
 
@@ -774,7 +815,13 @@ def _lire_t2m_compagne(
             aucune série T2M compagne trouvée.
     """
     t2m_serie_id = _chercher_serie_compagne(
-        session, localite_id, source_id, "t2m", periode_debut_source, granularite_source
+        session,
+        localite_id,
+        source_id,
+        "t2m",
+        periode_debut_source,
+        granularite_source,
+        periode_fin_source,
     )
     if t2m_serie_id is None:
         raise ExceptionKuma(
@@ -842,6 +889,7 @@ def grandeur_productible_correction_thermique(
             "t2m",
             serie.periode_debut,
             serie.granularite,
+            serie.periode_fin,
         )
         if t2m_serie_id is None:
             raise ExceptionKuma(
@@ -880,6 +928,7 @@ def grandeur_productible_correction_thermique(
             params.periode_fin,
             serie.periode_debut,
             serie.granularite,
+            serie.periode_fin,
         )
         mesures: list[MesureJourThermique] = [
             {
@@ -1004,6 +1053,7 @@ def grandeur_productible_pr_fourni(
                 "t2m",
                 serie.periode_debut,
                 serie.granularite,
+                serie.periode_fin,
             )
             if t2m_serie_id is None:
                 raise ExceptionKuma(
@@ -1110,6 +1160,7 @@ def grandeur_productible_pr_fourni(
             params.periode_fin,
             serie.periode_debut,
             serie.granularite,
+            serie.periode_fin,
         )
 
     mesures: list[MesureJourPRFourni] = [
@@ -1193,6 +1244,7 @@ def grandeur_energie_utile_ecs(
             "t2m",
             serie.periode_debut,
             serie.granularite,
+            serie.periode_fin,
         )
         if t2m_serie_id is None:
             raise ExceptionKuma(
@@ -1242,6 +1294,7 @@ def grandeur_energie_utile_ecs(
         params.periode_fin,
         serie.periode_debut,
         serie.granularite,
+        serie.periode_fin,
     )
 
     mesures: list[MesureJourECS] = [
@@ -1354,16 +1407,15 @@ def _resoudre_serie_ghi_mensuelle_1991_2020(
 ) -> tuple[int, str]:
     """Résout (serie_id, code_serie) de la série GHI mensuelle 1991-2020 d'une ville.
 
-    Cherche dans ``series_metadonnees`` la série active de la localité
-    ciblée avec ``grandeur_code = 'ghi'``, ``source.code = 'nasa_power'``
-    et ``periode_debut`` dans la fenêtre climatologique. Cette série est
-    seedée en migration 041 (NASA POWER 1991-2020).
+    Cherche dans ``series_metadonnees`` la série **mensuelle** active de la
+    localité ciblée avec ``grandeur_code = 'ghi'``, ``source.code =
+    'nasa_power'`` et ``periode_debut`` en 1991 (une série journalière NASA
+    POWER peut commencer le même jour : le filtre de granularité l'écarte).
 
     Raises:
         ExceptionKuma : HTTP 404 ``RESSOURCE_INCONNUE`` si la localité
-            n'est pas trouvée ou si aucune série GHI mensuelle 1991-2020
-            n'est rattachée. Cas typique : localité hors des 6 villes
-            pilotes.
+            n'est pas trouvée ou si aucune série GHI mensuelle NASA POWER
+            commençant en 1991 n'y est rattachée.
     """
     row = session.execute(
         text(
@@ -1376,7 +1428,9 @@ def _resoudre_serie_ghi_mensuelle_1991_2020(
               AND sm.grandeur_code = 'ghi'
               AND s.code = 'nasa_power'
               AND EXTRACT(YEAR FROM sm.periode_debut) = :annee_debut
+              AND sm.granularite = 'mensuel'
               AND sm.actif = TRUE
+            ORDER BY sm.id
             LIMIT 1
             """
         ),
@@ -1388,8 +1442,7 @@ def _resoudre_serie_ghi_mensuelle_1991_2020(
             message=(
                 f"Aucune serie GHI mensuelle {ANNEE_DEBUT_CLIMATOLOGIE}-"
                 f"{ANNEE_FIN_CLIMATOLOGIE} trouvee pour la localite "
-                f"{code_localite!r}. La grandeur ghi_exceedance n'est "
-                f"disponible que pour les 6 villes pilotes phase 1."
+                f"{code_localite!r}."
             ),
             statut_http=status.HTTP_404_NOT_FOUND,
         )
@@ -1397,12 +1450,12 @@ def _resoudre_serie_ghi_mensuelle_1991_2020(
 
 
 def _lire_mensuelles_brutes(session: Session, serie_id: int) -> list[tuple[int, int, float]]:
-    """Lit les 360 mesures mensuelles courantes d'une série sous forme de tuples.
+    """Lit les 360 mesures mensuelles courantes 1991-2020 d'une série.
 
     Renvoie une liste de tuples ``(annee, mois, valeur)`` ordonnés
     chronologiquement. Filtre standard ``valide_au IS NULL`` (version
-    courante). Pas de pagination : on charge tout (360 lignes attendues
-    pour une série 1991-2020 complète).
+    courante) et fenêtre de la normale : une série qui se prolonge au-delà
+    de 2020 ne déborde pas sur les percentiles.
     """
     rows = session.execute(
         text(
@@ -1410,38 +1463,31 @@ def _lire_mensuelles_brutes(session: Session, serie_id: int) -> list[tuple[int, 
             SELECT annee, mois, valeur
             FROM mesures_ressource_mensuelles
             WHERE serie_id = :serie_id AND valide_au IS NULL
+              AND annee BETWEEN :debut AND :fin
             ORDER BY annee, mois
             """
         ),
-        {"serie_id": serie_id},
+        {"serie_id": serie_id, "debut": ANNEE_DEBUT_CLIMATOLOGIE, "fin": ANNEE_FIN_CLIMATOLOGIE},
     ).all()
     return [(int(r.annee), int(r.mois), float(r.valeur)) for r in rows]
 
 
-def _construire_limite_ghi_exceedance(code_localite: str) -> str:
-    """Compose le champ ``limite`` de la réponse, enrichi le cas échéant.
+def _construire_limite_ghi_exceedance() -> str:
+    """Compose le champ ``limite`` de la réponse.
 
-    Le texte de base avertit que la valeur est inter-annuelle uniquement
-    (et non un P90 bancable complet). Pour les villes co-localisées dans
-    le même pixel CERES SYN1deg (Kindia / Mamou), une mention
-    explicite de l'identité avec la ville jumelle est ajoutée.
+    Avertit que la valeur est inter-annuelle uniquement (et non un P90
+    bancable complet), et que la maille NASA POWER est partagée par les
+    localités voisines.
     """
-    base = (
+    return (
         "Exceedance inter-annuelle uniquement (variabilite annee a annee sur "
         f"{NOMBRE_ANNEES_BASE} ans). Ne propage pas l'incertitude de modele "
         "satellitaire NASA POWER : ce n'est pas un P90 bancable complet "
         "(qui necessiterait un modele d'erreur explicite, type PRUVE, et "
-        "idealement une calibration sol)."
+        "idealement une calibration sol). NASA POWER sert le rayonnement sur "
+        "une maille de 1 deg : les localites voisines de la meme maille ont la "
+        "meme serie, donc les memes P50 et P90."
     )
-    jumelle = PAIRES_COLOCALISEES_D29.get(code_localite)
-    if jumelle is not None:
-        base += (
-            f" Dette D-29 : cette localite et {jumelle!r} tombent dans le meme "
-            f"pixel CERES SYN1deg NASA POWER (110 km a 10 deg N) ; leurs "
-            f"series GHI mensuelles 1991-2020 sont strictement identiques "
-            f"et leurs P50 / P90 le sont donc aussi."
-        )
-    return base
 
 
 @routeur.get(
@@ -1467,12 +1513,14 @@ def grandeur_ghi_exceedance(
        journalière ``calendar.monthrange`` (années bissextiles incluses).
     4. Percentiles P50 (médiane) et P90 (= percentile 10, scénario
        conservateur). P90 < P50 par construction.
-    5. Construction de la réponse avec champ ``limite`` enrichi pour
-       les villes co-localisées Kindia / Mamou.
+    5. Construction de la réponse avec son champ ``limite``.
     """
     serie_id, code_serie = _resoudre_serie_ghi_mensuelle_1991_2020(session, code_localite)
     mensuelles = _lire_mensuelles_brutes(session, serie_id)
-    totaux_par_annee = calculer_totaux_annuels(mensuelles)
+    mois_par_annee = Counter(annee for annee, _, _ in mensuelles)
+    totaux_par_annee = calculer_totaux_annuels(
+        [m for m in mensuelles if mois_par_annee[m[0]] == 12]
+    )
     resultat = calculer_ghi_exceedance(list(totaux_par_annee.values()))
     return ReponseGhiExceedance(
         code_localite=code_localite,
@@ -1484,7 +1532,7 @@ def grandeur_ghi_exceedance(
         unite=UNITE_GHI_EXCEEDANCE,
         methode_percentile=METHODE_PERCENTILE,
         niveau_confiance=NIVEAU_CONFIANCE_DERIVE,
-        limite=_construire_limite_ghi_exceedance(code_localite),
+        limite=_construire_limite_ghi_exceedance(),
     )
 
 
@@ -1586,7 +1634,13 @@ def grandeur_taux_salissure_proxy(
     _exiger_grandeur(serie.grandeur_code, "pm2_5", code_serie_source, "taux_salissure_proxy")
 
     pm10_serie_id = _chercher_serie_compagne(
-        session, serie.localite_id, serie.source_id, "pm10", serie.periode_debut, serie.granularite
+        session,
+        serie.localite_id,
+        serie.source_id,
+        "pm10",
+        serie.periode_debut,
+        serie.granularite,
+        serie.periode_fin,
     )
     pluie_serie_id = _chercher_serie_pluie_nasa(
         session, serie.localite_id, serie.periode_debut, serie.periode_fin
@@ -1722,6 +1776,7 @@ def grandeur_pr_realiste(
             "t2m",
             serie.periode_debut,
             serie.granularite,
+            serie.periode_fin,
         )
         if t2m_id is None:
             raise ExceptionKuma(
@@ -1746,6 +1801,7 @@ def grandeur_pr_realiste(
             "precipitation",
             serie.periode_debut,
             serie.granularite,
+            serie.periode_fin,
         )
         pm2_5_id = _chercher_serie_pm_cams(session, serie.localite_id, "pm2_5")
         pm10_id = _chercher_serie_pm_cams(session, serie.localite_id, "pm10")

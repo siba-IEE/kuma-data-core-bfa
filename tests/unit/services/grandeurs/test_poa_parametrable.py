@@ -29,6 +29,9 @@ from kuma_data_core.services.grandeurs.poa_parametrable import (
     UNITE_POA,
     MesureHeurePOA,
     MesureJourPOA,
+    _decomposer_jour,
+    _fraction_diffuse_erbs_journaliere,
+    _irradiation_extraterrestre_jour,
     calculer_poa_parametrable,
     calculer_poa_parametrable_horaire,
 )
@@ -109,14 +112,17 @@ def test_t_poa_1_cas_standard_perez() -> None:
 
 
 def test_t_poa_2_fallback_liu_jordan() -> None:
-    """T-POA-2 : DNI/DHI absents -> fallback Liu-Jordan via Erbs.
+    """T-POA-2 : DNI/DHI absents -> fallback Liu-Jordan, Erbs journalier.
 
-    Verifie qu'un POA positif est calcule meme sans composantes DNI/DHI.
+    Sur un total journalier (kWh/m²/jour), la décomposition garde le GHI en
+    plan horizontal et donne un POA du même ordre que le GHI pour un plan
+    peu incliné.
     """
+    ghi_jour = 6.0
     mesures: list[MesureJourPOA] = [
         {
             "instant_mesure": date(2024, 6, 15),
-            "ghi": 600.0,
+            "ghi": ghi_jour,
             "dni": None,
             "dhi": None,
         }
@@ -128,7 +134,20 @@ def test_t_poa_2_fallback_liu_jordan() -> None:
         parametres=_parametres_poa_standard(),
     )
     assert len(resultats) == 1
-    assert resultats[0].valeur > 0.0
+    assert 0.85 * ghi_jour < resultats[0].valeur < 1.05 * ghi_jour
+
+
+def test_t_poa_2b_decomposition_journaliere_erbs() -> None:
+    """T-POA-2b : Erbs journalier, KT et fraction diffuse plausibles, GHI conservé."""
+    jour = date(2024, 4, 15)
+    h0, omega_s = _irradiation_extraterrestre_jour(12.37, jour)
+    assert 9.5 < h0 < 11.0  # Ouagadougou, avril
+    assert 89.0 < omega_s < 95.0
+    dni, dhi = _decomposer_jour(6.5, 12.37, jour, zenith_midi_deg=3.0)
+    assert 0.25 < dhi / 6.5 < 0.5
+    assert abs(dni * math.cos(math.radians(3.0)) + dhi - 6.5) < 1e-9
+    assert _fraction_diffuse_erbs_journaliere(0.9, 85.0) == 0.175
+    assert _fraction_diffuse_erbs_journaliere(0.9, 75.0) == 0.143
 
 
 def test_t_poa_3_liste_vide() -> None:

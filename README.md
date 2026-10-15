@@ -43,13 +43,19 @@ Socle en place. La donnée nationale se construit par lots.
   SARAH-3, ERA5 et CAMS ; DHI de CAMS) et fraction diffuse NASA POWER,
   mensuelle et annuelle. Voir
   l'[ADR-0012](docs/decisions/0012-grandeurs-derivees-stockees.md).
+- Météo journalière NASA POWER aux 47 provinces (température, humidité, pluie,
+  1991-2025) et grandeurs métier calculées par l'API : POA, productibles,
+  énergie utile ECS, degrés-jours, P50/P90, PR réaliste corrigé de la
+  température. Voir
+  l'[ADR-0013](docs/decisions/0013-meteo-journaliere-et-grandeurs-calculees.md).
 
 `alembic upgrade head` n'exige aucun accès réseau : les valeurs sont relues dans
 des CSV versionnés, produits par les scripts d'ingestion.
 
 ### À faire
 
-- Grandeurs métier calculées et contrôle qualité.
+- Salissure et PR réaliste corrigé de la salissure (particules fines CAMS
+  EAC4), séries horaires et contrôle qualité.
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A.
 - Adaptation de la documentation `docs/` au contexte burkinabè.
 
@@ -59,13 +65,14 @@ Les localités s'appuient sur Wikidata (CC0), sur le 5e RGPH 2019 de l'INSD
 Burkina Faso et sur les contours administratifs COD-AB de l'IGB, publiés par
 OCHA sur HDX (CC BY-IGO, « IGB / OCHA, via HDX »).
 
-Les séries solaires proviennent de :
+Les séries proviennent de :
 
 - **NASA POWER** (CC BY 4.0), POWER Monthly and Annual API et POWER Daily API
   v2.10.0, consultées le 15 octobre 2026 : « The data was obtained from
   National Aeronautics and Space Administration (NASA) Langley Research
   Center's Prediction Of Worldwide Energy Resources (POWER) project funded
-  through the NASA Earth Science Division. »
+  through the NASA Earth Science Division. » NASA POWER tire sa météo de la
+  réanalyse MERRA-2 du GMAO (NASA).
 - **PVGIS** (Joint Research Centre de la Commission européenne), API v5_3
   `MRcalc`, consultée le 15 octobre 2026 : « PVGIS © Union européenne,
   2001-2026 ». Réutilisation autorisée sous réserve de citer la source

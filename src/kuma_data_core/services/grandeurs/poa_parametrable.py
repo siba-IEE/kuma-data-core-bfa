@@ -12,13 +12,17 @@ Modèles retenus en v1 :
   source F1.
 
 - **Modèle fallback Liu-Jordan 1963** [2] (isotrope) : utilisé
-  lorsque seul le GHI est disponible (cas typique des séries
-  ``mesures_ressource_mensuelles`` SARAH-3 ICDR ou NASA POWER monthly
-  climato 1991-2020). La décomposition GHI -> (DNI estimé, DHI estimé)
-  est réalisée via la corrélation Erbs 1982 [3] intégrée à pvlib.
+  lorsque seul le GHI est disponible (par exemple les jours d'une série
+  journalière NASA POWER antérieurs au DNI et au DHI, servis depuis
+  2001). Le total du jour est décomposé par la corrélation journalière
+  d'Erbs et al. 1982 [3] : indice de clarté ``KT = H / H0`` (``H0``
+  irradiation extraterrestre du jour sur le plan horizontal), fraction
+  diffuse ``Hd / H``, puis DNI ramené au midi solaire
+  ``(H - Hd) / cos(z)``, cohérent avec la transposition au midi solaire.
 
-Implémentation via la bibliothèque ``pvlib`` (v0.15+) pour les fonctions
-de position solaire, décomposition GHI et transposition POA. Citée par
+Implémentation via la bibliothèque ``pvlib`` (v0.15+) pour la position
+solaire et la transposition POA ; la décomposition journalière du repli est
+codée ici. ``pvlib`` est citée par
 PVsyst et NREL SAM comme référence industrielle. Approche midi solaire
 local (jour représentatif) pour la granularité journalière - biais de
 moyennage acté.
@@ -54,6 +58,7 @@ Références bibliographiques :
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
 from typing import Literal, TypedDict
@@ -80,6 +85,9 @@ MODELE_PEREZ: Literal["perez"] = "perez"
 MODELE_ISOTROPE: Literal["isotropic"] = "isotropic"
 """Identifiant pvlib du modèle isotrope Liu-Jordan 1963."""
 
+CONSTANTE_SOLAIRE_KW: float = 1.367
+"""Constante solaire (kW/m²) des corrélations journalières (Duffie et Beckman)."""
+
 
 # === TypedDict d'entree ===================================================
 
@@ -89,7 +97,8 @@ class MesureJourPOA(TypedDict):
 
     ``ghi`` est obligatoire ; ``dni`` et ``dhi`` sont optionnels. Si
     ces deux derniers sont ``None``, le fallback Liu-Jordan est
-    déclenché pour ce jour.
+    déclenché pour ce jour. Valeurs en totaux du jour (kWh/m²/jour) :
+    l'indice de clarté du repli en dépend.
     """
 
     instant_mesure: date
@@ -127,6 +136,58 @@ def _midi_solaire_utc(jour: date, longitude_deg: float) -> datetime:
     )
 
 
+def _irradiation_extraterrestre_jour(latitude_deg: float, jour: date) -> tuple[float, float]:
+    """Irradiation extraterrestre du jour sur le plan horizontal.
+
+    Renvoie ``(H0, omega_s)`` : ``H0`` en kWh/m²/jour et l'angle horaire du
+    coucher du soleil ``omega_s`` en degrés (Duffie et Beckman, éq. 1.10.3).
+    """
+    n = jour.timetuple().tm_yday
+    phi = math.radians(latitude_deg)
+    delta = math.radians(23.45 * math.sin(math.radians(360.0 * (284 + n) / 365.0)))
+    omega_s = math.acos(max(-1.0, min(1.0, -math.tan(phi) * math.tan(delta))))
+    excentricite = 1.0 + 0.033 * math.cos(math.radians(360.0 * n / 365.0))
+    h0 = (
+        24.0
+        / math.pi
+        * CONSTANTE_SOLAIRE_KW
+        * excentricite
+        * (
+            math.cos(phi) * math.cos(delta) * math.sin(omega_s)
+            + omega_s * math.sin(phi) * math.sin(delta)
+        )
+    )
+    return h0, math.degrees(omega_s)
+
+
+def _fraction_diffuse_erbs_journaliere(kt: float, omega_s_deg: float) -> float:
+    """Fraction diffuse journalière ``Hd / H`` d'Erbs et al. 1982 [3]."""
+    if omega_s_deg <= 81.4:
+        if kt < 0.715:
+            return 1.0 - 0.2727 * kt + 2.4495 * kt**2 - 11.9514 * kt**3 + 9.3879 * kt**4
+        return 0.143
+    if kt < 0.722:
+        return 1.0 + 0.2832 * kt - 2.5557 * kt**2 + 0.8448 * kt**3
+    return 0.175
+
+
+def _decomposer_jour(
+    ghi_jour: float, latitude_deg: float, jour: date, zenith_midi_deg: float
+) -> tuple[float, float]:
+    """Décompose un total journalier GHI en ``(DNI, DHI)`` ramenés au midi solaire.
+
+    Le DHI est le total diffus du jour ; le DNI est le direct horizontal
+    du jour divisé par ``cos(z)`` au midi solaire, ce qui redonne le direct
+    horizontal par la transposition au midi solaire.
+    """
+    h0, omega_s_deg = _irradiation_extraterrestre_jour(latitude_deg, jour)
+    kt = min(max(ghi_jour / h0, 0.0), 1.0) if h0 > 0 else 0.0
+    dhi = ghi_jour * min(max(_fraction_diffuse_erbs_journaliere(kt, omega_s_deg), 0.0), 1.0)
+    cos_z = math.cos(math.radians(zenith_midi_deg))
+    dni = (ghi_jour - dhi) / cos_z if cos_z > 0.05 else 0.0
+    return dni, dhi
+
+
 def _calculer_poa_jour(
     mesure: MesureJourPOA,
     latitude_deg: float,
@@ -157,15 +218,14 @@ def _calculer_poa_jour(
         dhi_a_utiliser = mesure["dhi"]
         modele = MODELE_PEREZ
     else:
-        # Fallback Liu-Jordan : décomposition GHI -> (DNI estimé, DHI estimé)
-        # via corrélation Erbs 1982 intégrée à pvlib.
-        decomposition = pvlib.irradiance.erbs(
-            ghi=mesure["ghi"],
-            zenith=solpos["zenith"].iloc[0],
-            datetime_or_doy=instant_utc,
+        # Fallback Liu-Jordan : décomposition du total journalier par la
+        # corrélation journalière d'Erbs 1982 (KT = H / H0 du jour).
+        dni_a_utiliser, dhi_a_utiliser = _decomposer_jour(
+            mesure["ghi"],
+            latitude_deg,
+            mesure["instant_mesure"],
+            float(solpos["zenith"].iloc[0]),
         )
-        dni_a_utiliser = float(decomposition["dni"])
-        dhi_a_utiliser = float(decomposition["dhi"])
         modele = MODELE_ISOTROPE
 
     # dni_extra (irradiance extra-atmosphérique) requise par Perez
@@ -187,7 +247,7 @@ def _calculer_poa_jour(
 
     poa_global = float(resultat_poa["poa_global"])
     # Garde-fou : pvlib peut retourner NaN si position solaire dégénérée
-    # (nuit, polaire). En contexte Guinée à midi solaire, sans risque.
+    # (nuit, polaire). Sous les tropiques, à midi solaire, sans risque.
     if pd.isna(poa_global) or poa_global < 0:
         return 0.0
     return poa_global

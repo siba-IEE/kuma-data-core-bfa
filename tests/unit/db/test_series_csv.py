@@ -83,6 +83,7 @@ def test_ecriture_deterministe() -> None:
         (_mesures()[:-1], "mois"),  # incomplet
         ([*_mesures()[:-1], (2020, 12, 9.9)], "bornes"),  # hors bornes
         ([*_mesures()[:-1], (2020, 12, 0.0)], "bornes"),  # valeur nulle
+        ([*_mesures()[:-1], (2020, 12, float("nan"))], "bornes"),  # valeur NaN
         ([*_mesures()[:-1], (2021, 1, 5.0)], "période"),  # hors période
     ],
 )
@@ -170,3 +171,26 @@ def test_journalier_rejets_a_la_lecture(tmp_path: Path, jour: str, message: str)
     chemin.write_bytes(gzip.compress(("\n".join(lignes) + "\n").encode()))
     with pytest.raises(ValueError, match=message):
         lire_series_journalieres(_JOURNALIER, "test")
+
+
+def test_borne_basse_incluse() -> None:
+    """Avec une borne basse, zéro est admis (pluie) et une valeur négative refusée."""
+    pluie = ContratSerie(
+        source_code="nasa_power",
+        source_id=1,
+        source_libelle="NASA POWER",
+        prefixe_code="nasa_power_precipitation_journalier",
+        grandeur_code="precipitation",
+        methode_collecte="reanalyse",
+        annee_debut=2019,
+        annee_fin=2020,
+        borne_max=500.0,
+        granularite="journalier",
+        borne_min=0.0,
+    )
+    jours = [(jour, 0.0) for jour, _ in _jours()]
+    ecrire_series_journalieres(pluie, "test", [(*_POINT, jours)])
+    (serie,) = lire_series_journalieres(pluie, "test")
+    assert all(valeur == 0.0 for _, valeur in serie["mesures"])
+    with pytest.raises(ValueError, match="bornes"):
+        ecrire_series_journalieres(pluie, "test", [(*_POINT, [*jours[:-1], (jours[-1][0], -0.1)])])

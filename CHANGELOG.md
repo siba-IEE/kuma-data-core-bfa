@@ -3,6 +3,18 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.7.0
+
+- Météo journalière NASA POWER aux 47 provinces (ADR-0013) : température,
+  humidité relative et précipitations 1991-2025, réanalyse MERRA-2, soit
+  141 séries et 1 802 544 mesures relues dans des CSV versionnés (migration
+  0010). Les contrats de séries gagnent une borne basse incluse ; l'ingesteur
+  journalier exige désormais `--famille rayonnement` ou `--famille meteo`.
+- Grandeurs calculées : séries compagnes trouvées par recouvrement de
+  périodes ; P50/P90 limité à la série mensuelle et à la normale 1991-2020 ;
+  repli du POA par la corrélation journalière d'Erbs. Tests d'intégration de
+  chaque grandeur sur une province.
+
 ## 0.6.0
 
 - Grandeurs dérivées stockées aux 47 provinces et aux 351 communes (ADR-0012) :

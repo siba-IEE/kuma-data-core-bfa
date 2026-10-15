@@ -29,8 +29,11 @@ l'amorçage et la montée en charge de la donnée burkinabè.
 - [x] Grandeurs dérivées stockées : écarts entre sources et fraction diffuse
       (ADR-0012).
 - [ ] Adapter `/v1/grandeurs/incertitude_inter_source` aux écarts de l'ADR-0012.
-- [ ] Grandeurs métier calculées (POA, productible, P50/P90, salissure, PR
-      réaliste) exposées par l'API.
+- [x] Météo journalière NASA POWER et grandeurs métier calculées par l'API :
+      POA, productibles, ECS, degrés-jours, P50/P90, PR réaliste corrigé de la
+      température (ADR-0013).
+- [ ] Salissure et PR réaliste corrigé de la salissure (particules fines CAMS
+      EAC4).
 - [ ] Contrôle qualité horaire.
 
 ## Jalon 4 : terrain (confiance A)

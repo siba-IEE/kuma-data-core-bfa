@@ -1,7 +1,7 @@
 """Calcul à la volée de la grandeur F1 ``ghi_exceedance``.
 
 Exceedance inter-annuelle de l'irradiation annuelle, dérivée de la série
-GHI mensuelle 1991-2020 NASA POWER (climatologie OMM, 6 villes pilotes).
+GHI mensuelle 1991-2020 NASA POWER (normale climatologique OMM).
 
 Méthode :
 
@@ -41,10 +41,9 @@ Limites documentées (cf. champ ``limite`` de la réponse API) :
   ne propage pas l'incertitude de modèle satellitaire. Ce n'est pas un
   P90 bancable complet (qui nécessiterait un modèle d'erreur explicite,
   type PRUVE, et idéalement une calibration sol).
-- Kindia et Mamou tombent dans le même pixel CERES SYN1deg NASA POWER
-  (110 km à 10° N) ; leurs séries mensuelles 1991-2020 sont
-  strictement identiques et leurs P50/P90 le sont donc aussi. Note
-  ajoutée au champ ``limite`` pour ces deux villes.
+- NASA POWER sert le rayonnement sur une maille de 1° : les localités
+  voisines de la même maille ont des séries identiques, donc les mêmes
+  P50/P90. Mention au champ ``limite``.
 - base 30 ans, **incertitude d'échantillonnage** sur P90 (10ᵉ
   percentile sur 30 valeurs = 3 valeurs en queue). Mention qualitative
   dans le champ ``limite``.
@@ -90,18 +89,6 @@ ANNEE_FIN_CLIMATOLOGIE: int = 2020
 
 NOMBRE_ANNEES_BASE: int = ANNEE_FIN_CLIMATOLOGIE - ANNEE_DEBUT_CLIMATOLOGIE + 1
 """30 années : base d'échantillonnage des percentiles."""
-
-
-# === Constantes co-localisation ===========================================
-
-PAIRES_COLOCALISEES_D29: dict[str, str] = {
-    "gin_kindia": "gin_mamou",
-    "gin_mamou": "gin_kindia",
-}
-"""Paires de villes co-localisées dans le même pixel CERES SYN1deg NASA
-POWER (110 km à 10° N). Pour ces villes, P50/P90 sont strictement
-identiques à la ville jumelle. Mention au champ ``limite`` de la
-réponse API."""
 
 
 # === Modele de resultat ===================================================

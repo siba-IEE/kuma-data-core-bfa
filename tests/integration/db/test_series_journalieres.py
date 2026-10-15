@@ -30,7 +30,7 @@ def test_series_journalieres(db_session: Session) -> None:
             FROM series_metadonnees s
             JOIN sources so ON so.id = s.source_id
             JOIN localites l ON l.id = s.localite_id
-            WHERE s.granularite = 'journalier'
+            WHERE s.granularite = 'journalier' AND s.grandeur_code IN ('ghi', 'dni', 'dhi')
             GROUP BY 1, 2, 3, 4, 5, 6
             """
         )
@@ -56,7 +56,7 @@ def test_mesures_completes_et_bornees(db_session: Session) -> None:
                    bool_and(m.instant_mesure BETWEEN s.periode_debut AND s.periode_fin) AS dedans
             FROM series_metadonnees s
             LEFT JOIN mesures_ressource m ON m.serie_id = s.id
-            WHERE s.granularite = 'journalier'
+            WHERE s.granularite = 'journalier' AND s.grandeur_code IN ('ghi', 'dni', 'dhi')
             GROUP BY 1, 2
             """
         )
@@ -67,7 +67,15 @@ def test_mesures_completes_et_bornees(db_session: Session) -> None:
         assert r.n == r.jours == nb_jours, r.code
         assert r.vmin > 0.0 and r.vmax <= borne, r.code
         assert r.brut and r.confiance_b and r.dedans, r.code
-    total = db_session.execute(text("SELECT count(*) FROM mesures_ressource")).scalar_one()
+    total = db_session.execute(
+        text(
+            """
+            SELECT count(*) FROM mesures_ressource m
+            JOIN series_metadonnees s ON s.id = m.serie_id
+            WHERE s.grandeur_code IN ('ghi', 'dni', 'dhi')
+            """
+        )
+    ).scalar_one()
     assert total == 1_459_162
 
 
@@ -83,7 +91,7 @@ def test_accord_avec_le_mensuel(db_session: Session) -> None:
                        avg(m.valeur) AS moyenne
                 FROM series_metadonnees s
                 JOIN mesures_ressource m ON m.serie_id = s.id
-                WHERE s.granularite = 'journalier'
+                WHERE s.granularite = 'journalier' AND s.grandeur_code IN ('ghi', 'dni', 'dhi')
                 GROUP BY 1, 2, 3, 4
             )
             SELECT count(*) AS n, max(abs(j.moyenne - mm.valeur)) AS ecart
