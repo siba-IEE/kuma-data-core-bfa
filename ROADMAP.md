@@ -16,9 +16,12 @@ l'amorçage et la montée en charge de la donnée burkinabè.
 
 ## Jalon 2 : donnée solaire brute
 
-- [ ] Séries et mesures brutes par source (NASA POWER, SARAH-3 via PVGIS, CAMS,
-      ERA5-Land) aux points burkinabè, en confiance B.
-- [ ] Chaîne d'ingestion reproductible.
+- [x] Séries mensuelles brutes aux provinces et aux communes, en confiance B :
+      NASA POWER, SARAH-3 et ERA5 via PVGIS (ADR-0009).
+- [x] Chaîne d'ingestion reproductible : ingesteurs, CSV versionnés, migration
+      sans réseau.
+- [ ] CAMS Radiation (compte Copernicus ADS requis).
+- [ ] Séries journalières.
 
 ## Jalon 3 : grandeurs et qualité
 

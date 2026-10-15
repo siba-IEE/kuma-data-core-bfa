@@ -8,6 +8,6 @@ Les contributions au projet sont régies par l'accord de licence de
 contribution (voir CLA.md).
 
 Ce dépôt inclut des jeux de données dérivés de sources ouvertes
-(NASA POWER, Copernicus / CAMS / ERA5-Land, EUMETSAT CM SAF via PVGIS,
-ESMAP / WAPP). Voir la section « Attribution des données amont » du
-README.
+(NASA POWER, EUMETSAT CM SAF / SARAH-3 et Copernicus / ERA5 via PVGIS,
+Wikidata, RGPH 2019 de l'INSD, contours COD-AB de l'IGB via OCHA). Voir
+la section « Attribution des données amont » du README.

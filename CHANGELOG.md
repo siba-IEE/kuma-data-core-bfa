@@ -3,6 +3,19 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.3.0
+
+- Donnée solaire brute : 2 786 séries mensuelles aux 47 provinces et aux
+  351 communes, en confiance B. NASA POWER (GHI 1991-2025, DNI et DHI
+  2001-2025), SARAH-3 et ERA5 via PVGIS (GHI et DNI 2005-2023), soit 768 936
+  mesures relues dans des CSV versionnés (ADR-0009).
+- Mises en garde dans la note publique des séries : maille de 1° de NASA POWER,
+  six mois SARAH-3 abaissés par des journées satellite manquantes, niveau ERA5
+  plus élevé après 2020.
+- Source `era5_pvgis` et méthode de collecte `reanalyse`.
+- Ingesteurs `scripts/ingest_nasa_power_mensuel.py` et
+  `scripts/ingest_pvgis_mensuel.py`.
+
 ## 0.2.0
 
 - Localités : les 351 communes (niveau `commune`), soit les 350 départements de

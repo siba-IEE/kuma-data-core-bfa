@@ -28,13 +28,18 @@ Socle en place. La donnée nationale se construit par lots.
   Ouagadougou) du découpage de 2025 (décrets n°2025-1012 et n°2025-1003), avec
   coordonnées Wikidata (deux centroïdes de contour COD-AB, ADR-0008) et
   population RGPH 2019 (INSD).
+- Donnée solaire brute : séries mensuelles aux 47 provinces et aux 351 communes,
+  en confiance B : NASA POWER (GHI 1991-2025, DNI et DHI 2001-2025), SARAH-3 et
+  ERA5 via PVGIS (GHI et DNI 2005-2023). Voir
+  l'[ADR-0009](docs/decisions/0009-series-solaires-mensuelles.md).
 
-`alembic upgrade head` n'exige aucun accès réseau : aucune migration d'ingestion.
+`alembic upgrade head` n'exige aucun accès réseau : les valeurs sont relues dans
+des CSV versionnés, produits par les scripts d'ingestion.
 
 ### À faire
 
-- Ingestion de la donnée solaire (séries et mesures brutes par source), puis
-  grandeurs métier calculées et contrôle qualité.
+- CAMS Radiation (compte Copernicus ADS requis) et séries journalières.
+- Grandeurs métier calculées et contrôle qualité.
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A.
 - Adaptation de la documentation `docs/` au contexte burkinabè.
 
@@ -43,6 +48,27 @@ Socle en place. La donnée nationale se construit par lots.
 Les localités s'appuient sur Wikidata (CC0), sur le 5e RGPH 2019 de l'INSD
 Burkina Faso et sur les contours administratifs COD-AB de l'IGB, publiés par
 OCHA sur HDX (CC BY-IGO, « IGB / OCHA, via HDX »).
+
+Les séries solaires proviennent de :
+
+- **NASA POWER** (CC BY 4.0), POWER Monthly and Annual API v2.10.0, consultée
+  le 15 octobre 2026 : « The data was obtained from National Aeronautics and
+  Space Administration (NASA) Langley Research Center's Prediction Of
+  Worldwide Energy Resources (POWER) project funded through the NASA Earth
+  Science Division. »
+- **PVGIS** (Joint Research Centre de la Commission européenne), API v5_3
+  `MRcalc`, consultée le 15 octobre 2026 : « PVGIS © Union européenne,
+  2001-2026 ». Réutilisation autorisée sous réserve de citer la source
+  (décision 2011/833/UE de la Commission). PVGIS sert ici deux bases :
+  - **SARAH-3**, données du Satellite Application Facility on Climate
+    Monitoring (CM SAF) d'EUMETSAT : « © 2005-2023 EUMETSAT » ;
+  - **ERA5**, Copernicus Climate Change Service (C3S), ECMWF (CC BY 4.0) :
+    « Contains modified Copernicus Climate Change Service information
+    2005-2023 ».
+
+Ni la Commission européenne, ni le CEPMMT (ECMWF), ni EUMETSAT / CM SAF ne
+sauraient être tenus responsables de l'usage fait de ces informations et
+données transformées.
 
 ## Démarrage rapide
 

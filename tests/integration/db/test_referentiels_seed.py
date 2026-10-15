@@ -41,4 +41,4 @@ def test_amont_generique_present(db_session: Session) -> None:
     codes = {row[0] for row in db_session.execute(text("SELECT code FROM sources")).all()}
     attendus = {"nasa_power", "ecmwf_era5", "sarah3_monthly", "cams_radiation", "kuma_calculs"}
     assert attendus <= codes
-    assert len(codes) == 14
+    assert len(codes) == 15  # 14 en 0002, + era5_pvgis en 0005
