@@ -103,8 +103,8 @@ jobs:
   tests-integration:
     name: Tests d'intégration
     runs-on: ubuntu-latest
-    # Migrations 0006 et 0007 (768 936 mesures mensuelles et 1 459 162
-    # journalières, lues dans les CSV committés) : upgrade head en 2 min 30
+    # Migrations 0006 à 0008 (1 069 824 mesures mensuelles et 1 459 162
+    # journalières, lues dans les CSV committés) : upgrade head en 3 min
     # environ en local.
     timeout-minutes: 10
     needs: [lint, type-check]

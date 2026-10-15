@@ -20,7 +20,8 @@ l'amorçage et la montée en charge de la donnée burkinabè.
       NASA POWER, SARAH-3 et ERA5 via PVGIS (ADR-0009).
 - [x] Chaîne d'ingestion reproductible : ingesteurs, CSV versionnés, migration
       sans réseau.
-- [ ] CAMS Radiation (compte Copernicus ADS requis).
+- [x] CAMS Radiation, séries mensuelles aux provinces et aux communes
+      (ADR-0011).
 - [x] Séries journalières NASA POWER aux provinces (ADR-0010).
 
 ## Jalon 3 : grandeurs et qualité

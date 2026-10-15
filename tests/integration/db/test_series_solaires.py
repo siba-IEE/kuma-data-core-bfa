@@ -1,7 +1,8 @@
 """Tests d'intégration des séries solaires mensuelles (migrations 0005 et 0006).
 
 Vérifie les 2 786 séries brutes (398 localités, 7 familles), leurs mesures, la
-source ``era5_pvgis`` et la méthode ``reanalyse`` (ADR-0009).
+source ``era5_pvgis`` et la méthode ``reanalyse`` (ADR-0009). Le contrôle du
+gradient nord-sud couvre aussi CAMS Radiation (migration 0008).
 """
 
 from __future__ import annotations
@@ -41,7 +42,7 @@ def test_series_par_famille(db_session: Session) -> None:
             FROM series_metadonnees s
             JOIN sources so ON so.id = s.source_id
             JOIN localites l ON l.id = s.localite_id
-            WHERE s.granularite = 'mensuel'
+            WHERE s.granularite = 'mensuel' AND so.code <> 'cams_radiation'
             GROUP BY 1, 2, 3, 4, 5, 6, 7
             """
         )
@@ -69,7 +70,7 @@ def test_mesures_completes_et_bornees(db_session: Session) -> None:
             FROM series_metadonnees s
             JOIN sources so ON so.id = s.source_id
             LEFT JOIN mesures_ressource_mensuelles m ON m.serie_id = s.id
-            WHERE s.granularite = 'mensuel'
+            WHERE s.granularite = 'mensuel' AND so.code <> 'cams_radiation'
             GROUP BY 1, 2, 3
             """
         )
@@ -81,7 +82,14 @@ def test_mesures_completes_et_bornees(db_session: Session) -> None:
         assert r.vmin > 0.0 and r.vmax <= borne, r.code
         assert r.brut and r.confiance_b, r.code
     total = db_session.execute(
-        text("SELECT count(*) FROM mesures_ressource_mensuelles")
+        text(
+            """
+            SELECT count(*)
+            FROM mesures_ressource_mensuelles m
+            JOIN series_metadonnees s ON s.id = m.serie_id
+            WHERE s.source_id <> 13
+            """
+        )
     ).scalar_one()
     assert total == 768_936
 
@@ -106,6 +114,11 @@ def test_gradient_nord_sud_du_ghi(db_session: Session) -> None:
             """
         )
     ).all()
-    assert {r.source for r in lignes} == {"nasa_power", "sarah3_monthly", "era5_pvgis"}
+    assert {r.source for r in lignes} == {
+        "nasa_power",
+        "sarah3_monthly",
+        "era5_pvgis",
+        "cams_radiation",
+    }
     for r in lignes:
         assert r.r > 0.5, r.source

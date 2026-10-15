@@ -14,7 +14,7 @@ authors:
 license: AGPL-3.0-or-later
 repository-code: "https://github.com/siba-IEE/kuma-data-core-bfa"
 url: "https://kumascience.com"
-version: "0.4.0"
+version: "0.5.0"
 date-released: "2026-10-15"
 keywords:
   - solar energy

@@ -3,6 +3,16 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.5.0
+
+- CAMS Radiation : 1 194 séries mensuelles GHI, DNI et DHI aux 47 provinces et
+  aux 351 communes, 2005-2025, en confiance B, soit 300 888 mesures relues dans
+  des CSV versionnés (ADR-0011).
+- Mise en garde dans la note publique des séries GHI et DNI : CAMS et SARAH-3
+  exploitent tous deux l'imagerie Meteosat.
+- Ingesteur `scripts/ingest_cams_radiation_mensuel.py` (clé `ADS_API_KEY`) ;
+  attribution CAMS dans le README et NOTICE.
+
 ## 0.4.0
 
 - Séries journalières NASA POWER aux 47 provinces, en confiance B : GHI

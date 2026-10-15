@@ -9,11 +9,11 @@ pytestmark = pytest.mark.integration
 
 
 def test_listing_des_series_d_une_commune(client: TestClient, headers_auth: dict[str, str]) -> None:
-    """Une commune porte 7 séries mensuelles : NASA POWER, SARAH-3 et ERA5."""
+    """Une commune porte 10 séries mensuelles : NASA POWER, SARAH-3, ERA5 et CAMS."""
     response = client.get("/v1/series?localite=bfa_dep_fo", headers=headers_auth)
     assert response.status_code == 200
     payload = response.json()
-    assert payload["total"] == 7
+    assert payload["total"] == 10
     familles = {(s["source_code"], s["grandeur_code"]) for s in payload["items"]}
     assert familles == {
         ("nasa_power", "ghi"),
@@ -23,6 +23,9 @@ def test_listing_des_series_d_une_commune(client: TestClient, headers_auth: dict
         ("sarah3_monthly", "dni"),
         ("era5_pvgis", "ghi"),
         ("era5_pvgis", "dni"),
+        ("cams_radiation", "ghi"),
+        ("cams_radiation", "dni"),
+        ("cams_radiation", "dhi"),
     }
 
 

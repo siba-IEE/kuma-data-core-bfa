@@ -1,4 +1,4 @@
-"""Lots de séries solaires : points et contrats (ADR-0009, ADR-0010).
+"""Lots de séries solaires : points et contrats (ADR-0009 à ADR-0011).
 
 Un **lot** est un ensemble de localités du référentiel dont les séries sont
 demandées aux sources solaires sous le même contrat :
@@ -10,8 +10,9 @@ demandées aux sources solaires sous le même contrat :
 Les séries mensuelles portent sur les deux lots, les séries journalières NASA
 POWER sur le seul lot ``provinces``. Chaque série couvre toute la période servie
 par sa source à la date de l'ingestion (octobre 2026). Ces contrats sont figés
-par les migrations 0006 (mensuel) et 0007 (journalier) : une autre source ou une
-autre période passera par de nouveaux contrats et de nouveaux fichiers.
+par les migrations 0006 (mensuel), 0007 (journalier) et 0008 (CAMS) : une autre
+source ou une autre période passera par de nouveaux contrats et de nouveaux
+fichiers.
 """
 
 from __future__ import annotations
@@ -75,6 +76,20 @@ def _pvgis(
     )
 
 
+def _cams(grandeur: str) -> ContratSerie:
+    return ContratSerie(
+        source_code="cams_radiation",
+        source_id=13,
+        source_libelle="CAMS Radiation",
+        prefixe_code=f"cams_{grandeur}_mensuel",
+        grandeur_code=grandeur,
+        methode_collecte="modele_satellitaire",
+        annee_debut=2005,
+        annee_fin=2025,
+        borne_max=BORNES[grandeur],
+    )
+
+
 # Paramètre NASA POWER de chaque grandeur.
 PARAMETRES_NASA: dict[str, str] = {
     "ghi": "ALLSKY_SFC_SW_DWN",
@@ -83,7 +98,7 @@ PARAMETRES_NASA: dict[str, str] = {
 }
 
 # Bornes de plausibilité (kWh/m²/jour, moyenne journalière du mois) : au-dessus
-# des maxima servis par les sources sur le Burkina Faso (GHI 7,83, DNI 8,20,
+# des maxima servis par les sources sur le Burkina Faso (GHI 7,83, DNI 8,23,
 # DHI 3,89) et sous le plafond physique par ciel clair à ces latitudes.
 BORNES: dict[str, float] = {"ghi": 8.5, "dni": 10.0, "dhi": 6.0}
 # Bornes journalières (kWh/m²/jour, total du jour) : au-dessus des maxima servis
@@ -107,6 +122,10 @@ CONTRATS_ERA5: dict[str, ContratSerie] = {
     g: _pvgis("era5_pvgis", 16, "ERA5 (PVGIS)", "era5", "reanalyse", g) for g in ("ghi", "dni")
 }
 
+# CAMS Radiation (ADS) : servi depuis février 2004 ; 2005 à 2025, années
+# complètes. Lot distinct des contrats mensuels de la migration 0006.
+CONTRATS_CAMS: dict[str, ContratSerie] = {g: _cams(g) for g in ("ghi", "dni", "dhi")}
+
 # NASA POWER journalier : mêmes périodes que le mensuel.
 CONTRATS_NASA_JOURNALIERS: dict[str, ContratSerie] = {
     "ghi": _nasa("ghi", 1991, "journalier"),
@@ -114,7 +133,7 @@ CONTRATS_NASA_JOURNALIERS: dict[str, ContratSerie] = {
     "dhi": _nasa("dhi", 2001, "journalier"),
 }
 
-# Tous les contrats mensuels, dans l'ordre d'insertion de la migration.
+# Contrats mensuels de la migration 0006, dans son ordre d'insertion.
 CONTRATS_MENSUELS: tuple[ContratSerie, ...] = (
     *CONTRATS_NASA.values(),
     *CONTRATS_SARAH3.values(),

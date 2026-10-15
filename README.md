@@ -35,13 +35,15 @@ Socle en place. La donnée nationale se construit par lots.
 - Séries journalières NASA POWER aux 47 provinces, en confiance B (GHI
   1991-2025, DNI et DHI 2001-2025). Voir
   l'[ADR-0010](docs/decisions/0010-series-journalieres-nasa-power.md).
+- CAMS Radiation : séries mensuelles GHI, DNI et DHI aux 47 provinces et aux
+  351 communes, 2005-2025, en confiance B. Voir
+  l'[ADR-0011](docs/decisions/0011-series-cams-radiation.md).
 
 `alembic upgrade head` n'exige aucun accès réseau : les valeurs sont relues dans
 des CSV versionnés, produits par les scripts d'ingestion.
 
 ### À faire
 
-- CAMS Radiation (compte Copernicus ADS requis).
 - Grandeurs métier calculées et contrôle qualité.
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A.
 - Adaptation de la documentation `docs/` au contexte burkinabè.
@@ -68,6 +70,10 @@ Les séries solaires proviennent de :
   - **ERA5**, Copernicus Climate Change Service (C3S), ECMWF (CC BY 4.0) :
     « Contains modified Copernicus Climate Change Service information
     2005-2023 ».
+- **CAMS Radiation**, Copernicus Atmosphere Monitoring Service (CC BY 4.0),
+  service v4.6 (Vaisala, MINES ParisTech et DLR) diffusé par l'ADS
+  Copernicus, consulté le 15 octobre 2026 : « Contains modified Copernicus
+  Atmosphere Monitoring Service information 2005-2025 ».
 
 Ni la Commission européenne, ni le CEPMMT (ECMWF), ni EUMETSAT / CM SAF ne
 sauraient être tenus responsables de l'usage fait de ces informations et
