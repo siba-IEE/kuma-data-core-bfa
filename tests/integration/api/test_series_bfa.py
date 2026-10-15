@@ -9,11 +9,11 @@ pytestmark = pytest.mark.integration
 
 
 def test_listing_des_series_d_une_commune(client: TestClient, headers_auth: dict[str, str]) -> None:
-    """Une commune porte 10 séries mensuelles : NASA POWER, SARAH-3, ERA5 et CAMS."""
+    """Une commune porte 10 séries brutes (NASA POWER, SARAH-3, ERA5, CAMS) et 8 dérivées."""
     response = client.get("/v1/series?localite=bfa_dep_fo", headers=headers_auth)
     assert response.status_code == 200
     payload = response.json()
-    assert payload["total"] == 10
+    assert payload["total"] == 18
     familles = {(s["source_code"], s["grandeur_code"]) for s in payload["items"]}
     assert familles == {
         ("nasa_power", "ghi"),
@@ -26,6 +26,14 @@ def test_listing_des_series_d_une_commune(client: TestClient, headers_auth: dict
         ("cams_radiation", "ghi"),
         ("cams_radiation", "dni"),
         ("cams_radiation", "dhi"),
+        ("kuma_calculs", "ecart_relatif_ghi_sarah3_nasa"),
+        ("kuma_calculs", "ecart_relatif_ghi_era5_nasa"),
+        ("kuma_calculs", "ecart_relatif_ghi_cams_nasa"),
+        ("kuma_calculs", "ecart_relatif_dni_sarah3_nasa"),
+        ("kuma_calculs", "ecart_relatif_dni_era5_nasa"),
+        ("kuma_calculs", "ecart_relatif_dni_cams_nasa"),
+        ("kuma_calculs", "ecart_relatif_dhi_cams_nasa"),
+        ("kuma_calculs", "fraction_diffuse"),
     }
 
 
@@ -53,3 +61,16 @@ def test_detail_d_une_serie_journaliere(client: TestClient, headers_auth: dict[s
     assert payload["localite_code"] == "bfa_prov_kadiogo"
     assert len(payload["mesures"]) == 29
     assert all(0.0 < m["valeur"] < 9.0 for m in payload["mesures"])
+
+
+def test_detail_d_une_grandeur_derivee(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """Une série dérivée renvoie ses valeurs mensuelles et annuelles de grandeurs_metier."""
+    response = client.get(
+        "/v1/series/fraction_diffuse_nasa_power_bfa_prov_kadiogo?from=2024-01&to=2024-12",
+        headers=headers_auth,
+    )
+    assert response.status_code == 200
+    mesures = response.json()["mesures"]
+    types = sorted(m["periode_type"] for m in mesures)
+    assert types == ["annuel"] + ["mensuel"] * 12
+    assert all(0.0 < m["valeur"] < 1.0 and m["niveau_effectif"] == "B" for m in mesures)

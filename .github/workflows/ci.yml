@@ -103,10 +103,10 @@ jobs:
   tests-integration:
     name: Tests d'intégration
     runs-on: ubuntu-latest
-    # Migrations 0006 à 0008 (1 069 824 mesures mensuelles et 1 459 162
-    # journalières, lues dans les CSV committés) : upgrade head en 3 min
+    # Migrations 0006 à 0009 (mesures lues dans les CSV committés, puis
+    # 793 214 grandeurs dérivées calculées en SQL) : upgrade head en 5 min
     # environ en local.
-    timeout-minutes: 10
+    timeout-minutes: 20
     needs: [lint, type-check]
 
     # Service container natif GitHub Actions : un PostgreSQL 16-alpine
@@ -165,9 +165,10 @@ jobs:
 
       - name: Appliquer les migrations Alembic
         # Instance Burkina Faso : baseline schéma squashée + référentiels +
-        # localités + séries solaires mensuelles et journalières. Les mesures
-        # sont lues dans les CSV gzip committés -> `alembic upgrade head`
-        # n'exige aucun accès réseau.
+        # localités + séries solaires mensuelles et journalières + grandeurs
+        # dérivées. Les mesures sont lues dans les CSV gzip committés et les
+        # grandeurs calculées en SQL -> `alembic upgrade head` n'exige aucun
+        # accès réseau.
         run: uv run alembic upgrade head
 
       - name: Vérifier la cohérence Alembic / modèles SQLAlchemy

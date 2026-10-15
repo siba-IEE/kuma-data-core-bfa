@@ -148,9 +148,10 @@ seed offline committé, ingestion NASA POWER gardée) suspendent le
 trigger d'audit de la table cible le temps de leurs écritures
 (`ALTER TABLE ... DISABLE TRIGGER trg_audit_<table>`, réactivation en
 fin de migration ; geste transactionnel, un rollback restaure l'état).
-Même règle pour leurs downgrades (DELETE de masse) et pour les
+Même règle pour leurs downgrades (DELETE de masse), pour les
 migrations de contrôle qualité algorithmique qui requalifient ces
-mêmes lignes en masse.
+mêmes lignes en masse, et pour les grandeurs dérivées calculées en SQL
+depuis ces lignes (calcul déterministe, rejouable au bit près).
 
 Motif : l'audit trace l'édition, pas le déversement. Le rejeu du
 backfill journalier (4 147 830 insertions, migration 107, antérieure à

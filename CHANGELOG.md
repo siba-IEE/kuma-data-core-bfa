@@ -3,6 +3,14 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.6.0
+
+- Grandeurs dérivées stockées aux 47 provinces et aux 351 communes (ADR-0012) :
+  sept écarts relatifs mensuels à NASA POWER (GHI SARAH-3, ERA5 et CAMS ; DNI
+  SARAH-3, ERA5 et CAMS ; DHI CAMS), nouvelles grandeurs 35 à 41, et fraction
+  diffuse NASA POWER mensuelle et annuelle, soit 3 184 séries `kuma_calculs`
+  et 793 214 valeurs calculées en SQL par la migration 0009.
+
 ## 0.5.0
 
 - CAMS Radiation : 1 194 séries mensuelles GHI, DNI et DHI aux 47 provinces et

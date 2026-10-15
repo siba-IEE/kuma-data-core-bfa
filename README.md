@@ -38,6 +38,11 @@ Socle en place. La donnée nationale se construit par lots.
 - CAMS Radiation : séries mensuelles GHI, DNI et DHI aux 47 provinces et aux
   351 communes, 2005-2025, en confiance B. Voir
   l'[ADR-0011](docs/decisions/0011-series-cams-radiation.md).
+- Grandeurs dérivées stockées aux 398 localités, calculées en base depuis les
+  séries mensuelles : écarts relatifs mensuels à NASA POWER (GHI et DNI de
+  SARAH-3, ERA5 et CAMS ; DHI de CAMS) et fraction diffuse NASA POWER,
+  mensuelle et annuelle. Voir
+  l'[ADR-0012](docs/decisions/0012-grandeurs-derivees-stockees.md).
 
 `alembic upgrade head` n'exige aucun accès réseau : les valeurs sont relues dans
 des CSV versionnés, produits par les scripts d'ingestion.

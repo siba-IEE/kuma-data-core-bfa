@@ -26,6 +26,9 @@ l'amorçage et la montée en charge de la donnée burkinabè.
 
 ## Jalon 3 : grandeurs et qualité
 
+- [x] Grandeurs dérivées stockées : écarts entre sources et fraction diffuse
+      (ADR-0012).
+- [ ] Adapter `/v1/grandeurs/incertitude_inter_source` aux écarts de l'ADR-0012.
 - [ ] Grandeurs métier calculées (POA, productible, P50/P90, salissure, PR
       réaliste) exposées par l'API.
 - [ ] Contrôle qualité horaire.
