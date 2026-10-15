@@ -11,8 +11,8 @@ l'amorçage et la montée en charge de la donnée burkinabè.
 - [x] Arrêter le mapping de la hiérarchie burkinabè (région, province,
       département, village) sur les 7 niveaux du schéma (ADR-0007) et la règle
       de sélection des coordonnées Wikidata (ADR-0008).
-- [ ] 350 départements (niveau `commune`), avec coordonnées, population et
-      sourçage (Wikidata, INSD).
+- [x] 350 départements et commune de Ouagadougou (niveau `commune`), avec
+      coordonnées et population RGPH 2019.
 
 ## Jalon 2 : donnée solaire brute
 

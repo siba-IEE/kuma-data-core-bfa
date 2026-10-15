@@ -23,20 +23,26 @@ Socle en place. La donnée nationale se construit par lots.
   POWER, ERA5 et ERA5-Land, SARAH-3 via PVGIS, CAMS, ESMAP/WAPP, normes IEC et
   WMO).
 - Localités : le pays `bfa` (ISO 3166-1 alpha-3 : BFA), les 17 régions (niveau
-  `region_administrative`) et les 47 provinces (niveau `prefecture`) du découpage
-  de 2025 (décrets n°2025-1012 et n°2025-1003), avec coordonnées Wikidata et
+  `region_administrative`), les 47 provinces (niveau `prefecture`) et les
+  351 communes (niveau `commune` : 350 départements et la commune de
+  Ouagadougou) du découpage de 2025 (décrets n°2025-1012 et n°2025-1003), avec
+  coordonnées Wikidata (deux centroïdes de contour COD-AB, ADR-0008) et
   population RGPH 2019 (INSD).
 
 `alembic upgrade head` n'exige aucun accès réseau : aucune migration d'ingestion.
 
 ### À faire
 
-- Localités : 350 départements (niveau `commune`), avec coordonnées, population
-  et sourçage (Wikidata, INSD).
 - Ingestion de la donnée solaire (séries et mesures brutes par source), puis
   grandeurs métier calculées et contrôle qualité.
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A.
 - Adaptation de la documentation `docs/` au contexte burkinabè.
+
+## Attribution des données amont
+
+Les localités s'appuient sur Wikidata (CC0), sur le 5e RGPH 2019 de l'INSD
+Burkina Faso et sur les contours administratifs COD-AB de l'IGB, publiés par
+OCHA sur HDX (CC BY-IGO, « IGB / OCHA, via HDX »).
 
 ## Démarrage rapide
 

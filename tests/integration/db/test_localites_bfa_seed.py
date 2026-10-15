@@ -1,9 +1,10 @@
-"""Tests d'intégration du seed des localités Burkina Faso (migration 0003).
+"""Tests d'intégration du référentiel de localités Burkina Faso (migration 0003).
 
-Vérifie le premier lot de localités : 1 continent, 1 pays, 17 régions et
-47 provinces du découpage de 2025, leur hiérarchie, leurs coordonnées
-(ADR-0008), leurs populations RGPH 2019 et les provinces renommées, créées ou
-réduites.
+Vérifie le pays, les 17 régions et les 47 provinces du découpage de 2025, leur
+hiérarchie, leurs coordonnées (ADR-0008), leurs populations RGPH 2019 et les
+provinces renommées, créées ou réduites. Le décompte par niveau et le contrôle
+de co-localisation portent sur toutes les localités, communes comprises
+(migration 0004).
 """
 
 from __future__ import annotations
@@ -71,7 +72,7 @@ _REPLI_CHEF_LIEU = {
 
 
 def test_nombre_total_localites(db_session: Session) -> None:
-    """66 localités : 1 continent + 1 pays + 17 régions + 47 provinces."""
+    """1 continent, 1 pays, 17 régions, 47 provinces et 351 communes."""
     lignes = db_session.execute(
         text("SELECT type_localite, count(*) AS n FROM localites GROUP BY type_localite")
     ).all()
@@ -80,6 +81,7 @@ def test_nombre_total_localites(db_session: Session) -> None:
         "pays": 1,
         "region_administrative": 17,
         "prefecture": 47,
+        "commune": 351,
     }
 
 

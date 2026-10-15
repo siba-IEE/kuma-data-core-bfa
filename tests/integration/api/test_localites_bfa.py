@@ -13,13 +13,13 @@ pytestmark = pytest.mark.integration
 
 
 def test_listing_par_pays(client: TestClient, headers_auth: dict[str, str]) -> None:
-    """Pays, 17 régions et 47 provinces portent ``pays_iso3 = BFA``."""
-    response = client.get("/v1/localites?pays_iso3=BFA&limit=100", headers=headers_auth)
+    """Pays, 17 régions, 47 provinces et 351 communes portent ``pays_iso3 = BFA``."""
+    response = client.get("/v1/localites?pays_iso3=BFA&limit=1000", headers=headers_auth)
     assert response.status_code == 200
     payload = response.json()
-    assert payload["total"] == 65
+    assert payload["total"] == 416
     types = {item["type_localite"] for item in payload["items"]}
-    assert types == {"pays", "region_administrative", "prefecture"}
+    assert types == {"pays", "region_administrative", "prefecture", "commune"}
 
 
 def test_listing_provinces_d_une_region(client: TestClient, headers_auth: dict[str, str]) -> None:

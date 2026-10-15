@@ -3,6 +3,13 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.2.0
+
+- Localités : les 351 communes (niveau `commune`), soit les 350 départements de
+  l'annexe II du décret n°2025-1012 et la commune de Ouagadougou, rattachées à
+  leur province, avec coordonnées Wikidata (deux centroïdes de contour COD-AB,
+  ADR-0008) et population RGPH 2019 (INSD).
+
 ## 0.1.0
 
 Amorçage de l'instance Burkina Faso, à partir d'un socle propre.
