@@ -1,8 +1,9 @@
-"""Tests d'intégration des grandeurs métier calculées à la volée (ADR-0013).
+"""Tests d'intégration des grandeurs métier calculées à la volée (ADR-0013, ADR-0015).
 
 Province du Kadiogo : GHI, DNI et DHI journaliers NASA POWER (0007), météo
-journalière (0010) et séries mensuelles (0006). Vérifie que chaque grandeur
-trouve ses compagnes et renvoie des valeurs plausibles.
+journalière (0010), séries mensuelles (0006) et particules fines CAMS EAC4
+(0013). Vérifie que chaque grandeur trouve ses compagnes et renvoie des valeurs
+plausibles.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ pytestmark = pytest.mark.integration
 
 GHI = "nasa_power_ghi_journalier_bfa_prov_kadiogo"
 T2M = "nasa_power_t2m_journalier_bfa_prov_kadiogo"
+PM2_5 = "cams_eac4_pm2_5_journalier_bfa_prov_kadiogo"
 ANNEE_2024 = {"periode_debut": "2024-01-01", "periode_fin": "2024-12-31"}
 
 
@@ -225,3 +227,58 @@ def test_pr_realiste_avec_temperature(client: TestClient, headers_auth: dict[str
     assert valeurs
     assert all(0.5 < v < 0.9 for v in valeurs)
     assert statistics.mean(valeurs) < 0.8
+
+
+def _pertes(client: TestClient, headers: dict[str, str], province: str) -> dict[str, float]:
+    serie = f"cams_eac4_pm2_5_journalier_bfa_prov_{province}"
+    response = client.get(f"/v1/grandeurs/taux_salissure_proxy/{serie}", headers=headers)
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["periode"] == "2005-01-01/2025-12-31"
+    return {m["instant"]: m["perte_pct"] for m in payload["mesures"]}
+
+
+def test_taux_salissure_proxy(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """Salissure HSU 2005-2025 au Kadiogo : 2,2 % en moyenne, 6,6 % en février, lavée l'été."""
+    pertes = _pertes(client, headers_auth, "kadiogo")
+    assert len(pertes) == 7_670
+    assert all(0.0 <= p < 50.0 for p in pertes.values())
+    assert statistics.mean(pertes.values()) == pytest.approx(2.24, abs=0.05)
+    fevrier = [p for jour, p in pertes.items() if jour[5:7] == "02"]
+    hivernage = [p for jour, p in pertes.items() if jour[5:7] in ("06", "07", "08", "09")]
+    assert statistics.mean(fevrier) == pytest.approx(6.6, abs=0.1)
+    assert statistics.mean(hivernage) < 0.1
+
+
+def test_salissure_du_nord_au_sud(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """La salissure baisse du nord sahélien (Oudalan) au sud-ouest humide (Poni)."""
+    moyennes = [
+        statistics.mean(_pertes(client, headers_auth, p).values())
+        for p in ("oudalan", "kadiogo", "poni")
+    ]
+    assert moyennes == sorted(moyennes, reverse=True)
+
+
+def test_pr_realiste_avec_salissure(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """La salissure ne peut que baisser le PR corrigé de la température, jour par jour."""
+
+    def _pr(correction: str) -> dict[str, float]:
+        response = client.get(
+            f"/v1/grandeurs/pr_realiste/{GHI}",
+            params={
+                "pr_fourni": 0.8,
+                "correction": correction,
+                "noct_degc": 45,
+                "coeff_temp_pourcent_par_degc": -0.35,
+            },
+            headers=headers_auth,
+        )
+        assert response.status_code == 200, response.text
+        return {m["instant"]: m["pr_realiste"] for m in response.json()["mesures_journalier"]}
+
+    thermique = _pr("temperature")
+    complet = _pr("temperature_salissure")
+    assert min(complet) == "2005-01-01"
+    assert set(complet) <= set(thermique)
+    assert all(complet[j] <= thermique[j] + 1e-12 for j in complet)
+    assert statistics.mean(complet.values()) < statistics.mean(thermique[j] for j in complet)

@@ -1586,9 +1586,8 @@ def _chercher_serie_pluie_nasa(
     Résolveur **dédié** (la pluie est ``nasa_power``, source différente des PM
     ``cams_eac4`` ; ``_chercher_serie_compagne`` filtre sur ``source_id`` et la
     raterait). La source est **épinglée explicitement** : même si une autre source de
-    pluie arrive un jour, elle ne sera pas sélectionnée. Depuis le backfill
-    journalier profondeur (migration 107), une localité porte **deux** séries de
-    pluie NASA (1981-2020 et 2021-2025) : la série retenue est celle dont la plage
+    pluie arrive un jour, elle ne sera pas sélectionnée. Si une localité porte
+    plusieurs séries de pluie NASA, la série retenue est celle dont la plage
     **recouvre la fenêtre de la série PM appelante** (le modèle HSU intègre la
     pluie sur les dates des PM) ; ordre stable sur ``periode_debut, id``.
     """
@@ -1658,8 +1657,7 @@ def grandeur_taux_salissure_proxy(
        L'une absente -> 400.
     3. Lecture des 3 séries (``mesures_ressource``, courantes) ; alignement par
        **intersection des dates** (fenêtre effective = overlap PM ∩ pluie, bornée
-       par les PM : 2021-01-01 à 2025-08-31) ; garde-fou de contiguïté (HSU
-       path-dependant).
+       par les PM) ; garde-fou de contiguïté (HSU path-dependant).
     4. Modèle HSU (pvlib) sur la fenêtre complète depuis le début (le spin-up n'est
        amorti qu'une fois) ; tilt / seuil de nettoyage = défauts F1 documentés.
     """
@@ -1775,7 +1773,7 @@ def grandeur_pr_realiste(
     Compagnes selon le mode : T2M et pluie (même source que le GHI), PM2.5/PM10
     (cross-source EAC4). Alignement par intersection des séries du mode ; la fenêtre
     effective diverge donc par mode (les modes salissure sont bornés à l'overlap PM
-    EAC4, 2025-08-31), avec garde-fou de contiguïté (HSU path-dependant). Sorties
+    EAC4), avec garde-fou de contiguïté (HSU path-dependant). Sorties
     journalier + mensuel (la courbe mensuelle = la PR saisonnière).
     """
     serie = _resoudre_serie_source(session, code_serie_source)

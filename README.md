@@ -53,14 +53,16 @@ Socle en place. La donnée nationale se construit par lots.
   par la doctrine QC v1 et servies par `/v1/horaire` ; grandeurs métier en
   intégration horaire. Voir
   l'[ADR-0014](docs/decisions/0014-series-horaires-et-controle-qualite.md).
+- Particules fines CAMS EAC4 (PM2.5 et PM10 journaliers, 2005-2025) aux
+  47 provinces, en confiance B, et grandeurs qui en dépendent : proxy de
+  salissure et PR réaliste corrigé de la salissure. Voir
+  l'[ADR-0015](docs/decisions/0015-particules-fines-cams-eac4.md).
 
 `alembic upgrade head` n'exige aucun accès réseau : les valeurs sont relues dans
 des CSV versionnés, produits par les scripts d'ingestion.
 
 ### À faire
 
-- Salissure et PR réaliste corrigé de la salissure (particules fines CAMS
-  EAC4).
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A.
 - Adaptation de la documentation `docs/` au contexte burkinabè.
 
@@ -91,6 +93,13 @@ Les séries proviennent de :
   service v4.6 (Vaisala, MINES ParisTech et DLR) diffusé par l'ADS
   Copernicus, consulté le 15 octobre 2026 : « Contains modified Copernicus
   Atmosphere Monitoring Service information 2005-2025 ».
+- **CAMS EAC4**, réanalyse globale de composition atmosphérique du Copernicus
+  Atmosphere Monitoring Service (CEPMMT, CC BY 4.0), jeu
+  `cams-global-reanalysis-eac4` (DOI 10.24381/d58bbf47) diffusé par l'ADS
+  Copernicus, consulté le 16 octobre 2026 : « Contains modified Copernicus
+  Atmosphere Monitoring Service information 2005-2025 ». Référence : Inness,
+  A. et al. (2019), « The CAMS reanalysis of atmospheric composition »,
+  *Atmos. Chem. Phys.*, 19, 3515-3556, doi:10.5194/acp-19-3515-2019.
 
 Ni la Commission européenne, ni le CEPMMT (ECMWF), ni EUMETSAT / CM SAF ne
 sauraient être tenus responsables de l'usage fait de ces informations et

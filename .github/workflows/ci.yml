@@ -103,9 +103,9 @@ jobs:
   tests-integration:
     name: Tests d'intégration
     runs-on: ubuntu-latest
-    # Migrations 0006 à 0012 (mesures lues dans les CSV committés,
+    # Migrations 0006 à 0013 (mesures lues dans les CSV committés,
     # 793 214 grandeurs dérivées calculées en SQL et contrôle qualité
-    # horaire) : upgrade head en 9 min environ en local.
+    # horaire) : upgrade head en 10 min environ en local.
     timeout-minutes: 20
     needs: [lint, type-check]
 

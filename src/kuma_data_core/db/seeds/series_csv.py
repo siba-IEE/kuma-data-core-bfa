@@ -61,6 +61,8 @@ COLONNES_HORAIRES: tuple[str, ...] = (
 FORMAT_INSTANT: str = "%Y-%m-%dT%H:00Z"
 
 NOMS_LOCALITES: dict[str, str] = {e["code"]: e["nom"] for e in (*_LOCALITES, *_COMMUNES)}
+# Nom d'une grandeur dans les libellés de série, quand son code en majuscules ne convient pas.
+LIBELLES_GRANDEURS: dict[str, str] = {"pm2_5": "PM2.5"}
 
 
 @dataclass(frozen=True)
@@ -332,11 +334,12 @@ def _series(
         mesures = trier(par_loc[code]["mesures"])
         if len(mesures) != nombre:
             raise ValueError(f"{chemin.name} : {code} a {len(mesures)} {unite}, {nombre} attendus.")
+        grandeur = LIBELLES_GRANDEURS.get(contrat.grandeur_code, contrat.grandeur_code.upper())
         sortie.append(
             {
                 "code": contrat.code_serie(code),
                 "libelle": (
-                    f"{contrat.grandeur_code.upper()} {contrat.granularite} "
+                    f"{grandeur} {contrat.granularite} "
                     f"{contrat.source_libelle}, {NOMS_LOCALITES[code]} "
                     f"({contrat.annee_debut}-{contrat.annee_fin})"
                 ),

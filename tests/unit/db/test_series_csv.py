@@ -198,6 +198,26 @@ def test_borne_basse_incluse() -> None:
         ecrire_series_journalieres(pluie, "test", [(*_POINT, [*jours[:-1], (jours[-1][0], -0.1)])])
 
 
+def test_libelle_des_particules_fines() -> None:
+    """Le code ``pm2_5`` s'écrit PM2.5 dans les libellés de série."""
+    pm = ContratSerie(
+        source_code="cams_eac4",
+        source_id=15,
+        source_libelle="CAMS EAC4",
+        prefixe_code="cams_eac4_pm2_5_journalier",
+        grandeur_code="pm2_5",
+        methode_collecte="reanalyse",
+        annee_debut=2019,
+        annee_fin=2020,
+        borne_max=3000.0,
+        granularite="journalier",
+        borne_min=0.0,
+    )
+    ecrire_series_journalieres(pm, "test", [(*_POINT, _jours())])
+    (serie,) = lire_series_journalieres(pm, "test")
+    assert serie["libelle"] == "PM2.5 journalier CAMS EAC4, Fô (2019-2020)"
+
+
 _HORAIRE = ContratSerie(
     source_code="nasa_power",
     source_id=1,

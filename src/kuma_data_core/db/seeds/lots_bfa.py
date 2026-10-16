@@ -1,4 +1,4 @@
-"""Lots de séries : points et contrats (ADR-0009 à ADR-0011, ADR-0013, ADR-0014).
+"""Lots de séries : points et contrats (ADR-0009 à ADR-0011, ADR-0013 à ADR-0015).
 
 Un **lot** est un ensemble de localités du référentiel dont les séries sont
 demandées aux sources solaires sous le même contrat :
@@ -8,13 +8,13 @@ demandées aux sources solaires sous le même contrat :
   ``commune``, migration 0004).
 
 Les séries mensuelles portent sur les deux lots, les séries journalières NASA
-POWER sur le seul lot ``provinces``, les séries horaires sur cinq points
-pilotes du lot ``communes`` (la commune de Ouagadougou et quatre
+POWER et CAMS EAC4 sur le seul lot ``provinces``, les séries horaires sur cinq
+points pilotes du lot ``communes`` (la commune de Ouagadougou et quatre
 départements). Chaque série couvre toute la période servie par sa source à
 la date de l'ingestion (octobre 2026). Ces contrats sont figés
-par les migrations 0006 (mensuel), 0007 et 0010 (journalier), 0008 (CAMS) et
-0011 (horaire) : une autre source ou une autre période passera par de nouveaux
-contrats et de nouveaux fichiers.
+par les migrations 0006 (mensuel), 0007 et 0010 (journalier), 0008 (CAMS),
+0011 (horaire) et 0013 (particules fines) : une autre source ou une autre
+période passera par de nouveaux contrats et de nouveaux fichiers.
 """
 
 from __future__ import annotations
@@ -193,6 +193,33 @@ CONTRATS_HORAIRES: dict[str, ContratSerie] = {
         borne_min=borne_min,
     )
     for grandeur, (_, methode, borne_min, borne_max) in HORAIRE_NASA.items()
+}
+
+
+# Particules fines CAMS EAC4 (ADR-0015) : moyenne journalière (jour UTC) des huit
+# pas de 3 h de la réanalyse, à la maille de 0,75° la plus proche, en µg/m³.
+# 2005-2025, période de CAMS Radiation. Variable NetCDF et borne haute,
+# au-dessus des maxima servis aux provinces (PM2.5 744, PM10 1 017, le
+# 13 novembre 2013 dans la Gobnangou) ; valeurs strictement positives (minima
+# servis : 0,76 et 1,10).
+PM_EAC4: dict[str, tuple[str, float]] = {
+    "pm2_5": ("pm2p5", 1000.0),
+    "pm10": ("pm10", 1500.0),
+}
+CONTRATS_PM: dict[str, ContratSerie] = {
+    grandeur: ContratSerie(
+        source_code="cams_eac4",
+        source_id=15,
+        source_libelle="CAMS EAC4",
+        prefixe_code=f"cams_eac4_{grandeur}_journalier",
+        grandeur_code=grandeur,
+        methode_collecte="reanalyse",
+        annee_debut=2005,
+        annee_fin=2025,
+        borne_max=borne_max,
+        granularite="journalier",
+    )
+    for grandeur, (_, borne_max) in PM_EAC4.items()
 }
 
 

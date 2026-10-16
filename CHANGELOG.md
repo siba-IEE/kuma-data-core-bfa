@@ -3,6 +3,17 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.9.0
+
+- Particules fines CAMS EAC4 aux 47 provinces (ADR-0015) : PM2.5 et PM10
+  journaliers 2005-2025, moyenne des pas de 3 h de la réanalyse à la maille
+  la plus proche, soit 94 séries et 720 980 mesures relues dans des CSV
+  versionnés (migration 0013). Ingesteur
+  `scripts/ingest_cams_eac4_journalier.py`. Fiche de la source `cams_eac4`
+  mise à la période servie au Burkina Faso.
+- Le proxy de salissure et le PR réaliste corrigé de la salissure répondent
+  désormais aux provinces ; tests d'intégration au Kadiogo.
+
 ## 0.8.0
 
 - Séries horaires NASA POWER aux cinq points pilotes (ADR-0014) : Ouagadougou,

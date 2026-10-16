@@ -32,8 +32,8 @@ l'amorçage et la montée en charge de la donnée burkinabè.
 - [x] Météo journalière NASA POWER et grandeurs métier calculées par l'API :
       POA, productibles, ECS, degrés-jours, P50/P90, PR réaliste corrigé de la
       température (ADR-0013).
-- [ ] Salissure et PR réaliste corrigé de la salissure (particules fines CAMS
-      EAC4).
+- [x] Particules fines CAMS EAC4, salissure et PR réaliste corrigé de la
+      salissure (ADR-0015).
 - [x] Séries horaires aux cinq points pilotes et contrôle qualité horaire
       (ADR-0014).
 
