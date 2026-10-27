@@ -12,7 +12,8 @@ le projet suit le versionnement sémantique.
   panache de feux de brousse servi à Madjoari le 13 novembre 2013
   (1 143 µg/m³ de PM2.5) est gardé.
 - Proxy de salissure et PR réaliste corrigé de la salissure aux communes ; un
-  jour de pluie sans valeur y compte 0 mm et la réponse le signale.
+  jour de pluie sans valeur y compte 0 mm et la réponse le signale (dix jours
+  au plus, au-delà la série est refusée).
 
 ## 0.11.0
 

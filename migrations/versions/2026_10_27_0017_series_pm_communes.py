@@ -15,9 +15,9 @@ Soit 702 séries (351 communes, 2 grandeurs) de 7 670 jours, statut ``brut``.
 distincte qu'une fois (102 séries porteuses, 2 142 lignes annuelles et
 782 340 valeurs dans ``mesures_journalieres_denses``), les 600 autres séries
 lisent les mesures de leur porteuse, et la note publique dit combien de
-communes partagent la série. Avec la pluie journalière NASA POWER des communes (0016), elles rendent
-le proxy de salissure et le PR réaliste corrigé de la salissure calculables
-aux communes.
+communes partagent la série. Avec la pluie journalière NASA POWER des
+communes (0016), elles rendent le proxy de salissure et le PR réaliste
+corrigé de la salissure calculables aux communes.
 
 Valeurs lues dans les fichiers Parquet de ``seeds/donnees/denses/`` (produits
 hors ligne par ``scripts/ingest_cams_eac4_journalier.py --lot communes``) et

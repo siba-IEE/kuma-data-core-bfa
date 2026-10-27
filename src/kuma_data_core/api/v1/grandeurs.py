@@ -1617,30 +1617,39 @@ def _chercher_serie_pluie_nasa(
     return int(row.id) if row else None
 
 
+# Jours de pluie sans valeur comblés au plus ; au-delà, la série est trop
+# lacunaire et le contrôle de contiguïté la refuse (422).
+PLUIE_COMBLEE_MAX_JOURS: int = 10
+
+
 def _combler_pluie(pluie: dict[date, float]) -> tuple[dict[date, float], list[date]]:
     """Compte 0 mm les jours sans valeur à l'intérieur de la série de pluie (ADR-0017).
 
     Une valeur écartée à l'ingestion laisse un jour sans valeur dans une série
     dense, alors que le modèle HSU exige un index continu. 0 mm signifie aucun
-    nettoyage ce jour-là : l'hypothèse la plus prudente pour la salissure.
-    Renvoie la série complétée et les jours comblés.
+    nettoyage ce jour-là : l'hypothèse la plus prudente pour la salissure. Au-delà
+    de ``PLUIE_COMBLEE_MAX_JOURS`` jours sans valeur, rien n'est comblé. Renvoie
+    la série, complétée ou non, et les jours comblés.
     """
     if not pluie:
         return pluie, []
     debut, fin = min(pluie), max(pluie)
     jours = (debut + timedelta(days=i) for i in range((fin - debut).days + 1))
     combles = [jour for jour in jours if jour not in pluie]
+    if len(combles) > PLUIE_COMBLEE_MAX_JOURS:
+        return pluie, []
     return pluie | dict.fromkeys(combles, 0.0), combles
 
 
 def _mention_pluie_comblee(combles: list[date], dates: list[date]) -> str:
+    """Phrase ajoutée à ``limite`` pour les jours comblés de la fenêtre calculée."""
     dans_la_fenetre = [j.isoformat() for j in combles if dates and dates[0] <= j <= dates[-1]]
     if not dans_la_fenetre:
         return ""
-    return (
-        " Pluie sans valeur comptée 0 mm, aucun nettoyage ce jour-là : "
-        f"{', '.join(dans_la_fenetre)}."
-    )
+    liste = ", ".join(dans_la_fenetre[:5])
+    if len(dans_la_fenetre) > 5:
+        liste += f" et {len(dans_la_fenetre) - 5} autres jours"
+    return f" Pluie sans valeur comptée 0 mm, aucun nettoyage ce jour-là : {liste}."
 
 
 def _verifier_contiguite_journaliere(dates: list[date], code_serie_source: str) -> None:

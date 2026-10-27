@@ -334,9 +334,13 @@ def test_salissure_aux_communes(client: TestClient, headers_auth: dict[str, str]
         assert reponse.status_code == 200, reponse.text
         assert reponse.json()["periode"] == "2005-01-01/2025-12-31"
         assert len(reponse.json()["mesures"]) == 7_670
-    assert "Pluie sans valeur comptée 0 mm" not in reponses["banfora"].json()["limite"]
-    assert (
-        reponses["tiefora"]
-        .json()["limite"]
-        .endswith("Pluie sans valeur comptée 0 mm, aucun nettoyage ce jour-là : 2025-12-02.")
+    mention = "Pluie sans valeur comptée 0 mm, aucun nettoyage ce jour-là : 2025-12-02."
+    assert "Pluie sans valeur" not in reponses["banfora"].json()["limite"]
+    assert reponses["tiefora"].json()["limite"].endswith(mention)
+    pr = client.get(
+        "/v1/grandeurs/pr_realiste/nasa_power_ghi_journalier_bfa_dep_tiefora",
+        params={"pr_fourni": 0.8, "correction": "salissure"},
+        headers=headers_auth,
     )
+    assert pr.status_code == 200, pr.text
+    assert pr.json()["limite"].endswith(mention)

@@ -14,7 +14,9 @@ from sqlalchemy.orm import Session
 pytestmark = pytest.mark.integration
 
 _JOURS = 7_670  # 2005-2025
-_BORNES = {"pm2_5": 2000.0, "pm10": 3000.0}
+# Plafonds observés aux provinces (744 et 1 017 µg/m³), sous les bornes du contrat
+# (2 000 et 3 000 µg/m³, ADR-0018).
+_BORNES = {"pm2_5": 1000.0, "pm10": 1500.0}
 
 
 def test_series_pm(db_session: Session) -> None:

@@ -18,7 +18,7 @@ découpé en fichiers annuels à réception ; au plus ``--travailleurs`` requêt
 à la fois, toute erreur reprise après une attente croissante, jusqu'à 8
 essais.
 
-Recette : maille la plus proche de chaque province, sans interpolation ;
+Recette : maille la plus proche de chaque localité, sans interpolation ;
 moyenne des huit pas du jour civil UTC (00 à 21 h) ; conversion de kg/m³ en
 µg/m³ (× 10⁹) ; arrondi à 4 décimales. Les pas servis à zéro par la réanalyse
 sont gardés tels quels (ADR-0015).
