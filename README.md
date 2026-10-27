@@ -5,8 +5,10 @@
 Instance dédiée au Burkina Faso du moteur Kuma Data Core. Moteur de données à
 confiance tracée : chaque valeur porte sa source, sa méthode, son niveau de
 confiance (A/B/C), ses dates de validité et son statut éditorial. Versionnement
-temporel non destructif, audit applicatif par triggers. Base PostgreSQL, API
-FastAPI. Domaine : la ressource solaire au Burkina Faso.
+temporel non destructif, audit applicatif par triggers. Les séries journalières
+brutes en masse font exception : stockage dense, sans versionnement par valeur,
+rééditées en bloc depuis des fichiers versionnés (ADR-0017). Base PostgreSQL,
+API FastAPI. Domaine : la ressource solaire au Burkina Faso.
 
 Le code moteur est générique : le pays est un axe de classification, pas une base
 séparée. Cette instance repart d'un socle propre, sans donnée d'une autre
@@ -35,6 +37,10 @@ Socle en place. La donnée nationale se construit par lots.
 - Séries journalières NASA POWER aux 47 provinces, en confiance B (GHI
   1991-2025, DNI et DHI 2001-2025). Voir
   l'[ADR-0010](docs/decisions/0010-series-journalieres-nasa-power.md).
+- Séries journalières NASA POWER aux 351 communes, 2005-2025, en confiance B :
+  GHI, DNI, DHI, température, humidité et pluie, en stockage dense (une
+  série par maille, partagée par les communes qui s'y trouvent). Voir
+  l'[ADR-0017](docs/decisions/0017-stockage-dense-des-series-journalieres.md).
 - CAMS Radiation : séries mensuelles GHI, DNI et DHI aux 47 provinces et aux
   351 communes, 2005-2025, en confiance B. Voir
   l'[ADR-0011](docs/decisions/0011-series-cams-radiation.md).
@@ -63,10 +69,14 @@ Socle en place. La donnée nationale se construit par lots.
   l'[ADR-0016](docs/decisions/0016-incertitude-inter-source.md).
 
 `alembic upgrade head` n'exige aucun accès réseau : les valeurs sont relues dans
-des CSV versionnés, produits par les scripts d'ingestion.
+des CSV et des fichiers Parquet versionnés, produits par les scripts
+d'ingestion.
 
 ### À faire
 
+- CAMS Radiation journalier aux 398 localités et CAMS EAC4 en stockage dense :
+  particules fines aux communes, épaisseur optique des aérosols aux
+  398 localités.
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A.
 - Adaptation de la documentation `docs/` au contexte burkinabè.
 
@@ -79,7 +89,8 @@ OCHA sur HDX (CC BY-IGO, « IGB / OCHA, via HDX »).
 Les séries proviennent de :
 
 - **NASA POWER** (CC BY 4.0), POWER Monthly and Annual API, POWER Daily API
-  v2.10.0 et POWER Hourly API v2.10.2, consultées le 15 octobre 2026 : « The
+  v2.10.0 et POWER Hourly API v2.10.2, consultées le 15 octobre 2026 ; POWER
+  Daily API v2.10.1 pour les communes, consultée le 27 octobre 2026. « The
   data was obtained from National Aeronautics and Space Administration (NASA)
   Langley Research Center's Prediction Of Worldwide Energy Resources (POWER)
   project funded through the NASA Earth Science Division. » NASA POWER tire sa

@@ -168,6 +168,15 @@ s'applique qu'aux écritures rejouables à l'identique. Toute écriture
 éditoriale (correction humaine, override de confiance, dépréciation)
 reste auditée sans exception.
 
+## Table dense non auditée
+
+**Décision du 2026-10-27 (ADR-0017).** `mesures_journalieres_denses` n'a
+pas de trigger d'audit : elle ne reçoit que des déversements rejouables à
+l'identique depuis des fichiers versionnés. Un trigger y refuse toute mise à
+jour de ligne ; une correction réédite la série (suppression puis
+rechargement), et l'édition précédente ne survit que dans l'historique du
+dépôt. Les séries elles-mêmes restent auditées dans `series_metadonnees`.
+
 ## Rétention
 
 **Politique courante** : rétention infinie. Aucune purge automatique.

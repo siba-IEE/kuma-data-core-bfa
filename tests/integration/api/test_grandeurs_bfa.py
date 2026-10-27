@@ -282,3 +282,39 @@ def test_pr_realiste_avec_salissure(client: TestClient, headers_auth: dict[str, 
     assert set(complet) <= set(thermique)
     assert all(complet[j] <= thermique[j] + 1e-12 for j in complet)
     assert statistics.mean(complet.values()) < statistics.mean(thermique[j] for j in complet)
+
+
+def test_grandeurs_sur_une_commune_dense(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """Commune de Fô (stockage dense) : POA et productible trouvent leurs compagnes denses."""
+    ghi_fo = "nasa_power_ghi_journalier_bfa_dep_fo"
+    poa = _resultats(
+        client,
+        headers_auth,
+        "poa_parametrable",
+        code_serie_source=ghi_fo,
+        inclinaison_deg=15,
+        orientation_deg=180,
+        albedo_sol=0.2,
+        **ANNEE_2024,
+    )
+    thermique = _resultats(
+        client,
+        headers_auth,
+        "productible_correction_thermique",
+        code_serie_source=ghi_fo,
+        noct_degc=45,
+        coeff_temp_pourcent_par_degc=-0.35,
+        puissance_stc_wc=1000,
+        **ANNEE_2024,
+    )
+    djc = _resultats(
+        client,
+        headers_auth,
+        "degre_jour_climatisation",
+        code_serie_source="nasa_power_t2m_journalier_bfa_dep_fo",
+        base_temperature_degc=26,
+        **ANNEE_2024,
+    )
+    assert len(poa) == len(thermique) == 366
+    assert 4.0 < statistics.mean(thermique) < 7.0
+    assert len(djc) == 12 and sum(djc) > 0.0

@@ -3,6 +3,23 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.11.0
+
+- Stockage dense des séries journalières (ADR-0017, migration 0015) : table
+  `mesures_journalieres_denses`, une ligne par série et par année, sans
+  versionnement ni audit ligne à ligne ; partage des mesures entre séries
+  d'une même maille (`serie_porteuse_id`) ; vue `v_mesures_journalieres` lue
+  par l'API et les services de grandeurs ; garde-fous par triggers. Fichiers
+  Parquet versionnés sous `seeds/donnees/denses/`, avec points interrogés,
+  version de la source et valeurs écartées.
+- NASA POWER journalier aux 351 communes, 2005-2025 (migration 0016) : GHI,
+  DNI, DHI, température, humidité et pluie, soit 2 106 séries et
+  2 646 149 valeurs. `scripts/ingest_nasa_power_journalier.py --lot communes`.
+- Pluie de décembre 2025 : les deux valeurs servies au-delà de 500 mm le
+  2 décembre (Sidéradougou, Tiéfora) sont écartées ; les autres jours de
+  décembre 2025 au-dessus de 3 mm, hors de l'enveloppe 2005-2024, sont
+  signalés dans la note de 125 communes et de 13 provinces.
+
 ## 0.10.0
 
 - Fiche d'incertitude inter-source (ADR-0016) :

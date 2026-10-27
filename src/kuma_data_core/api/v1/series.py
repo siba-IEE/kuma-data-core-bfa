@@ -12,7 +12,7 @@ Deux endpoints :
   format JSON ou CSV.
 
 Couvre les 3 tables-cibles :
-- ``mesures_ressource`` (journalier)
+- ``v_mesures_journalieres`` (journalier : ``mesures_ressource`` et table dense)
 - ``mesures_ressource_mensuelles`` (mensuel brut)
 - ``grandeurs_metier`` (calcule Kuma) - via la vue
   ``v_grandeurs_metier_courantes`` pour semantique « valeurs publiables »
@@ -256,9 +256,12 @@ def _lire_mesures_journalier(
     limit: int,
     offset: int,
 ) -> list[MesureLue]:
-    """Lit les mesures journalieres depuis ``mesures_ressource``."""
+    """Lit les mesures journalieres courantes (vue ``v_mesures_journalieres``, ADR-0017).
+
+    La vue réunit ``mesures_ressource`` (lignes courantes) et la table dense.
+    """
     from_d, to_d = bornes
-    clauses = ["mr.serie_id = :serie_id", "mr.valide_au IS NULL"]
+    clauses = ["mr.serie_id = :serie_id"]
     params: dict[str, object] = {"serie_id": serie_id, "limit": limit, "offset": offset}
     if from_d is not None:
         clauses.append("mr.instant_mesure >= :from_d")
@@ -276,7 +279,7 @@ def _lire_mesures_journalier(
                 COALESCE(mr.niveau_confiance_override, mr.niveau_confiance_derive)
                   AS niveau_effectif,
                 mr.statut
-            FROM mesures_ressource mr
+            FROM v_mesures_journalieres mr
             WHERE {" AND ".join(clauses)}
             ORDER BY mr.instant_mesure
             LIMIT :limit OFFSET :offset

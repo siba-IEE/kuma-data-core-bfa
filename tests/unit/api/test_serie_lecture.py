@@ -40,13 +40,13 @@ def test_t2_resolve_granularite_mensuel() -> None:
 
 
 def test_t3_resolve_granularite_journalier() -> None:
-    """T-3 : granularite=journalier -> JOURNALIER."""
+    """T-3 : granularite=journalier -> JOURNALIER, lu par la vue des deux stockages (ADR-0017)."""
     result = resolve_table_from_series_metadata(
         source_code="nasa_power",
         granularite="journalier",
     )
     assert result == TableMesures.JOURNALIER
-    assert result.value == "mesures_ressource"
+    assert result.value == "v_mesures_journalieres"
 
 
 def test_t4_resolve_granularite_horaire() -> None:

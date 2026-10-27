@@ -27,7 +27,7 @@ from enum import StrEnum
 class TableMesures(StrEnum):
     """Tables-cibles des mesures pour les endpoints `/api/v1/series`."""
 
-    JOURNALIER = "mesures_ressource"
+    JOURNALIER = "v_mesures_journalieres"  # mesures_ressource et table dense (ADR-0017)
     MENSUEL_RESSOURCE = "mesures_ressource_mensuelles"
     HORAIRE = "mesures_ressource_horaires"
     GRANDEURS_METIER = "grandeurs_metier"

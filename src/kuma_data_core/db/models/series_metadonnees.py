@@ -114,6 +114,31 @@ class SerieMetadonnees(Base):
         ),
     )
 
+    # === Stockage des mesures journalières (ADR-0017) ===
+    stockage: Mapped[str] = mapped_column(
+        String(9),
+        nullable=False,
+        server_default=text("'versionne'"),
+        comment=(
+            "Table des mesures journalieres : 'versionne' (mesures_ressource, "
+            "versionnement temporel et audit) ou 'dense' "
+            "(mesures_journalieres_denses, valeurs brutes en masse, ADR-0017)."
+        ),
+    )
+    serie_porteuse_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey(
+            "series_metadonnees.id",
+            name="fk_series_metadonnees_serie_porteuse_id__series_metadonnees",
+            ondelete="RESTRICT",
+        ),
+        nullable=True,
+        comment=(
+            "Serie dense dont celle-ci lit les mesures (meme maille de la source, "
+            "valeurs identiques) ; NULL si la serie porte ses propres mesures."
+        ),
+    )
+
     # === Métadonnées éditoriales ===
     methode_collecte: Mapped[str | None] = mapped_column(
         String(40),
@@ -180,6 +205,14 @@ class SerieMetadonnees(Base):
             name="ck_series_metadonnees_granularite_valide",
         ),
         CheckConstraint(
+            "stockage = 'versionne' OR (stockage = 'dense' AND granularite = 'journalier')",
+            name="ck_series_metadonnees_stockage_valide",
+        ),
+        CheckConstraint(
+            "serie_porteuse_id IS NULL OR (stockage = 'dense' AND serie_porteuse_id <> id)",
+            name="ck_series_metadonnees_serie_porteuse_dense",
+        ),
+        CheckConstraint(
             "(actif = TRUE AND desactive_le IS NULL) "
             "OR (actif = FALSE AND desactive_le IS NOT NULL)",
             name="ck_series_metadonnees_actif_desactive_coherent",
@@ -197,6 +230,11 @@ class SerieMetadonnees(Base):
         Index("idx_series_metadonnees_localite_id", "localite_id"),
         Index("idx_series_metadonnees_grandeur_code", "grandeur_code"),
         Index("idx_series_metadonnees_source_id", "source_id"),
+        Index(
+            "idx_series_metadonnees_serie_porteuse_id",
+            "serie_porteuse_id",
+            postgresql_where=text("serie_porteuse_id IS NOT NULL"),
+        ),
         # Nommé explicitement : la naming_convention Kuma (cf. db/base.py)
         # utilise column_0_name, donc sans `name=` ne reprend que la
         # première colonne - ne reflèterait pas l'identité métier complète.

@@ -184,10 +184,10 @@ def _lire_kuma_mensuel(session: Session, code_serie: str) -> dict[tuple[int, int
                 EXTRACT(YEAR FROM mr.instant_mesure)::int AS annee,
                 EXTRACT(MONTH FROM mr.instant_mesure)::int AS mois,
                 AVG(mr.valeur) AS moyenne
-            FROM mesures_ressource mr
-            JOIN series_metadonnees sm ON sm.id = mr.serie_id
-            WHERE sm.code = :code
-              AND mr.valide_au IS NULL
+            FROM v_mesures_journalieres mr
+            -- Série résolue avant la vue : une jointure ne lui transmet pas son
+            -- prédicat et la parcourrait en entier (ADR-0017).
+            WHERE mr.serie_id = (SELECT id FROM series_metadonnees WHERE code = :code)
               AND mr.statut <> 'deprecie'
             GROUP BY annee, mois
             ORDER BY annee, mois

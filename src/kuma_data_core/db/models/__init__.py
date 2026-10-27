@@ -11,6 +11,7 @@ from kuma_data_core.db.models.contributeurs import Contributeur
 from kuma_data_core.db.models.grandeurs_metier import GrandeurMetier
 from kuma_data_core.db.models.grandeurs_referentiel import GrandeurReferentiel
 from kuma_data_core.db.models.localites import Localite
+from kuma_data_core.db.models.mesures_journalieres_denses import MesureJournaliereDense
 from kuma_data_core.db.models.mesures_ressource import MesureRessource
 from kuma_data_core.db.models.mesures_ressource_horaires import MesureRessourceHoraire
 from kuma_data_core.db.models.mesures_ressource_mensuelles import MesureRessourceMensuelle
@@ -26,6 +27,7 @@ __all__ = [
     "GrandeurMetier",
     "GrandeurReferentiel",
     "Localite",
+    "MesureJournaliereDense",
     "MesureRessource",
     "MesureRessourceHoraire",
     "MesureRessourceMensuelle",

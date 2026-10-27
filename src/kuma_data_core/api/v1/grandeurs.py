@@ -13,7 +13,8 @@ Architecture commune :
 1. Validation Pydantic des paramètres utilisateur (schémas
    ``api.v1.schemas.grandeurs``).
 2. Résolution ``code_serie_source`` -> série + localité (lat/lon).
-3. Lecture des mesures journalières depuis ``mesures_ressource`` ; pour
+3. Lecture des mesures journalières par la vue ``v_mesures_journalieres``
+   (``mesures_ressource`` et table dense, ADR-0017) ; pour
    les grandeurs nécessitant 2+ séries (POA = GHI+DNI+DHI, thermique/
    PR_T/ECS = GHI+T2M), lecture complémentaire automatique en recherchant
    les séries compagnes (même ``localite_id``, ``source_id``, plage
@@ -329,15 +330,15 @@ def _lire_mesures_par_serie_id(
 
     Renvoie un dict ``{instant_mesure: valeur}`` pour indexation rapide
     par date (utilisé pour aligner GHI/DNI/DHI/T2M lors des calculs
-    multi-séries).
+    multi-séries). Lit la vue ``v_mesures_journalieres`` : mesures courantes
+    de ``mesures_ressource`` ou lignes de la table dense (ADR-0017).
     """
     rows = session.execute(
         text(
             """
             SELECT instant_mesure, valeur
-            FROM mesures_ressource
+            FROM v_mesures_journalieres
             WHERE serie_id = :serie_id
-              AND valide_au IS NULL
               AND instant_mesure >= :debut
               AND instant_mesure <= :fin
             ORDER BY instant_mesure
@@ -1013,7 +1014,7 @@ def grandeur_productible_pr_fourni(
 
     Dispatch table-cible via ``resolve_table_from_series_metadata`` :
 
-    - ``JOURNALIER`` (``mesures_ressource``) : flow journalier ci-dessus.
+    - ``JOURNALIER`` (vue ``v_mesures_journalieres``) : flow journalier ci-dessus.
     - ``MENSUEL_RESSOURCE`` (``mesures_ressource_mensuelles``) : branche
       mensuelle climato, mode ``correction='aucune'`` uniquement. Sortie
       :class:`ResultatMensuel` au format ``instant='YYYY-MM'``, sémantique
@@ -1655,7 +1656,7 @@ def grandeur_taux_salissure_proxy(
     2. Compagne **PM10** (même source ``cams_eac4``, ``_chercher_serie_compagne``)
        + compagne **precipitation** (``nasa_power``, résolveur bi-source dédié).
        L'une absente -> 400.
-    3. Lecture des 3 séries (``mesures_ressource``, courantes) ; alignement par
+    3. Lecture des 3 séries (``v_mesures_journalieres``, courantes) ; alignement par
        **intersection des dates** (fenêtre effective = overlap PM ∩ pluie, bornée
        par les PM) ; garde-fou de contiguïté (HSU path-dependant).
     4. Modèle HSU (pvlib) sur la fenêtre complète depuis le début (le spin-up n'est

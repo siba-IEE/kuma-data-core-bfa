@@ -9,16 +9,22 @@ pytestmark = pytest.mark.integration
 
 
 def test_listing_des_series_d_une_commune(client: TestClient, headers_auth: dict[str, str]) -> None:
-    """Une commune porte 10 séries brutes (NASA POWER, SARAH-3, ERA5, CAMS) et 8 dérivées."""
+    """Une commune porte 16 séries brutes (NASA POWER, SARAH-3, ERA5, CAMS) et 8 dérivées.
+
+    NASA POWER : rayonnement mensuel et journalier, météo journalière (ADR-0017).
+    """
     response = client.get("/v1/series?localite=bfa_dep_fo", headers=headers_auth)
     assert response.status_code == 200
     payload = response.json()
-    assert payload["total"] == 18
+    assert payload["total"] == 24
     familles = {(s["source_code"], s["grandeur_code"]) for s in payload["items"]}
     assert familles == {
         ("nasa_power", "ghi"),
         ("nasa_power", "dni"),
         ("nasa_power", "dhi"),
+        ("nasa_power", "t2m"),
+        ("nasa_power", "rh2m"),
+        ("nasa_power", "precipitation"),
         ("sarah3_monthly", "ghi"),
         ("sarah3_monthly", "dni"),
         ("era5_pvgis", "ghi"),
@@ -74,3 +80,30 @@ def test_detail_d_une_grandeur_derivee(client: TestClient, headers_auth: dict[st
     types = sorted(m["periode_type"] for m in mesures)
     assert types == ["annuel"] + ["mensuel"] * 12
     assert all(0.0 < m["valeur"] < 1.0 and m["niveau_effectif"] == "B" for m in mesures)
+
+
+def test_detail_d_une_serie_dense(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """Une série dense de commune se lit comme une autre ; le jour écarté manque (ADR-0017)."""
+
+    def mesures(code: str, debut: str, fin: str) -> list[dict[str, object]]:
+        response = client.get(f"/v1/series/{code}?from={debut}&to={fin}", headers=headers_auth)
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["localite_code"] == code.rsplit("_journalier_", 1)[1]
+        return list(payload["mesures"])
+
+    pluie = mesures(
+        "nasa_power_precipitation_journalier_bfa_dep_tiefora", "2025-11-30", "2025-12-04"
+    )
+    assert [m["instant_mesure"] for m in pluie] == [
+        "2025-11-30",
+        "2025-12-01",
+        "2025-12-03",
+        "2025-12-04",
+    ]
+    assert all(m["type"] == "journalier" and m["statut"] == "brut" for m in pluie)
+    # Tiéfora lit la série portée par Banfora (même maille de 1°).
+    tiefora = mesures("nasa_power_ghi_journalier_bfa_dep_tiefora", "2024-02-01", "2024-02-29")
+    banfora = mesures("nasa_power_ghi_journalier_bfa_dep_banfora", "2024-02-01", "2024-02-29")
+    assert len(tiefora) == 29
+    assert [m["valeur"] for m in tiefora] == [m["valeur"] for m in banfora]

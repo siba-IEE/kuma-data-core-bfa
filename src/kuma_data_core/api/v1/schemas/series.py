@@ -5,8 +5,8 @@
 - :class:`SerieListee` : ligne du listing (`GET /api/v1/series`).
 - :class:`SerieDetail` : détail d'une série (`GET /api/v1/series/{code}`)
   contenant un sous-objet ``mesures: list[MesureLue]``.
-- :class:`MesureJournaliere` : mesure journalière (table
-  ``mesures_ressource``), discriminée par ``type = 'journalier'``.
+- :class:`MesureJournaliere` : mesure journalière (vue
+  ``v_mesures_journalieres``), discriminée par ``type = 'journalier'``.
 - :class:`MesureMensuelle` : mesure mensuelle (table
   ``mesures_ressource_mensuelles``), discriminée par ``type = 'mensuel'``.
 - :class:`GrandeurMetierValeur` : valeur de grandeur calculée Kuma
@@ -30,7 +30,7 @@ from pydantic import BaseModel, Field
 
 
 class MesureJournaliere(BaseModel):
-    """Mesure journalière d'une série brute (table ``mesures_ressource``)."""
+    """Mesure journalière d'une série brute (vue ``v_mesures_journalieres``)."""
 
     type: Literal["journalier"] = "journalier"
     instant_mesure: date

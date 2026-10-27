@@ -27,7 +27,7 @@ def test_series_meteo(db_session: Session) -> None:
             FROM series_metadonnees s
             JOIN sources so ON so.id = s.source_id
             JOIN localites l ON l.id = s.localite_id
-            WHERE s.granularite = 'journalier'
+            WHERE s.granularite = 'journalier' AND s.stockage = 'versionne'
               AND s.grandeur_code IN ('t2m', 'rh2m', 'precipitation')
             GROUP BY 1, 2, 3, 4, 5, 6, 7
             """
@@ -51,7 +51,7 @@ def test_mesures_completes_et_bornees(db_session: Session) -> None:
                    bool_and(m.statut = 'brut' AND m.niveau_confiance_derive = 'B') AS invariants
             FROM series_metadonnees s
             LEFT JOIN mesures_ressource m ON m.serie_id = s.id
-            WHERE s.granularite = 'journalier'
+            WHERE s.granularite = 'journalier' AND s.stockage = 'versionne'
               AND s.grandeur_code IN ('t2m', 'rh2m', 'precipitation')
             GROUP BY 1, 2
             """
@@ -87,22 +87,29 @@ def test_compagnes_du_ghi_journalier(db_session: Session) -> None:
 
 
 def test_mises_en_garde_de_la_pluie(db_session: Session) -> None:
-    """Toutes les séries de pluie signalent la rupture de 2015 ; la valeur suspecte, deux."""
+    """Toutes les séries de pluie signalent la rupture de 2015 ; décembre 2025, treize.
+
+    Les treize provinces dont un jour de décembre 2025 dépasse 3 mm, plafond de
+    décembre de 2005 à 2024, le signalent (migration 0016).
+    """
     lignes = db_session.execute(
         text(
             """
-            SELECT code, note_publique LIKE '%2 décembre 2025%' AS suspecte,
-                   note_publique LIKE '%partir de 2015%' AS rupture
-            FROM series_metadonnees
-            WHERE grandeur_code = 'precipitation'
+            SELECT s.code, s.note_publique LIKE '%Décembre 2025 sort de l''enveloppe%' AS suspecte,
+                   s.note_publique LIKE '%partir de 2015%' AS rupture,
+                   EXISTS (
+                       SELECT 1 FROM mesures_ressource m
+                       WHERE m.serie_id = s.id AND m.valide_au IS NULL AND m.valeur > 3
+                         AND m.instant_mesure BETWEEN DATE '2025-12-01' AND DATE '2025-12-31'
+                   ) AS hors_enveloppe
+            FROM series_metadonnees s
+            WHERE s.grandeur_code = 'precipitation' AND s.stockage = 'versionne'
             """
         )
     ).all()
     assert len(lignes) == 47 and all(r.rupture for r in lignes)
-    assert {r.code for r in lignes if r.suspecte} == {
-        "nasa_power_precipitation_journalier_bfa_prov_comoe",
-        "nasa_power_precipitation_journalier_bfa_prov_leraba",
-    }
+    assert sum(r.suspecte for r in lignes) == 13
+    assert all(r.suspecte == r.hors_enveloppe for r in lignes)
 
 
 def test_valeur_de_pluie_suspecte_signalee(db_session: Session) -> None:
@@ -110,10 +117,10 @@ def test_valeur_de_pluie_suspecte_signalee(db_session: Session) -> None:
     lignes = db_session.execute(
         text(
             """
-            SELECT s.code, m.valeur, s.note_publique LIKE '%2 décembre 2025%' AS signalee
+            SELECT s.code, m.valeur, s.note_publique LIKE '%321,8 mm le 2,%' AS signalee
             FROM series_metadonnees s
             JOIN mesures_ressource m ON m.serie_id = s.id
-            WHERE s.grandeur_code = 'precipitation' AND m.valeur > 300
+            WHERE s.grandeur_code = 'precipitation' AND m.valeur > 300 AND m.valide_au IS NULL
             """
         )
     ).all()

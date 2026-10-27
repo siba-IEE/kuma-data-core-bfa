@@ -288,9 +288,8 @@ def calculer_et_inserer_hep(
         text(
             """
             SELECT instant_mesure, valeur
-            FROM mesures_ressource
+            FROM v_mesures_journalieres
             WHERE serie_id = :serie_id
-              AND valide_au IS NULL
               AND statut <> 'deprecie'
             ORDER BY instant_mesure
             """

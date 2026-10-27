@@ -230,9 +230,8 @@ def calculer_et_inserer_indicateur_qualite_donnees(
         text(
             """
             SELECT niveau_confiance_derive
-            FROM mesures_ressource
+            FROM v_mesures_journalieres
             WHERE serie_id = :serie_id
-              AND valide_au IS NULL
               AND statut <> 'deprecie'
             """
         ),

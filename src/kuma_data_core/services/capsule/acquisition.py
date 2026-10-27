@@ -232,13 +232,18 @@ class SourceCore:
                     min(sm.periode_debut) AS debut,
                     max(sm.periode_fin) AS fin,
                     min(s.code) AS source_code
-                FROM mesures_ressource m
+                FROM v_mesures_journalieres m
                 JOIN series_metadonnees sm ON sm.id = m.serie_id
                 LEFT JOIN sources s ON s.id = sm.source_id
-                WHERE sm.localite_id = :loc
-                  AND sm.grandeur_code IN ('t2m_min', 't2m_max')
-                  AND sm.granularite = 'journalier' AND sm.actif
-                  AND m.valide_au IS NULL AND m.statut <> 'deprecie'
+                -- Séries résolues avant la vue : une jointure ne lui transmet pas
+                -- son prédicat et la parcourrait en entier (ADR-0017).
+                WHERE m.serie_id = ANY(ARRAY(
+                        SELECT id FROM series_metadonnees
+                        WHERE localite_id = :loc
+                          AND grandeur_code IN ('t2m_min', 't2m_max')
+                          AND granularite = 'journalier' AND actif
+                      ))
+                  AND m.statut <> 'deprecie'
                 """
             ),
             {"loc": localite_id},

@@ -19,6 +19,7 @@ période passera par de nouveaux contrats et de nouveaux fichiers.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Literal
 
 from kuma_data_core.db.seeds.localites_bfa_departements_seed_data import (
@@ -28,7 +29,7 @@ from kuma_data_core.db.seeds.localites_bfa_seed_data import LOCALITES_SEED as _L
 from kuma_data_core.db.seeds.series_csv import ContratSerie
 
 LOTS: tuple[str, ...] = ("provinces", "communes")
-LOTS_JOURNALIERS: tuple[str, ...] = ("provinces",)
+LOTS_JOURNALIERS: tuple[str, ...] = ("provinces", "communes")
 _NIVEAUX: dict[str, str] = {"provinces": "prefecture", "communes": "commune"}
 
 
@@ -220,6 +221,26 @@ CONTRATS_PM: dict[str, ContratSerie] = {
         granularite="journalier",
     )
     for grandeur, (_, borne_max) in PM_EAC4.items()
+}
+
+
+# Journalier dense aux 351 communes (ADR-0017) : NASA POWER sur 2005-2025, mêmes
+# paramètres et bornes que les provinces, mesures dans la table dense.
+CONTRATS_NASA_JOURNALIERS_COMMUNES: dict[str, ContratSerie] = {
+    g: _nasa(g, 2005, "journalier") for g in ("ghi", "dni", "dhi")
+}
+# Seuls écarts admis : 514,64 mm servis le 2 décembre 2025, en saison sèche, à
+# Sidéradougou et Tiéfora (même maille), au-delà de la borne de 500 mm.
+ECARTS_PLUIE_COMMUNES: frozenset[tuple[str, str]] = frozenset(
+    {("bfa_dep_sideradougou", "2025-12-02"), ("bfa_dep_tiefora", "2025-12-02")}
+)
+CONTRATS_METEO_JOURNALIERS_COMMUNES: dict[str, ContratSerie] = {
+    g: replace(
+        c,
+        annee_debut=2005,
+        ecarts_admis=ECARTS_PLUIE_COMMUNES if g == "precipitation" else frozenset(),
+    )
+    for g, c in CONTRATS_METEO_JOURNALIERS.items()
 }
 
 

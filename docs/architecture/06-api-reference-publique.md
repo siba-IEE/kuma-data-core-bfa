@@ -225,7 +225,8 @@ Deux régimes coexistent :
 | `offset` | `int >= 0` | `0` | Pagination |
 
 - Résolution de la table-cible : le routeur déduit où vivent les mesures
-  (`mesures_ressource` journalier, `mesures_ressource_mensuelles`
+  (journalier par la vue `v_mesures_journalieres`, qui réunit `mesures_ressource`
+  et le stockage dense de l'ADR-0017, `mesures_ressource_mensuelles`
   mensuel brut, ou `grandeurs_metier` valeurs calculées Kuma via la vue
   `v_grandeurs_metier_courantes`) à partir de `source.code` et
   `periode_debut` (`api/services/serie_lecture.py`).

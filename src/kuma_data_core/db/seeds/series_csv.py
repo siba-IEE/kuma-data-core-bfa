@@ -83,6 +83,10 @@ class ContratSerie:
     # Borne basse incluse ; sans elle, la valeur doit être strictement positive
     # (rayonnement). La pluie, par exemple, vaut souvent zéro.
     borne_min: float | None = None
+    # Valeurs hors bornes que l'ingestion d'un lot dense peut écarter :
+    # (localité, jour ISO). Toute autre valeur hors bornes arrête l'ingestion
+    # (ADR-0017) ; les CSV n'en admettent aucune.
+    ecarts_admis: frozenset[tuple[str, str]] = frozenset()
 
     @property
     def periode_debut(self) -> str:
@@ -109,6 +113,14 @@ class ContratSerie:
 
     def code_serie(self, localite_code: str) -> str:
         return f"{self.prefixe_code}_{localite_code}"
+
+    def libelle_serie(self, localite_code: str) -> str:
+        """Libellé public d'une série, ex. « GHI journalier NASA POWER, Fô (2019-2020) »."""
+        grandeur = LIBELLES_GRANDEURS.get(self.grandeur_code, self.grandeur_code.upper())
+        return (
+            f"{grandeur} {self.granularite} {self.source_libelle}, "
+            f"{NOMS_LOCALITES[localite_code]} ({self.annee_debut}-{self.annee_fin})"
+        )
 
 
 def ecrire_series(
@@ -334,15 +346,10 @@ def _series(
         mesures = trier(par_loc[code]["mesures"])
         if len(mesures) != nombre:
             raise ValueError(f"{chemin.name} : {code} a {len(mesures)} {unite}, {nombre} attendus.")
-        grandeur = LIBELLES_GRANDEURS.get(contrat.grandeur_code, contrat.grandeur_code.upper())
         sortie.append(
             {
                 "code": contrat.code_serie(code),
-                "libelle": (
-                    f"{grandeur} {contrat.granularite} "
-                    f"{contrat.source_libelle}, {NOMS_LOCALITES[code]} "
-                    f"({contrat.annee_debut}-{contrat.annee_fin})"
-                ),
+                "libelle": contrat.libelle_serie(code),
                 "localite_code": code,
                 "latitude": par_loc[code]["latitude"],
                 "longitude": par_loc[code]["longitude"],

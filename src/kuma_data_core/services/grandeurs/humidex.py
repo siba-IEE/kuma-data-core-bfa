@@ -324,8 +324,8 @@ def calculer_et_inserer_humidex(
     rows_t2m = session.execute(
         text(
             """
-            SELECT instant_mesure, valeur FROM mesures_ressource
-            WHERE serie_id = :serie_id AND valide_au IS NULL AND statut <> 'deprecie'
+            SELECT instant_mesure, valeur FROM v_mesures_journalieres
+            WHERE serie_id = :serie_id AND statut <> 'deprecie'
             ORDER BY instant_mesure
             """
         ),
@@ -334,8 +334,8 @@ def calculer_et_inserer_humidex(
     rows_rh2m = session.execute(
         text(
             """
-            SELECT instant_mesure, valeur FROM mesures_ressource
-            WHERE serie_id = :serie_id AND valide_au IS NULL AND statut <> 'deprecie'
+            SELECT instant_mesure, valeur FROM v_mesures_journalieres
+            WHERE serie_id = :serie_id AND statut <> 'deprecie'
             ORDER BY instant_mesure
             """
         ),

@@ -31,6 +31,7 @@ def test_series_journalieres(db_session: Session) -> None:
             JOIN sources so ON so.id = s.source_id
             JOIN localites l ON l.id = s.localite_id
             WHERE s.granularite = 'journalier' AND s.grandeur_code IN ('ghi', 'dni', 'dhi')
+              AND s.stockage = 'versionne'
             GROUP BY 1, 2, 3, 4, 5, 6
             """
         )
@@ -57,6 +58,7 @@ def test_mesures_completes_et_bornees(db_session: Session) -> None:
             FROM series_metadonnees s
             LEFT JOIN mesures_ressource m ON m.serie_id = s.id
             WHERE s.granularite = 'journalier' AND s.grandeur_code IN ('ghi', 'dni', 'dhi')
+              AND s.stockage = 'versionne'
             GROUP BY 1, 2
             """
         )
@@ -92,6 +94,7 @@ def test_accord_avec_le_mensuel(db_session: Session) -> None:
                 FROM series_metadonnees s
                 JOIN mesures_ressource m ON m.serie_id = s.id
                 WHERE s.granularite = 'journalier' AND s.grandeur_code IN ('ghi', 'dni', 'dhi')
+              AND s.stockage = 'versionne'
                 GROUP BY 1, 2, 3, 4
             )
             SELECT count(*) AS n, max(abs(j.moyenne - mm.valeur)) AS ecart

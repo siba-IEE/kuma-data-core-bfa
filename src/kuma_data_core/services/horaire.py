@@ -33,7 +33,7 @@ L'instant d'une ligne de ``mesures_ressource_horaires`` désigne le début de
 l'heure dont la valeur est la moyenne, comme chez NASA POWER : la valeur se
 rapporte au milieu de l'heure, une demi-heure plus tard. Le contrôle qualité
 et le POA horaire calculent la géométrie solaire à cet instant. Une autre
-source horaire (stations sol, jalon 4) se ramène à cette convention à
+source horaire (stations sol, jalon 5) se ramène à cette convention à
 l'ingestion.
 """
 
