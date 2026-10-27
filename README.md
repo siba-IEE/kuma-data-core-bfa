@@ -116,7 +116,8 @@ Les séries proviennent de :
 - **CAMS EAC4**, réanalyse globale de composition atmosphérique du Copernicus
   Atmosphere Monitoring Service (CEPMMT, CC BY 4.0), jeu
   `cams-global-reanalysis-eac4` (DOI 10.24381/d58bbf47) diffusé par l'ADS
-  Copernicus, consulté le 16 octobre 2026 : « Contains modified Copernicus
+  Copernicus, consulté le 16 octobre 2026 (particules fines) et le 27 octobre
+  2026 (épaisseur optique des aérosols) : « Contains modified Copernicus
   Atmosphere Monitoring Service information 2005-2025 ». Référence : Inness,
   A. et al. (2019), « The CAMS reanalysis of atmospheric composition »,
   *Atmos. Chem. Phys.*, 19, 3515-3556, doi:10.5194/acp-19-3515-2019.

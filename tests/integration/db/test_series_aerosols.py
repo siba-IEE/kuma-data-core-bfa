@@ -163,9 +163,27 @@ def test_notes_publiques(db_session: Session) -> None:
             WHERE grandeur_code LIKE 'aod550%' AND NOT (
                 note_publique LIKE '%stockage dense (ADR-0017)%'
                 AND note_publique LIKE '%Maille de 0,75° la plus proche%'
-                AND note_publique LIKE '%de mars à juin%'
+                AND note_publique ILIKE '%de mars à juin%'
+                AND note_publique LIKE '%partage entre espèces vient du modèle%'
             )
             """
         )
     ).scalar_one()
     assert sans_mention == 0
+
+
+def test_fiche_de_la_source(db_session: Session) -> None:
+    """La fiche de ``cams_eac4`` dit l'épaisseur optique, son partage et sa consultation."""
+    fiche = db_session.execute(
+        text(
+            """
+            SELECT date_consultation::text AS consultation, notes,
+                   metadonnees -> 'variables_ingerees' AS variables
+            FROM sources WHERE code = 'cams_eac4'
+            """
+        )
+    ).one()
+    assert fiche.consultation == "2026-10-27"
+    assert "épaisseur optique des aérosols" in fiche.notes and "ADR-0019" in fiche.notes
+    assert "partage entre espèces vient du modèle" in fiche.notes
+    assert {"aod550", "duaod550", "omaod550"} <= set(fiche.variables)

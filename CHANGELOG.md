@@ -8,10 +8,13 @@ le projet suit le versionnement sémantique.
 - Épaisseur optique des aérosols à 550 nm, CAMS EAC4, aux 398 localités
   (ADR-0019, migration 0018) : totale, des poussières et de la matière
   organique, journalière 2005-2025 en stockage dense ; trois grandeurs
-  ajoutées au référentiel, 1 194 séries sur 51 mailles.
+  ajoutées au référentiel, 1 194 séries sur 51 mailles. Le partage entre
+  espèces est modélisé : la matière organique n'indique les fumées qu'au sud,
+  de novembre à mars. Fiche de la source `cams_eac4` mise à jour.
   `scripts/ingest_cams_eac4_journalier.py --famille aod --lot localites`.
-- L'ingesteur EAC4 sert deux familles (`--famille pm` ou `aod`) avec la même
-  requête annuelle, le même cache et la même recette.
+- L'ingesteur EAC4 sert deux familles (`--famille pm` ou `aod`) : même forme
+  de requête, mêmes fonctions de cache et même recette, fichiers de cache
+  propres à chaque famille.
 
 ## 0.12.0
 
