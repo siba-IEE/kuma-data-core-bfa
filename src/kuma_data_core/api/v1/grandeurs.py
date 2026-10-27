@@ -1895,89 +1895,116 @@ def grandeur_pr_realiste(
     )
 
 
-# === Endpoint incertitude_inter_source (atlas Temps 2, F1 lecture/assemblage) ===
+# === Endpoint incertitude_inter_source (F1 lecture/assemblage, ADR-0016) ===
 
-_AN_DEBUT_ATLAS = 2021
+# Fenêtre commune des sept écarts de l'ADR-0012 : SARAH-3 et ERA5 s'arrêtent en 2023.
+_AN_DEBUT_ATLAS = 2005
 _AN_FIN_ATLAS = 2023
-_FENETRE_ATLAS_STR = "2021-2023"
+_FENETRE_ATLAS_STR = "2005-2023"
 _GRILLE_CERES = "CERES SYN1deg (1 deg / 110 km)"
 # (grandeur exposée, grandeur_code de l'écart matérialisé, libellé de la paire).
-_PAIRES_ECART_ATLAS: tuple[tuple[Literal["ghi", "dni"], str, str], ...] = (
-    ("ghi", "ecart_relatif_referentiel", "NASA POWER vs PVGIS-SARAH3"),
-    ("dni", "ecart_relatif_dni_cams", "NASA POWER vs CAMS"),
+_PAIRES_ECART_ATLAS: tuple[tuple[Literal["ghi", "dni", "dhi"], str, str], ...] = (
+    ("ghi", "ecart_relatif_ghi_sarah3_nasa", "SARAH-3 vs NASA POWER"),
+    ("ghi", "ecart_relatif_ghi_era5_nasa", "ERA5 vs NASA POWER"),
+    ("ghi", "ecart_relatif_ghi_cams_nasa", "CAMS vs NASA POWER"),
+    ("dni", "ecart_relatif_dni_sarah3_nasa", "SARAH-3 vs NASA POWER"),
+    ("dni", "ecart_relatif_dni_era5_nasa", "ERA5 vs NASA POWER"),
+    ("dni", "ecart_relatif_dni_cams_nasa", "CAMS vs NASA POWER"),
+    ("dhi", "ecart_relatif_dhi_cams_nasa", "CAMS vs NASA POWER"),
 )
 
 
-def _mediane_abs(valeurs: Sequence[float]) -> float:
-    """Médiane des valeurs absolues (pur). ``valeurs`` non vide (garanti par l'appelant)."""
-    absolues = sorted(abs(v) for v in valeurs)
-    n = len(absolues)
-    milieu = n // 2
-    if n % 2 == 1:
-        return absolues[milieu]
-    return (absolues[milieu - 1] + absolues[milieu]) / 2.0
+class _LectureFiche(NamedTuple):
+    """Écarts et dégénérescence d'une localité, lus en une passe pour une page de fiches."""
+
+    ecarts: list[EcartPaireInterSource]
+    degenerescence: DegenerescenceFiche | None
+    niveaux: list[tuple[str, str | None]]
 
 
-def _lire_ecart_paire_recent(
-    session: Session, code_localite: str, grandeur_ecart: str
-) -> tuple[list[float], list[tuple[str, str | None]]]:
-    """Lit les écarts mensuels RECENTS (2021-2023) d'une (localité, grandeur d'écart).
+def _lire_fiches(session: Session, codes: Sequence[str]) -> dict[str, _LectureFiche]:
+    """Lit les écarts de la fenêtre et la dégénérescence des localités ``codes``.
 
-    Filtre ``annee_debut >= 2021`` : isole la fenêtre récente et exclut le climato DNI
-    2004-2020 (artefact pilote, anti-mélange de fenêtres). Renvoie ``(valeurs_signees,
-    niveaux)`` sur les mois non-NULL, ou ``([], [])`` si aucune (localité hors atlas).
+    Deux requêtes pour toute la page : médiane des |écarts| mensuels, moyenne signée et
+    nombre de mois de chaque paire, agrégés en base ; puis dégénérescence NASA/ghi.
+    Une localité sans écart n'apparaît pas dans le résultat. GHI, DNI et DHI partagent
+    la grille CERES : la dégénérescence de la série ``nasa_power`` + ``ghi`` vaut pour
+    la localité.
     """
-    rows = session.execute(
+    lignes = session.execute(
         text(
             """
-            SELECT gm.valeur, gm.niveau_confiance_derive AS derive,
-                   gm.niveau_confiance_override AS override
+            SELECT l.code, gm.grandeur_code,
+                   percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(gm.valeur)::float8)
+                       AS mediane_abs,
+                   avg(gm.valeur)::float8 AS moyenne, count(*) AS n,
+                   array_agg(DISTINCT coalesce(gm.niveau_confiance_override,
+                                               gm.niveau_confiance_derive)) AS niveaux
             FROM grandeurs_metier gm
             JOIN localites l ON l.id = gm.localite_id
-            WHERE l.code = :loc AND gm.grandeur_code = :g
+            WHERE l.code = ANY(:codes) AND gm.grandeur_code = ANY(:g)
               AND gm.annee_debut BETWEEN :a1 AND :a2
-              AND gm.valide_au IS NULL
-            ORDER BY gm.annee_debut, gm.mois
+              AND gm.valide_au IS NULL AND gm.valeur IS NOT NULL
+            GROUP BY l.code, gm.grandeur_code
             """
         ),
-        {"loc": code_localite, "g": grandeur_ecart, "a1": _AN_DEBUT_ATLAS, "a2": _AN_FIN_ATLAS},
+        {
+            "codes": list(codes),
+            "g": [ecart for _, ecart, _ in _PAIRES_ECART_ATLAS],
+            "a1": _AN_DEBUT_ATLAS,
+            "a2": _AN_FIN_ATLAS,
+        },
     ).all()
-    valeurs = [float(r.valeur) for r in rows if r.valeur is not None]
-    niveaux = [(str(r.derive), r.override) for r in rows if r.valeur is not None]
-    return valeurs, niveaux
+    agregats = {(r.code, r.grandeur_code): r for r in lignes}
+    niveaux: dict[str, list[tuple[str, str | None]]] = {}
+    for r in lignes:
+        niveaux.setdefault(r.code, []).extend((str(n), None) for n in r.niveaux)
 
+    degenerescences = {
+        r.code: r
+        for r in session.execute(
+            text(
+                """
+                SELECT l.code, gm.valeur, gm.commentaire_editorial AS note,
+                       gm.niveau_confiance_derive AS derive,
+                       gm.niveau_confiance_override AS override
+                FROM grandeurs_metier gm
+                JOIN localites l ON l.id = gm.localite_id
+                JOIN series_metadonnees sm ON sm.id = gm.series_metadonnees_id
+                JOIN sources s ON s.id = sm.source_id
+                WHERE l.code = ANY(:codes) AND gm.grandeur_code = 'degenerescence_pixel'
+                  AND s.code = 'nasa_power' AND sm.grandeur_code = 'ghi'
+                  AND gm.valide_au IS NULL AND gm.valeur IS NOT NULL
+                """
+            ),
+            {"codes": list(codes)},
+        ).all()
+    }
 
-def _lire_degenerescence_localite(
-    session: Session, code_localite: str
-) -> tuple[DegenerescenceFiche | None, list[tuple[str, str | None]]]:
-    """Lit la dégénérescence niveau-localité (grille NASA CERES, via la série ghi).
-
-    GHI et DNI partagent la grille CERES -> la ligne ``nasa_power`` + ``ghi`` est
-    représentative et unique par localité. Renvoie ``(fiche, niveaux)`` ou ``(None, [])``.
-    """
-    row = session.execute(
-        text(
-            """
-            SELECT gm.valeur, gm.commentaire_editorial AS note,
-                   gm.niveau_confiance_derive AS derive,
-                   gm.niveau_confiance_override AS override
-            FROM grandeurs_metier gm
-            JOIN localites l ON l.id = gm.localite_id
-            JOIN series_metadonnees sm ON sm.id = gm.series_metadonnees_id
-            JOIN sources s ON s.id = sm.source_id
-            WHERE l.code = :loc AND gm.grandeur_code = 'degenerescence_pixel'
-              AND s.code = 'nasa_power' AND sm.grandeur_code = 'ghi'
-              AND gm.valide_au IS NULL
-            """
-        ),
-        {"loc": code_localite},
-    ).first()
-    if row is None or row.valeur is None:
-        return None, []
-    fiche = DegenerescenceFiche(
-        n_jumeaux=int(row.valeur), grille=_GRILLE_CERES, note=str(row.note or "")
-    )
-    return fiche, [(str(row.derive), row.override)]
+    fiches: dict[str, _LectureFiche] = {}
+    for code in codes:
+        ecarts = [
+            EcartPaireInterSource(
+                grandeur=grandeur,
+                paire=paire,
+                ecart_abs_pct=round(float(a.mediane_abs), 4),
+                ecart_signe_pct=round(float(a.moyenne), 4),
+                n_mois=int(a.n),
+            )
+            for grandeur, ecart, paire in _PAIRES_ECART_ATLAS
+            if (a := agregats.get((code, ecart))) is not None
+        ]
+        if not ecarts:
+            continue
+        niveaux_fiche = list(niveaux[code])
+        degenerescence = None
+        if (d := degenerescences.get(code)) is not None:
+            degenerescence = DegenerescenceFiche(
+                n_jumeaux=int(d.valeur), grille=_GRILLE_CERES, note=str(d.note or "")
+            )
+            niveaux_fiche.append((str(d.derive), d.override))
+        fiches[code] = _LectureFiche(ecarts, degenerescence, niveaux_fiche)
+    return fiches
 
 
 def _assurer_confiance_b(
@@ -1995,7 +2022,7 @@ def _assurer_confiance_b(
             message=(
                 f"Incoherence de confiance pour {code_localite!r} : la fiche inter-source "
                 f"attend des donnees en confiance B, trouve {sorted(effectifs)}. "
-                "L'atlas est inter-source (B) ; A est reserve au terrain (D-67)."
+                "L'atlas est inter-source (B) ; A est reserve aux mesures sol."
             ),
             statut_http=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
@@ -2005,9 +2032,11 @@ def _assurer_confiance_b(
 def _construire_limite_incertitude_inter_source() -> str:
     """Avertissement éditorial anti-survente."""
     return (
-        "Incertitude inter-source / relative : divergence entre NASA POWER et les references "
-        "satellite (SARAH-3 pour le GHI, CAMS pour le DNI), fenetre 2021-2023, confiance B. "
-        "Ne quantifie PAS l'incertitude absolue vs mesure sol (regime terrain, dette D-67) : "
+        "Incertitude inter-source / relative : ecart mensuel de SARAH-3, ERA5 et CAMS a "
+        f"NASA POWER (GHI, DNI ; DHI pour CAMS), fenetre {_FENETRE_ATLAS_STR}, confiance B. "
+        "NASA POWER au denominateur est une convention de comparaison, pas un jugement de "
+        "justesse. SARAH-3 et CAMS partagent l'imagerie Meteosat : leur accord ne vaut pas "
+        "confirmation independante. Ne quantifie PAS l'incertitude absolue vs mesure sol : "
         "ce n'est pas une barre d'erreur calibree au sol."
     )
 
@@ -2024,48 +2053,31 @@ def grandeur_incertitude_inter_source(
     _cle: CleApiValidee,
     session: Annotated[Session, Depends(obtenir_session)],
 ) -> ReponseIncertitudeInterSource:
-    """Assemble en LECTURE la fiche d'incertitude inter-source d'une localité (atlas Temps 2).
+    """Assemble en LECTURE la fiche d'incertitude inter-source d'une localité (ADR-0016).
 
     Deux axes d'honnêteté DISTINCTS, non fusionnés :
 
-    - ``ecarts`` : écart inter-source par paire/grandeur (GHI : NASA vs SARAH-3 ; DNI :
-      NASA vs CAMS, fenêtre récente 2021-2023). ``ecart_abs_pct`` (médiane des |écarts|) =
-      signal primaire ; ``ecart_signe_pct`` orientationnel seulement.
+    - ``ecarts`` : écart à NASA POWER de chaque autre source, par grandeur (GHI et DNI :
+      SARAH-3, ERA5, CAMS ; DHI : CAMS ; ADR-0012), sur la fenêtre commune 2005-2023.
+      ``ecart_abs_pct`` (médiane des |écarts|) = signal primaire ; ``ecart_signe_pct``
+      orientationnel seulement.
     - ``degenerescence`` : propriété niveau-localité (grille NASA CERES), rendue une fois.
 
     Lecture/assemblage pur des grandeurs DÉJÀ matérialisées, zéro calcul de
     substrat. Confiance B lue et assérée (jamais A : A = terrain). 404 si la
-    localité n'est pas couverte par l'atlas (33 préfectures + Conakry, 34 points).
+    localité n'a pas d'écart matérialisé (atlas : 47 provinces et 351 communes).
     """
-    ecarts: list[EcartPaireInterSource] = []
-    niveaux: list[tuple[str, str | None]] = []
-    for grandeur, grandeur_ecart, paire in _PAIRES_ECART_ATLAS:
-        valeurs, niv = _lire_ecart_paire_recent(session, code_localite, grandeur_ecart)
-        if not valeurs:
-            continue
-        ecarts.append(
-            EcartPaireInterSource(
-                grandeur=grandeur,
-                paire=paire,
-                ecart_abs_pct=round(_mediane_abs(valeurs), 4),
-                ecart_signe_pct=round(sum(valeurs) / len(valeurs), 4),
-                n_mois=len(valeurs),
-            )
-        )
-        niveaux += niv
-
-    if not ecarts:
+    fiche = _lire_fiches(session, [code_localite]).get(code_localite)
+    if fiche is None:
         raise ExceptionKuma(
             code=CodeErreur.RESSOURCE_LOCALITE_INCONNUE,
             message=(
                 f"Localite {code_localite!r} non couverte par l'atlas d'incertitude "
-                "inter-source (33 prefectures + Conakry, 34 points d'ingestion sur 2021-2023)."
+                f"inter-source (provinces et communes, {_FENETRE_ATLAS_STR})."
             ),
             statut_http=status.HTTP_404_NOT_FOUND,
         )
-
-    degenerescence, niv_degen = _lire_degenerescence_localite(session, code_localite)
-    if degenerescence is None:
+    if fiche.degenerescence is None:
         raise ExceptionKuma(
             code=CodeErreur.SERVEUR_ERREUR_INTERNE,
             message=(
@@ -2074,88 +2086,94 @@ def grandeur_incertitude_inter_source(
             ),
             statut_http=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    niveaux += niv_degen
 
     return ReponseIncertitudeInterSource(
         code_localite=code_localite,
         fenetre=_FENETRE_ATLAS_STR,
-        ecarts=ecarts,
-        degenerescence=degenerescence,
-        niveau_confiance=_assurer_confiance_b(niveaux, code_localite),
+        ecarts=fiche.ecarts,
+        degenerescence=fiche.degenerescence,
+        niveau_confiance=_assurer_confiance_b(fiche.niveaux, code_localite),
         limite=_construire_limite_incertitude_inter_source(),
     )
 
 
-def _lister_points_atlas(session: Session) -> list[tuple[int, str]]:
-    """(localite_id, code) des points portant l'écart inter-source récent = périmètre atlas.
+def _lister_points_atlas(session: Session) -> list[tuple[str, float | None, float | None]]:
+    """(code, latitude, longitude) des points portant un écart inter-source = périmètre atlas.
 
-    Data-driven : les localités ayant un écart 2021-2023 (ghi vs SARAH-3 et/ou dni vs CAMS).
-    Robuste à une densification future (la liste suit la donnée, pas une énumération figée).
+    Data-driven : les localités ayant un écart sur la fenêtre de l'atlas. Robuste à une
+    densification future (la liste suit la donnée, pas une énumération figée).
     """
     rows = session.execute(
         text(
             """
-            SELECT DISTINCT l.id, l.code
-            FROM grandeurs_metier gm
-            JOIN localites l ON l.id = gm.localite_id
-            WHERE gm.grandeur_code IN ('ecart_relatif_referentiel', 'ecart_relatif_dni_cams')
-              AND gm.annee_debut >= :a1 AND gm.valide_au IS NULL
+            SELECT l.code, l.latitude, l.longitude
+            FROM localites l
+            WHERE EXISTS (
+                SELECT 1 FROM grandeurs_metier gm
+                WHERE gm.localite_id = l.id AND gm.grandeur_code = ANY(:g)
+                  AND gm.annee_debut BETWEEN :a1 AND :a2 AND gm.valide_au IS NULL
+                  AND gm.valeur IS NOT NULL
+            )
             ORDER BY l.code
             """
         ),
-        {"a1": _AN_DEBUT_ATLAS},
+        {
+            "g": [ecart for _, ecart, _ in _PAIRES_ECART_ATLAS],
+            "a1": _AN_DEBUT_ATLAS,
+            "a2": _AN_FIN_ATLAS,
+        },
     ).all()
-    return [(int(r.id), str(r.code)) for r in rows]
+    return [
+        (
+            str(r.code),
+            None if r.latitude is None else float(r.latitude),
+            None if r.longitude is None else float(r.longitude),
+        )
+        for r in rows
+    ]
 
 
-def _assembler_fiche_point(
-    session: Session, localite_id: int, code_localite: str
-) -> FichePointIncertitude:
-    """Assemble la fiche d'un point de l'atlas (fiche Temps 2 + coordonnées), pour la collection.
+def _assembler_fiches(
+    session: Session, points: Sequence[tuple[str, float | None, float | None]]
+) -> list[FichePointIncertitude]:
+    """Assemble les fiches d'une page de points (fiche par localité + coordonnées).
 
-    Réutilise les mêmes helpers que l'endpoint par-localité (deux axes distincts, confiance B
-    lue + assérée, limite éditoriale). Lève 500 sur incohérence (un point du périmètre sans écart ou
-    sans dégénérescence ne devrait pas exister).
+    Mêmes lectures que l'endpoint par localité (deux axes distincts, confiance B lue et
+    assérée, limite éditoriale). Lève 500 sur incohérence (un point du périmètre sans
+    écart ou sans dégénérescence ne devrait pas exister).
     """
-    ecarts: list[EcartPaireInterSource] = []
-    niveaux: list[tuple[str, str | None]] = []
-    for grandeur, grandeur_ecart, paire in _PAIRES_ECART_ATLAS:
-        valeurs, niv = _lire_ecart_paire_recent(session, code_localite, grandeur_ecart)
-        if not valeurs:
-            continue
-        ecarts.append(
-            EcartPaireInterSource(
-                grandeur=grandeur,
-                paire=paire,
-                ecart_abs_pct=round(_mediane_abs(valeurs), 4),
-                ecart_signe_pct=round(sum(valeurs) / len(valeurs), 4),
-                n_mois=len(valeurs),
+    fiches = _lire_fiches(session, [code for code, _, _ in points])
+    items: list[FichePointIncertitude] = []
+    for code, latitude, longitude in points:
+        fiche = fiches.get(code)
+        if latitude is None or longitude is None:
+            raise ExceptionKuma(
+                code=CodeErreur.SERVEUR_ERREUR_INTERNE,
+                message=f"Localite {code!r} sans coordonnees latitude/longitude.",
+                statut_http=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        if fiche is None or fiche.degenerescence is None:
+            raise ExceptionKuma(
+                code=CodeErreur.SERVEUR_ERREUR_INTERNE,
+                message=(
+                    f"Incoherence collection atlas : point {code!r} sans ecart ou "
+                    "degenerescence (devrait etre garanti par le perimetre data-driven)."
+                ),
+                statut_http=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        items.append(
+            FichePointIncertitude(
+                code_localite=code,
+                fenetre=_FENETRE_ATLAS_STR,
+                ecarts=fiche.ecarts,
+                degenerescence=fiche.degenerescence,
+                niveau_confiance=_assurer_confiance_b(fiche.niveaux, code),
+                limite=_construire_limite_incertitude_inter_source(),
+                latitude_deg=latitude,
+                longitude_deg=longitude,
             )
         )
-        niveaux += niv
-
-    degenerescence, niv_degen = _lire_degenerescence_localite(session, code_localite)
-    if not ecarts or degenerescence is None:
-        raise ExceptionKuma(
-            code=CodeErreur.SERVEUR_ERREUR_INTERNE,
-            message=(
-                f"Incoherence collection atlas : point {code_localite!r} sans ecart ou "
-                "degenerescence (devrait etre garanti par le perimetre data-driven)."
-            ),
-            statut_http=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-    niveaux += niv_degen
-    latitude, longitude = _resoudre_coordonnees(session, localite_id)
-    return FichePointIncertitude(
-        code_localite=code_localite,
-        fenetre=_FENETRE_ATLAS_STR,
-        ecarts=ecarts,
-        degenerescence=degenerescence,
-        niveau_confiance=_assurer_confiance_b(niveaux, code_localite),
-        limite=_construire_limite_incertitude_inter_source(),
-        latitude_deg=latitude,
-        longitude_deg=longitude,
-    )
+    return items
 
 
 @routeur.get(
@@ -2175,14 +2193,13 @@ def grandeur_incertitude_inter_source_collection(
 
     Un appel pour le snapshot média (carte) au lieu de N. Chaque item = la MÊME fiche
     que l'endpoint par-localité (deux axes distincts, B, limite éditoriale) + lat/lon.
-    Lecture/assemblage pur des grandeurs déjà matérialisées (écart Temps 1 +
+    Lecture/assemblage pur des grandeurs déjà matérialisées (écarts de l'ADR-0012 +
     dégénérescence), zéro substrat.
     Enveloppe paginée identique à /v1/series (items / total / limit / offset).
     """
     points = _lister_points_atlas(session)
     total = len(points)
-    page = points[offset : offset + limit]
-    items = [_assembler_fiche_point(session, loc_id, code) for loc_id, code in page]
+    items = _assembler_fiches(session, points[offset : offset + limit])
     return ReponseIncertitudeInterSourceCollection(
         items=items, total=total, limit=limit, offset=offset
     )

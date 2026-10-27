@@ -3,6 +3,16 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.10.0
+
+- Fiche d'incertitude inter-source (ADR-0016) :
+  `/v1/grandeurs/incertitude_inter_source` lit les sept écarts mensuels à NASA
+  POWER de l'ADR-0012 sur la fenêtre commune 2005-2023, au lieu des grandeurs
+  guinéennes, pour les 398 localités ; la collection lit une page en deux
+  requêtes.
+- Dégénérescence de pixel aux 398 localités (migration 0014) : nombre d'autres
+  localités dont la série mensuelle GHI NASA POWER est identique.
+
 ## 0.9.0
 
 - Particules fines CAMS EAC4 aux 47 provinces (ADR-0015) : PM2.5 et PM10

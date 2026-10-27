@@ -57,6 +57,10 @@ Socle en place. La donnée nationale se construit par lots.
   47 provinces, en confiance B, et grandeurs qui en dépendent : proxy de
   salissure et PR réaliste corrigé de la salissure. Voir
   l'[ADR-0015](docs/decisions/0015-particules-fines-cams-eac4.md).
+- Fiche d'incertitude inter-source aux 398 localités : écart de SARAH-3, ERA5
+  et CAMS à NASA POWER sur 2005-2023, et nombre de localités qui partagent la
+  même maille NASA POWER. Voir
+  l'[ADR-0016](docs/decisions/0016-incertitude-inter-source.md).
 
 `alembic upgrade head` n'exige aucun accès réseau : les valeurs sont relues dans
 des CSV versionnés, produits par les scripts d'ingestion.

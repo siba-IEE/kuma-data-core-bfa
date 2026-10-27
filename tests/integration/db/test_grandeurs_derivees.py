@@ -79,6 +79,7 @@ def test_comptes_et_invariants(db_session: Session) -> None:
     attendu = {(e.grandeur_code, "mensuel"): 398 * e.nb_mois for e in ECARTS}
     attendu[("fraction_diffuse", "mensuel")] = 398 * 300
     attendu[("fraction_diffuse", "annuel")] = 398 * 25
+    attendu[("degenerescence_pixel", "statique")] = 398  # ADR-0016
     assert vues == attendu
     assert all(r.invariants for r in lignes)
 
@@ -92,10 +93,11 @@ def test_rattachement_aux_series(db_session: Session) -> None:
             FROM grandeurs_metier gm
             JOIN series_metadonnees s ON s.id = gm.series_metadonnees_id
             JOIN localites l ON l.id = gm.localite_id
-            WHERE s.localite_id <> gm.localite_id
-               OR s.grandeur_code <> gm.grandeur_code
-               OR s.source_id <> 10
-               OR right(s.code, length(l.code) + 1) <> '_' || l.code
+            WHERE gm.grandeur_code <> 'degenerescence_pixel'  -- ADR-0016
+              AND (s.localite_id <> gm.localite_id
+                   OR s.grandeur_code <> gm.grandeur_code
+                   OR s.source_id <> 10
+                   OR right(s.code, length(l.code) + 1) <> '_' || l.code)
             """
         )
     ).scalar_one()

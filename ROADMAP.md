@@ -28,7 +28,8 @@ l'amorçage et la montée en charge de la donnée burkinabè.
 
 - [x] Grandeurs dérivées stockées : écarts entre sources et fraction diffuse
       (ADR-0012).
-- [ ] Adapter `/v1/grandeurs/incertitude_inter_source` aux écarts de l'ADR-0012.
+- [x] Adapter `/v1/grandeurs/incertitude_inter_source` aux écarts de l'ADR-0012
+      (ADR-0016).
 - [x] Météo journalière NASA POWER et grandeurs métier calculées par l'API :
       POA, productibles, ECS, degrés-jours, P50/P90, PR réaliste corrigé de la
       température (ADR-0013).

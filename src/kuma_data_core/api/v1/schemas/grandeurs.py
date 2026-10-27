@@ -565,44 +565,42 @@ class ReponseGrandeurF2(BaseModel):
     )
 
 
-# === Atlas Temps 2 : fiche d'incertitude inter-source (F1 lecture/assemblage) ===
+# === Fiche d'incertitude inter-source (F1 lecture/assemblage, ADR-0016) ===
 
 
 class EcartPaireInterSource(BaseModel):
-    """Écart inter-source pour une paire (grandeur), agrégé sur 2021-2023.
+    """Écart inter-source pour une paire (grandeur), agrégé sur la fenêtre de la fiche.
 
-    Pairwise par grandeur (GHI : NASA vs SARAH-3 ; DNI : NASA vs CAMS), pas un consensus
-    à trois. ``ecart_abs_pct`` (magnitude, médiane) = signal d'incertitude PRIMAIRE ; le
+    Chaque source comparée à NASA POWER, par grandeur (ADR-0012, ADR-0016), pas un
+    consensus. ``ecart_abs_pct`` (magnitude, médiane) = signal d'incertitude PRIMAIRE ; le
     signe est purement orientationnel, JAMAIS une correction de biais (anti-absolu).
     """
 
-    grandeur: Literal["ghi", "dni"]
-    paire: str = Field(
-        ..., description="Couple de sources compare (ex. 'NASA POWER vs PVGIS-SARAH3')."
-    )
+    grandeur: Literal["ghi", "dni", "dhi"]
+    paire: str = Field(..., description="Couple de sources compare (ex. 'SARAH-3 vs NASA POWER').")
     ecart_abs_pct: float = Field(
         ...,
         ge=0.0,
-        description="Mediane des |ecarts mensuels| (%), 2021-2023. Signal d'incertitude PRIMAIRE.",
+        description="Mediane des |ecarts mensuels| (%). Signal d'incertitude PRIMAIRE.",
     )
     ecart_signe_pct: float = Field(
         ...,
         description=(
-            "Moyenne signee des ecarts mensuels (%). Orientation SEULEMENT (ex. negatif = "
-            "NASA < reference) ; jamais une correction de biais (l'atlas est inter-source / "
-            "relatif, pas l'absolu vs sol, D-67)."
+            "Moyenne signee des ecarts mensuels (%), (source - NASA) / NASA. Orientation "
+            "SEULEMENT (positif = source au-dessus de NASA POWER) ; jamais une correction de "
+            "biais (l'atlas est inter-source / relatif, pas l'absolu vs sol)."
         ),
     )
     n_mois: int = Field(
-        ..., ge=1, description="Nombre de mois compares (36 attendu sur 2021-2023)."
+        ..., ge=1, description="Nombre de mois compares (228 sur 2005-2023 au Burkina Faso)."
     )
 
 
 class DegenerescenceFiche(BaseModel):
     """Dégénérescence de pixel, propriété du (localité, grille-source), rendue UNE fois.
 
-    Niveau-localité (pas par grandeur) : GHI et DNI partagent la grille NASA CERES, donc
-    une seule valeur représentative. ``note`` = caveat éditorial (groupe de jumeaux +
+    Niveau-localité (pas par grandeur) : GHI, DNI et DHI partagent la grille NASA CERES,
+    donc une seule valeur représentative. ``note`` = caveat éditorial (groupe de jumeaux +
     nature exacte) transmis brut.
     """
 
@@ -613,13 +611,13 @@ class DegenerescenceFiche(BaseModel):
     )
     grille: str = Field(
         ...,
-        description="Grille source de la degenerescence (ex. 'CERES SYN1deg 1 deg / 110 km').",
+        description="Grille source de la degenerescence (ex. 'CERES SYN1deg (1 deg / 110 km)').",
     )
-    note: str = Field(..., description="Caveat editorial brut (groupe de jumeaux + nature, B-3).")
+    note: str = Field(..., description="Caveat editorial brut (liste des jumeaux, nature).")
 
 
 class ReponseIncertitudeInterSource(BaseModel):
-    """Fiche d'incertitude INTER-SOURCE d'une localité (atlas Temps 2, lecture/assemblage).
+    """Fiche d'incertitude INTER-SOURCE d'une localité (lecture/assemblage, ADR-0016).
 
     Assemble SANS les fusionner les deux axes d'honnêteté : écart inter-source (relatif,
     par paire/grandeur) et dégénérescence de pixel. Confiance B (inter-source, relatif) ;
@@ -627,8 +625,8 @@ class ReponseIncertitudeInterSource(BaseModel):
     """
 
     code_grandeur: Literal["incertitude_inter_source"] = "incertitude_inter_source"
-    code_localite: str = Field(..., description="Code de la localite (ex. gin_boffa).")
-    fenetre: str = Field(..., description="Fenetre commune du triptyque (figee, ex. '2021-2023').")
+    code_localite: str = Field(..., description="Code de la localite (ex. bfa_prov_kadiogo).")
+    fenetre: str = Field(..., description="Fenetre commune des ecarts (figee, ex. '2005-2023').")
     ecarts: list[EcartPaireInterSource] = Field(
         ..., description="Ecart inter-source par paire/grandeur (AXE 1, distinct)."
     )
@@ -644,7 +642,7 @@ class ReponseIncertitudeInterSource(BaseModel):
         ...,
         description=(
             "Avertissement editorial : incertitude inter-source / relative, confiance B ; "
-            "ne quantifie PAS l'incertitude absolue vs mesure sol (terrain, D-67)."
+            "ne quantifie PAS l'incertitude absolue vs mesure sol."
         ),
     )
 
@@ -652,7 +650,7 @@ class ReponseIncertitudeInterSource(BaseModel):
 class FichePointIncertitude(ReponseIncertitudeInterSource):
     """Fiche d'incertitude inter-source d'un point + ses coordonnées (pour la carte/collection).
 
-    Strictement la fiche Temps 2 (héritée, contrat inchangé) augmentée de lat/lon, pour que
+    Strictement la fiche par localité (contrat inchangé) augmentée de lat/lon, pour que
     le consommateur média (snapshot atlas) place chaque point sans second appel.
     """
 
@@ -668,8 +666,10 @@ class ReponseIncertitudeInterSourceCollection(BaseModel):
     """
 
     items: list[FichePointIncertitude] = Field(
-        ..., description="Fiches par point de l'atlas (chacune = fiche Temps 2 + coordonnees)."
+        ..., description="Fiches par point de l'atlas (fiche par localite + coordonnees)."
     )
-    total: int = Field(..., ge=0, description="Nombre total de points de l'atlas (34 attendu).")
+    total: int = Field(
+        ..., ge=0, description="Nombre total de points de l'atlas (398 au Burkina Faso)."
+    )
     limit: int = Field(..., ge=1, description="Taille de page demandee.")
     offset: int = Field(..., ge=0, description="Decalage de pagination.")

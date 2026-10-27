@@ -490,10 +490,10 @@ saisonnière), `limite`.
 `incertitude_inter_source/{code_localite}` : fiche d'incertitude
 inter-source d'une localité, en lecture/assemblage de grandeurs déjà
 matérialisées (aucun calcul de substrat). Deux axes distincts, non
-fusionnés : `ecarts` (écart inter-source par paire de sources et
-grandeur, GHI = NASA POWER vs SARAH-3, DNI = NASA POWER vs CAMS, fenêtre
-2021-2023) et `degenerescence` (propriété niveau-localité liée à la
-grille CERES). `ecart_abs_pct` (médiane des écarts absolus mensuels) est
+fusionnés : `ecarts` (écart à NASA POWER de SARAH-3, ERA5 et CAMS pour le
+GHI et le DNI, de CAMS pour le DHI, fenêtre commune 2005-2023, ADR-0016)
+et `degenerescence` (nombre d'autres localités qui lisent la même maille
+CERES de NASA POWER). `ecart_abs_pct` (médiane des écarts absolus mensuels) est
 le signal primaire ; `ecart_signe_pct` est orientationnel, jamais une
 correction de biais. `niveau_confiance` : B, lu et vérifié (jamais A :
 inter-source, pas terrain). 404 `RESSOURCE_LOCALITE_INCONNUE` si la
@@ -504,7 +504,8 @@ de l'atlas, paginées, enveloppe identique à `/v1/series` (`items`,
 `total`, `limit`, `offset`). Chaque item est la fiche par-localité
 augmentée de `latitude_deg`/`longitude_deg`, pour poser chaque point sur
 une carte sans second appel. Le périmètre est data-driven (les localités
-portant l'écart inter-source récent), robuste à une densification.
+portant un écart sur la fenêtre, 398 au Burkina Faso), robuste à une
+densification.
 
 #### 3.7.7 Erreurs des routes grandeurs
 
