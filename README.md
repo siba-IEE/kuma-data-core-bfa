@@ -70,6 +70,10 @@ Socle en place. La donnée nationale se construit par lots.
   et CAMS à NASA POWER sur 2005-2023, et nombre de localités qui partagent la
   même maille NASA POWER. Voir
   l'[ADR-0016](docs/decisions/0016-incertitude-inter-source.md).
+- Épaisseur optique des aérosols à 550 nm (totale, poussières, matière
+  organique), CAMS EAC4, journalière 2005-2025 aux 398 localités, en stockage
+  dense et en confiance B. Voir
+  l'[ADR-0019](docs/decisions/0019-epaisseur-optique-des-aerosols.md).
 
 `alembic upgrade head` n'exige aucun accès réseau : les valeurs sont relues dans
 des CSV et des fichiers Parquet versionnés, produits par les scripts
@@ -77,8 +81,7 @@ d'ingestion.
 
 ### À faire
 
-- CAMS Radiation journalier aux 398 localités et épaisseur optique des
-  aérosols CAMS EAC4 aux 398 localités, en stockage dense.
+- CAMS Radiation journalier aux 398 localités, en stockage dense.
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A.
 - Adaptation de la documentation `docs/` au contexte burkinabè.
 

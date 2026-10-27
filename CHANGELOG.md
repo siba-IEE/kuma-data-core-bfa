@@ -3,6 +3,16 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.13.0
+
+- Épaisseur optique des aérosols à 550 nm, CAMS EAC4, aux 398 localités
+  (ADR-0019, migration 0018) : totale, des poussières et de la matière
+  organique, journalière 2005-2025 en stockage dense ; trois grandeurs
+  ajoutées au référentiel, 1 194 séries sur 51 mailles.
+  `scripts/ingest_cams_eac4_journalier.py --famille aod --lot localites`.
+- L'ingesteur EAC4 sert deux familles (`--famille pm` ou `aod`) avec la même
+  requête annuelle, le même cache et la même recette.
+
 ## 0.12.0
 
 - Particules fines CAMS EAC4 aux 351 communes (ADR-0018, migration 0017) :

@@ -54,10 +54,11 @@ def test_series_des_communes(db_session: Session) -> None:
             FROM series_metadonnees s
             JOIN sources so ON so.id = s.source_id
             JOIN localites l ON l.id = s.localite_id
-            WHERE s.stockage = 'dense'
+            WHERE s.stockage = 'dense' AND s.grandeur_code = ANY(:g)
             GROUP BY 1, 2, 3, 4, 5, 6
             """
-        )
+        ),
+        {"g": list(_GRANDEURS)},
     ).all()
     assert {r.grandeur_code for r in lignes} == set(_GRANDEURS)
     for r in lignes:
@@ -113,9 +114,11 @@ def test_lignes_annuelles_completes_et_bornees(db_session: Session) -> None:
             FROM mesures_journalieres_denses d
             JOIN series_metadonnees s ON s.id = d.serie_id
             CROSS JOIN LATERAL unnest(d.valeurs_e4) AS j(e4)
+            WHERE s.grandeur_code = ANY(:g)
             GROUP BY s.code, s.grandeur_code
             """
-        )
+        ),
+        {"g": list(_GRANDEURS)},
     ).all()
     assert len(lignes) == 345 + 102
     assert sum(r.valeurs for r in lignes) == 2_646_149 + 782_340

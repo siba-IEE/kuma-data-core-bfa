@@ -30,13 +30,19 @@ from kuma_data_core.db.seeds.series_csv import ContratSerie
 
 LOTS: tuple[str, ...] = ("provinces", "communes")
 LOTS_JOURNALIERS: tuple[str, ...] = ("provinces", "communes")
-_NIVEAUX: dict[str, str] = {"provinces": "prefecture", "communes": "commune"}
+# Lot dense des 398 localités : les 47 provinces et les 351 communes (ADR-0017).
+LOT_LOCALITES: str = "localites"
+_NIVEAUX: dict[str, tuple[str, ...]] = {
+    "provinces": ("prefecture",),
+    "communes": ("commune",),
+    LOT_LOCALITES: ("prefecture", "commune"),
+}
 
 
 def points_lot(lot: str) -> list[tuple[str, str, float, float]]:
     """Localités d'un lot : ``(code, nom, latitude, longitude)``, triées par code."""
-    niveau = _NIVEAUX[lot]
-    entrees = [e for e in (*_LOCALITES, *_COMMUNES) if e["type_localite"] == niveau]
+    niveaux = _NIVEAUX[lot]
+    entrees = [e for e in (*_LOCALITES, *_COMMUNES) if e["type_localite"] in niveaux]
     sans_coord = [e["code"] for e in entrees if e["latitude"] is None or e["longitude"] is None]
     if sans_coord:
         raise ValueError(f"Lot {lot!r} : localité(s) sans coordonnées : {sans_coord!r}.")
@@ -221,6 +227,33 @@ CONTRATS_PM: dict[str, ContratSerie] = {
         granularite="journalier",
     )
     for grandeur, (_, borne_max) in PM_EAC4.items()
+}
+
+# Épaisseur optique des aérosols à 550 nm, CAMS EAC4 (ADR-0019) : totale, des
+# poussières désertiques et de la matière organique (feux surtout), sans unité ;
+# même recette que les particules fines, aux 398 localités (lot ``localites``),
+# 2005-2025. Variable NetCDF et borne haute, au-dessus des maxima servis
+# (3,14, 2,56 et 0,94 en moyenne du jour) ; borne basse 0 incluse.
+AOD_EAC4: dict[str, tuple[str, float]] = {
+    "aod550": ("aod550", 5.0),
+    "aod550_poussiere": ("duaod550", 5.0),
+    "aod550_organique": ("omaod550", 2.0),
+}
+CONTRATS_AOD: dict[str, ContratSerie] = {
+    grandeur: ContratSerie(
+        source_code="cams_eac4",
+        source_id=15,
+        source_libelle="CAMS EAC4",
+        prefixe_code=f"cams_eac4_{grandeur}_journalier",
+        grandeur_code=grandeur,
+        methode_collecte="reanalyse",
+        annee_debut=2005,
+        annee_fin=2025,
+        borne_max=borne_max,
+        granularite="journalier",
+        borne_min=0.0,
+    )
+    for grandeur, (_, borne_max) in AOD_EAC4.items()
 }
 
 

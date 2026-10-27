@@ -62,7 +62,12 @@ FORMAT_INSTANT: str = "%Y-%m-%dT%H:00Z"
 
 NOMS_LOCALITES: dict[str, str] = {e["code"]: e["nom"] for e in (*_LOCALITES, *_COMMUNES)}
 # Nom d'une grandeur dans les libellés de série, quand son code en majuscules ne convient pas.
-LIBELLES_GRANDEURS: dict[str, str] = {"pm2_5": "PM2.5"}
+LIBELLES_GRANDEURS: dict[str, str] = {
+    "pm2_5": "PM2.5",
+    "aod550": "AOD 550 nm",
+    "aod550_poussiere": "AOD 550 nm des poussières",
+    "aod550_organique": "AOD 550 nm de la matière organique",
+}
 
 
 @dataclass(frozen=True)

@@ -25,7 +25,7 @@ def test_unites_et_grandeurs_peuplees(db_session: Session) -> None:
     unites = db_session.execute(text("SELECT count(*) FROM unites")).scalar_one()
     grandeurs = db_session.execute(text("SELECT count(*) FROM grandeurs_referentiel")).scalar_one()
     assert unites == 160
-    assert grandeurs == 41  # 34 en 0002, + 7 écarts en 0009
+    assert grandeurs == 44  # 34 en 0002, + 7 écarts en 0009, + 3 aérosols en 0018
 
 
 def test_source_guineenne_retiree(db_session: Session) -> None:
