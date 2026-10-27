@@ -25,7 +25,7 @@ def test_series_cams(db_session: Session) -> None:
             FROM series_metadonnees s
             JOIN sources so ON so.id = s.source_id
             JOIN localites l ON l.id = s.localite_id
-            WHERE so.code = 'cams_radiation'
+            WHERE so.code = 'cams_radiation' AND s.granularite = 'mensuel'
             GROUP BY 1, 2, 3, 4, 5, 6
             """
         )
@@ -49,7 +49,7 @@ def test_mesures_completes_et_bornees(db_session: Session) -> None:
                    bool_and(m.niveau_confiance_derive = 'B') AS confiance_b
             FROM series_metadonnees s
             LEFT JOIN mesures_ressource_mensuelles m ON m.serie_id = s.id
-            WHERE s.source_id = 13
+            WHERE s.source_id = 13 AND s.granularite = 'mensuel'
             GROUP BY 1, 2
             """
         )
@@ -65,7 +65,7 @@ def test_mesures_completes_et_bornees(db_session: Session) -> None:
             SELECT count(*)
             FROM mesures_ressource_mensuelles m
             JOIN series_metadonnees s ON s.id = m.serie_id
-            WHERE s.source_id = 13
+            WHERE s.source_id = 13 AND s.granularite = 'mensuel'
             """
         )
     ).scalar_one()
@@ -87,7 +87,7 @@ def test_fermeture(db_session: Session) -> None:
                        max(m.valeur) FILTER (WHERE s.grandeur_code = 'dhi') AS dhi
                 FROM series_metadonnees s
                 JOIN mesures_ressource_mensuelles m ON m.serie_id = s.id
-                WHERE s.source_id = 13
+                WHERE s.source_id = 13 AND s.granularite = 'mensuel'
                 GROUP BY 1, 2, 3
             ) par_mois
             """
@@ -104,7 +104,7 @@ def test_note_publique(db_session: Session) -> None:
             SELECT grandeur_code, bool_and(note_publique LIKE '%Meteosat%') AS meteosat,
                    bool_or(note_publique LIKE '%Meteosat%') AS une
             FROM series_metadonnees
-            WHERE source_id = 13
+            WHERE source_id = 13 AND granularite = 'mensuel'
             GROUP BY 1
             """
         )

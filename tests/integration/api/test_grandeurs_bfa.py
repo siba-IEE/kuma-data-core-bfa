@@ -344,3 +344,36 @@ def test_salissure_aux_communes(client: TestClient, headers_auth: dict[str, str]
     )
     assert pr.status_code == 200, pr.text
     assert pr.json()["limite"].endswith(mention)
+
+
+def test_poa_sur_cams_journalier(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """CAMS Radiation journalier (ADR-0020) : le POA se calcule avec les compagnes CAMS.
+
+    CAMS ferme exactement GHI = direct horizontal + diffus, mais la méthode journalière
+    projette le DNI du jour avec la géométrie du midi solaire : sur un plan horizontal,
+    elle rend 18 % de plus que le GHI, contre 6 % avec NASA POWER, dont le DNI est plus
+    faible (biais documenté, ADR-0013 et ADR-0020).
+    """
+
+    def _poa(source: str, inclinaison: int) -> list[float]:
+        return _resultats(
+            client,
+            headers_auth,
+            "poa_parametrable",
+            code_serie_source=f"{source}_ghi_journalier_bfa_dep_fo",
+            inclinaison_deg=inclinaison,
+            orientation_deg=180,
+            albedo_sol=0.2,
+            **ANNEE_2024,
+        )
+
+    response = client.get(
+        "/v1/series/cams_ghi_journalier_bfa_dep_fo?from=2024-01-01&to=2024-12-31&limit=400",
+        headers=headers_auth,
+    )
+    assert response.status_code == 200
+    ghi = statistics.mean(m["valeur"] for m in response.json()["mesures"])
+    incline, horizontal = _poa("cams", 15), _poa("cams", 0)
+    assert len(incline) == len(horizontal) == 366
+    assert statistics.mean(incline) > statistics.mean(horizontal) > 1.1 * ghi
+    assert statistics.mean(horizontal) > statistics.mean(_poa("nasa_power", 0))

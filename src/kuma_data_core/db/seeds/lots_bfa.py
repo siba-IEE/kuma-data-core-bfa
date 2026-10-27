@@ -135,6 +135,36 @@ CONTRATS_ERA5: dict[str, ContratSerie] = {
 # complètes. Lot distinct des contrats mensuels de la migration 0006.
 CONTRATS_CAMS: dict[str, ContratSerie] = {g: _cams(g) for g in ("ghi", "dni", "dhi")}
 
+# CAMS Radiation journalier aux 398 localités (lot ``localites``, ADR-0020) : total
+# du jour UTC en kWh/m²/jour, tous temps et par ciel clair. Colonne du CSV de
+# l'ADS, borne basse et borne haute, au-dessus des maxima servis (GHI 8,34, DNI
+# 10,14, DHI 4,61, ciel clair 8,36 et 10,17). Le DNI d'un jour couvert peut
+# être nul ; les autres grandeurs restent strictement positives.
+CAMS_JOURNALIER: dict[str, tuple[str, float | None, float]] = {
+    "ghi": ("GHI", None, 9.0),
+    "dni": ("BNI", 0.0, 11.0),
+    "dhi": ("DHI", None, 6.5),
+    "ghi_ciel_clair": ("Clear sky GHI", None, 9.0),
+    "dni_ciel_clair": ("Clear sky BNI", None, 11.0),
+}
+COLONNES_CAMS_JOURNALIERES: dict[str, str] = {g: c for g, (c, _, _) in CAMS_JOURNALIER.items()}
+CONTRATS_CAMS_JOURNALIERS: dict[str, ContratSerie] = {
+    grandeur: ContratSerie(
+        source_code="cams_radiation",
+        source_id=13,
+        source_libelle="CAMS Radiation",
+        prefixe_code=f"cams_{grandeur}_journalier",
+        grandeur_code=grandeur,
+        methode_collecte="modele_satellitaire",
+        annee_debut=2005,
+        annee_fin=2025,
+        borne_max=borne_max,
+        granularite="journalier",
+        borne_min=borne_min,
+    )
+    for grandeur, (_, borne_min, borne_max) in CAMS_JOURNALIER.items()
+}
+
 # NASA POWER journalier : mêmes périodes que le mensuel.
 CONTRATS_NASA_JOURNALIERS: dict[str, ContratSerie] = {
     "ghi": _nasa("ghi", 1991, "journalier"),

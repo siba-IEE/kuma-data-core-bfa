@@ -44,7 +44,10 @@ Socle en place. La donnée nationale se construit par lots.
   l'[ADR-0017](docs/decisions/0017-stockage-dense-des-series-journalieres.md).
 - CAMS Radiation : séries mensuelles GHI, DNI et DHI aux 47 provinces et aux
   351 communes, 2005-2025, en confiance B. Voir
-  l'[ADR-0011](docs/decisions/0011-series-cams-radiation.md).
+  l'[ADR-0011](docs/decisions/0011-series-cams-radiation.md). Séries
+  journalières aux 398 localités, avec le GHI et le DNI par ciel clair, en
+  stockage dense : voir
+  l'[ADR-0020](docs/decisions/0020-cams-radiation-journalier.md).
 - Grandeurs dérivées stockées aux 398 localités, calculées en base depuis les
   séries mensuelles : écarts relatifs mensuels à NASA POWER (GHI et DNI de
   SARAH-3, ERA5 et CAMS ; DHI de CAMS) et fraction diffuse NASA POWER,
@@ -81,7 +84,6 @@ d'ingestion.
 
 ### À faire
 
-- CAMS Radiation journalier aux 398 localités, en stockage dense.
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A.
 - Adaptation de la documentation `docs/` au contexte burkinabè.
 
@@ -111,7 +113,8 @@ Les séries proviennent de :
     2005-2023 ».
 - **CAMS Radiation**, Copernicus Atmosphere Monitoring Service (CC BY 4.0),
   service v4.6 (Vaisala, MINES ParisTech et DLR) diffusé par l'ADS
-  Copernicus, consulté le 15 octobre 2026 : « Contains modified Copernicus
+  Copernicus, consulté le 15 octobre 2026 (séries mensuelles) et le 27 octobre
+  2026 (séries journalières) : « Contains modified Copernicus
   Atmosphere Monitoring Service information 2005-2025 ».
 - **CAMS EAC4**, réanalyse globale de composition atmosphérique du Copernicus
   Atmosphere Monitoring Service (CEPMMT, CC BY 4.0), jeu

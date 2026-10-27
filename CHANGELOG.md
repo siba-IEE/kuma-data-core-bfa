@@ -3,6 +3,18 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.14.0
+
+- Rayonnement journalier CAMS Radiation aux 398 localités, 2005-2025
+  (ADR-0020, migration 0019) : GHI, DNI et DHI tous temps, GHI et DNI par ciel
+  clair, en stockage dense ; deux grandeurs de ciel clair ajoutées au
+  référentiel, 1 990 séries et 15 104 026 valeurs. Les jours non servis de
+  2005-2006 restent sans valeur. Fiche de la source `cams_radiation` mise au
+  Burkina Faso. `scripts/ingest_cams_radiation_journalier.py`.
+- Le POA en moyenne journalière surestime le direct avec la géométrie du midi
+  solaire : 18,5 % de trop sur un plan horizontal avec CAMS à Fô, 6 % avec
+  NASA POWER (ADR-0020) ; une correction de la méthode est à prévoir.
+
 ## 0.13.0
 
 - Épaisseur optique des aérosols à 550 nm, CAMS EAC4, aux 398 localités

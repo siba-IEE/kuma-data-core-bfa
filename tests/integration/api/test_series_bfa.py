@@ -9,15 +9,16 @@ pytestmark = pytest.mark.integration
 
 
 def test_listing_des_series_d_une_commune(client: TestClient, headers_auth: dict[str, str]) -> None:
-    """Une commune porte 21 séries brutes (NASA POWER, SARAH-3, ERA5, CAMS) et 8 dérivées.
+    """Une commune porte 26 séries brutes (NASA POWER, SARAH-3, ERA5, CAMS) et 8 dérivées.
 
     NASA POWER : rayonnement mensuel et journalier, météo journalière (ADR-0017) ;
-    CAMS EAC4 : particules fines (ADR-0018) et aérosols (ADR-0019) journaliers.
+    CAMS EAC4 : particules fines (ADR-0018) et aérosols (ADR-0019) journaliers ;
+    CAMS Radiation : rayonnement mensuel et journalier, ciel clair (ADR-0020).
     """
     response = client.get("/v1/series?localite=bfa_dep_fo", headers=headers_auth)
     assert response.status_code == 200
     payload = response.json()
-    assert payload["total"] == 29
+    assert payload["total"] == 34
     familles = {(s["source_code"], s["grandeur_code"]) for s in payload["items"]}
     assert familles == {
         ("nasa_power", "ghi"),
@@ -33,6 +34,8 @@ def test_listing_des_series_d_une_commune(client: TestClient, headers_auth: dict
         ("cams_radiation", "ghi"),
         ("cams_radiation", "dni"),
         ("cams_radiation", "dhi"),
+        ("cams_radiation", "ghi_ciel_clair"),
+        ("cams_radiation", "dni_ciel_clair"),
         ("cams_eac4", "pm2_5"),
         ("cams_eac4", "pm10"),
         ("cams_eac4", "aod550"),

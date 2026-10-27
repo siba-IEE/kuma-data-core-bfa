@@ -67,6 +67,8 @@ LIBELLES_GRANDEURS: dict[str, str] = {
     "aod550": "AOD 550 nm",
     "aod550_poussiere": "AOD 550 nm des poussières",
     "aod550_organique": "AOD 550 nm de la matière organique",
+    "ghi_ciel_clair": "GHI ciel clair",
+    "dni_ciel_clair": "DNI ciel clair",
 }
 
 

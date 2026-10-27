@@ -73,7 +73,7 @@ def test_compagnes_du_ghi_journalier(db_session: Session) -> None:
             SELECT count(*)
             FROM series_metadonnees g
             CROSS JOIN (VALUES ('t2m'), ('rh2m'), ('precipitation')) AS m(grandeur)
-            WHERE g.grandeur_code = 'ghi' AND g.granularite = 'journalier'
+            WHERE g.grandeur_code = 'ghi' AND g.granularite = 'journalier' AND g.source_id = 1
               AND NOT EXISTS (
                   SELECT 1 FROM series_metadonnees c
                   WHERE c.localite_id = g.localite_id AND c.source_id = g.source_id
