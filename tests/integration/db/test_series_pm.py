@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 pytestmark = pytest.mark.integration
 
 _JOURS = 7_670  # 2005-2025
-_BORNES = {"pm2_5": 1000.0, "pm10": 1500.0}
+_BORNES = {"pm2_5": 2000.0, "pm10": 3000.0}
 
 
 def test_series_pm(db_session: Session) -> None:
@@ -28,7 +28,7 @@ def test_series_pm(db_session: Session) -> None:
             FROM series_metadonnees s
             JOIN sources so ON so.id = s.source_id
             JOIN localites l ON l.id = s.localite_id
-            WHERE s.grandeur_code IN ('pm2_5', 'pm10')
+            WHERE s.grandeur_code IN ('pm2_5', 'pm10') AND s.stockage = 'versionne'
             GROUP BY 1, 2, 3, 4, 5, 6, 7
             """
         )
@@ -164,7 +164,7 @@ def test_note_publique(db_session: Session) -> None:
         text(
             """
             SELECT count(*) FROM series_metadonnees
-            WHERE source_id = 15 AND NOT (
+            WHERE source_id = 15 AND stockage = 'versionne' AND NOT (
                 note_publique LIKE '%34 mailles pour 47 provinces%'
                 AND note_publique LIKE '%feux de brousse%'
                 AND note_publique LIKE '%servis à zéro%'

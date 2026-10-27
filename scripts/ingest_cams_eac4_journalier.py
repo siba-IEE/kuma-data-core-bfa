@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Ingesteur reproductible : PM2.5 et PM10 journaliers CAMS EAC4, provinces du Burkina Faso.
+"""Ingesteur reproductible : PM2.5 et PM10 journaliers CAMS EAC4, Burkina Faso.
 
 Récupère, année par année, les concentrations massiques de surface PM2.5 et
 PM10 de la réanalyse CAMS EAC4 (jeu ``cams-global-reanalysis-eac4`` de l'ADS
 Copernicus, maille de 0,75°, pas de 3 h) sur une zone couvrant le Burkina Faso,
-puis écrit pour les 47 provinces (ADR-0015) un CSV gzip par grandeur sous
-``src/kuma_data_core/db/seeds/donnees/``. Les migrations relisent ces fichiers
-et n'accèdent jamais au réseau.
+puis écrit un fichier par grandeur sous ``src/kuma_data_core/db/seeds/donnees/`` :
+CSV gzip pour les 47 provinces (lot ``provinces``, ADR-0015), Parquet dense
+pour les 351 communes (lot ``communes``, ADR-0017). Les migrations relisent
+ces fichiers et n'accèdent jamais au réseau.
 
 Accès : clé ADS lue dans la variable d'environnement ``ADS_API_KEY`` ; licence
 du jeu acceptée une fois sur le compte Copernicus. Les requêtes EAC4 passent par
@@ -22,7 +23,8 @@ moyenne des huit pas du jour civil UTC (00 à 21 h) ; conversion de kg/m³ en
 µg/m³ (× 10⁹) ; arrondi à 4 décimales. Les pas servis à zéro par la réanalyse
 sont gardés tels quels (ADR-0015).
 
-Usage : ``uv run python scripts/ingest_cams_eac4_journalier.py --cache DOSSIER``
+Usage : ``uv run python scripts/ingest_cams_eac4_journalier.py --lot communes
+--cache DOSSIER``
 (le cache garde le zip NetCDF de chaque année pour reprendre après une
 interruption ; un fichier incomplet y est redemandé).
 """
@@ -35,7 +37,7 @@ import tempfile
 import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import cdsapi  # type: ignore[import-untyped]
@@ -45,6 +47,7 @@ import xarray as xr  # type: ignore[import-untyped]
 
 from kuma_data_core.db.seeds.lots_bfa import CONTRATS_PM, PM_EAC4, points_lot
 from kuma_data_core.db.seeds.series_csv import ecrire_series_journalieres
+from kuma_data_core.db.seeds.series_denses import ecrire_series_denses
 
 ADS_URL = "https://ads.atmosphere.copernicus.eu/api"
 JEU = "cams-global-reanalysis-eac4"
@@ -53,10 +56,10 @@ VARIABLES_ADS: dict[str, str] = {
     "pm10": "particulate_matter_10um",
 }
 HEURES = [f"{h:02d}:00" for h in range(0, 24, 3)]
-# Nord, ouest, sud, est : les provinces (9,8 à 14,5 °N, -5,2 à 1,8 °E) et une
+# Nord, ouest, sud, est : les localités (9,4 à 14,9 °N, -5,4 à 2,1 °E) et une
 # maille de marge.
 ZONE = [15.5, -6.0, 9.0, 3.0]
-LOT = "provinces"
+LOTS = ("provinces", "communes")
 ANNEE_DEBUT = min(c.annee_debut for c in CONTRATS_PM.values())
 ANNEE_FIN = max(c.annee_fin for c in CONTRATS_PM.values())
 MICROGRAMMES_PAR_KG = 1e9
@@ -183,7 +186,7 @@ def _journalier(ds: xr.Dataset, lat: float, lon: float, variable: str) -> list[t
     return [(jour.date(), round(float(v), 4)) for jour, v in moyennes.items()]
 
 
-def main(cache: Path, travailleurs: int, annees_par_requete: int) -> None:
+def main(lot: str, cache: Path, travailleurs: int, annees_par_requete: int) -> None:
     if not 1 <= annees_par_requete <= ANNEES_PAR_REQUETE_MAX:
         raise SystemExit(f"--annees-par-requete : de 1 à {ANNEES_PAR_REQUETE_MAX}.")
     cache.mkdir(parents=True, exist_ok=True)
@@ -198,7 +201,14 @@ def main(cache: Path, travailleurs: int, annees_par_requete: int) -> None:
         for i, futur in enumerate(as_completed(futurs), 1):
             futur.result()
             print(f"{i}/{len(futurs)} requêtes reçues")
-    points = points_lot(LOT)
+    points = points_lot(lot)
+    # Date de consultation : celle du fichier annuel le plus récent du cache.
+    recu = max(_fichier(cache, a).stat().st_mtime for a in annees)
+    source = {
+        "service": f"ADS Copernicus, jeu {JEU}",
+        "version": "EAC4",
+        "consultation": datetime.fromtimestamp(recu, UTC).date().isoformat(),
+    }
     mesures: dict[str, dict[str, list[tuple[date, float]]]] = {
         g: {code: [] for code, *_ in points} for g in PM_EAC4
     }
@@ -212,12 +222,18 @@ def main(cache: Path, travailleurs: int, annees_par_requete: int) -> None:
             raise SystemExit(f"{annee} : {erreur}") from None
     for grandeur, contrat in CONTRATS_PM.items():
         series = [(code, lat, lon, mesures[grandeur][code]) for code, _, lat, lon in points]
-        cible = ecrire_series_journalieres(contrat, LOT, series)
+        if lot == "communes":
+            # Aucun écart admis par le contrat : une valeur hors bornes arrête
+            # l'écriture (ADR-0017).
+            cible = ecrire_series_denses(contrat, lot, list(series), source)
+        else:
+            cible = ecrire_series_journalieres(contrat, lot, series)
         print(f"{grandeur}: {len(series)} séries -> {cible.name}")
 
 
 if __name__ == "__main__":
     parseur = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parseur.add_argument("--lot", required=True, choices=LOTS)
     parseur.add_argument("--cache", required=True, type=Path, help="dossier des zip NetCDF")
     parseur.add_argument("--travailleurs", type=int, default=5, help="requêtes ADS simultanées")
     parseur.add_argument(
@@ -227,4 +243,4 @@ if __name__ == "__main__":
         help=f"années consécutives par requête ADS (1 à {ANNEES_PAR_REQUETE_MAX})",
     )
     args = parseur.parse_args()
-    main(args.cache, args.travailleurs, args.annees_par_requete)
+    main(args.lot, args.cache, args.travailleurs, args.annees_par_requete)

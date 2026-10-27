@@ -1617,6 +1617,32 @@ def _chercher_serie_pluie_nasa(
     return int(row.id) if row else None
 
 
+def _combler_pluie(pluie: dict[date, float]) -> tuple[dict[date, float], list[date]]:
+    """Compte 0 mm les jours sans valeur à l'intérieur de la série de pluie (ADR-0017).
+
+    Une valeur écartée à l'ingestion laisse un jour sans valeur dans une série
+    dense, alors que le modèle HSU exige un index continu. 0 mm signifie aucun
+    nettoyage ce jour-là : l'hypothèse la plus prudente pour la salissure.
+    Renvoie la série complétée et les jours comblés.
+    """
+    if not pluie:
+        return pluie, []
+    debut, fin = min(pluie), max(pluie)
+    jours = (debut + timedelta(days=i) for i in range((fin - debut).days + 1))
+    combles = [jour for jour in jours if jour not in pluie]
+    return pluie | dict.fromkeys(combles, 0.0), combles
+
+
+def _mention_pluie_comblee(combles: list[date], dates: list[date]) -> str:
+    dans_la_fenetre = [j.isoformat() for j in combles if dates and dates[0] <= j <= dates[-1]]
+    if not dans_la_fenetre:
+        return ""
+    return (
+        " Pluie sans valeur comptée 0 mm, aucun nettoyage ce jour-là : "
+        f"{', '.join(dans_la_fenetre)}."
+    )
+
+
 def _verifier_contiguite_journaliere(dates: list[date], code_serie_source: str) -> None:
     """Garde-fou : le modèle HSU est path-dependant (il intègre la salissure depuis
     le début), l'index journalier doit être **trié croissant et sans trou** ; sinon
@@ -1694,8 +1720,10 @@ def grandeur_taux_salissure_proxy(
     pm10 = _lire_mesures_par_serie_id(
         session, pm10_serie_id, _FENETRE_LARGE_DEBUT, _FENETRE_LARGE_FIN
     )
-    pluie = _lire_mesures_par_serie_id(
-        session, pluie_serie_id, _FENETRE_LARGE_DEBUT, _FENETRE_LARGE_FIN
+    pluie, pluie_comblee = _combler_pluie(
+        _lire_mesures_par_serie_id(
+            session, pluie_serie_id, _FENETRE_LARGE_DEBUT, _FENETRE_LARGE_FIN
+        )
     )
 
     dates = sorted(pm2_5.keys() & pm10.keys() & pluie.keys())
@@ -1720,7 +1748,7 @@ def grandeur_taux_salissure_proxy(
         surface_tilt_deg=SURFACE_TILT_DEFAUT,
         cleaning_threshold_mm=CLEANING_THRESHOLD_DEFAUT_MM,
         mesures=resultat.mesures,
-        limite=resultat.limite,
+        limite=resultat.limite + _mention_pluie_comblee(pluie_comblee, dates),
     )
 
 
@@ -1823,6 +1851,7 @@ def grandeur_pr_realiste(
         ensembles_dates.append(set(t2m.keys()))
 
     pluie: dict[date, float] = {}
+    pluie_comblee: list[date] = []
     pm2_5: dict[date, float] = {}
     pm10: dict[date, float] = {}
     if besoin_salissure:
@@ -1847,8 +1876,8 @@ def grandeur_pr_realiste(
                 ),
                 statut_http=status.HTTP_400_BAD_REQUEST,
             )
-        pluie = _lire_mesures_par_serie_id(
-            session, pluie_id, _FENETRE_LARGE_DEBUT, _FENETRE_LARGE_FIN
+        pluie, pluie_comblee = _combler_pluie(
+            _lire_mesures_par_serie_id(session, pluie_id, _FENETRE_LARGE_DEBUT, _FENETRE_LARGE_FIN)
         )
         pm2_5 = _lire_mesures_par_serie_id(
             session, pm2_5_id, _FENETRE_LARGE_DEBUT, _FENETRE_LARGE_FIN
@@ -1892,7 +1921,7 @@ def grandeur_pr_realiste(
         pr_fourni=params.pr_fourni,
         mesures_journalier=resultat.mesures,
         mesures_mensuel=agreger_pr_mensuel(resultat.mesures),
-        limite=resultat.limite,
+        limite=resultat.limite + _mention_pluie_comblee(pluie_comblee, dates),
     )
 
 

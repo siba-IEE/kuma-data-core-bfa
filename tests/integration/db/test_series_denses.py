@@ -1,6 +1,7 @@
-"""Tests d'intégration du stockage dense (migrations 0015 et 0016, ADR-0017).
+"""Tests d'intégration du stockage dense (migrations 0015 à 0017, ADR-0017 et ADR-0018).
 
-Vérifie les 2 106 séries journalières NASA POWER des 351 communes, le partage
+Vérifie les 2 106 séries journalières NASA POWER et les 702 séries de
+particules fines CAMS EAC4 des 351 communes, le partage
 des mesures entre communes d'une même maille (séries porteuses), les lignes
 annuelles, la vue ``v_mesures_journalieres``, les garde-fous en base et
 l'accord avec les séries mensuelles des communes et versionnées des provinces.
@@ -17,14 +18,17 @@ from sqlalchemy.orm import Session
 
 pytestmark = pytest.mark.integration
 
-# Grandeur : (méthode, mailles distinctes, borne basse incluse ou None, borne haute).
+# Grandeur : (source, méthode, mailles distinctes, borne basse incluse ou None,
+# borne haute). Préfixe de série : ``<source>_<grandeur>_journalier``.
 _GRANDEURS = {
-    "ghi": ("modele_satellitaire", 33, None, 9.0),
-    "dni": ("modele_satellitaire", 33, None, 11.0),
-    "dhi": ("modele_satellitaire", 33, None, 6.5),
-    "t2m": ("reanalyse", 82, 0.0, 50.0),
-    "rh2m": ("reanalyse", 82, 0.0, 100.0),
-    "precipitation": ("reanalyse", 82, 0.0, 500.0),
+    "ghi": ("nasa_power", "modele_satellitaire", 33, None, 9.0),
+    "dni": ("nasa_power", "modele_satellitaire", 33, None, 11.0),
+    "dhi": ("nasa_power", "modele_satellitaire", 33, None, 6.5),
+    "t2m": ("nasa_power", "reanalyse", 82, 0.0, 50.0),
+    "rh2m": ("nasa_power", "reanalyse", 82, 0.0, 100.0),
+    "precipitation": ("nasa_power", "reanalyse", 82, 0.0, 500.0),
+    "pm2_5": ("cams_eac4", "reanalyse", 51, None, 2000.0),
+    "pm10": ("cams_eac4", "reanalyse", 51, None, 3000.0),
 }
 _PLUIE_ECARTEE = {
     "nasa_power_precipitation_journalier_bfa_dep_sideradougou",
@@ -57,13 +61,9 @@ def test_series_des_communes(db_session: Session) -> None:
     ).all()
     assert {r.grandeur_code for r in lignes} == set(_GRANDEURS)
     for r in lignes:
-        methode, mailles, _, _ = _GRANDEURS[r.grandeur_code]
+        source, methode, mailles, _, _ = _GRANDEURS[r.grandeur_code]
         assert (r.debut, r.fin, r.n, r.porteuses) == ("2005-01-01", "2025-12-31", 351, mailles)
-        assert (r.methode_collecte, r.type_localite, r.source) == (
-            methode,
-            "commune",
-            "nasa_power",
-        )
+        assert (r.methode_collecte, r.type_localite, r.source) == (methode, "commune", source)
 
 
 def test_porteuses_coherentes(db_session: Session) -> None:
@@ -117,10 +117,10 @@ def test_lignes_annuelles_completes_et_bornees(db_session: Session) -> None:
             """
         )
     ).all()
-    assert len(lignes) == 345
-    assert sum(r.valeurs for r in lignes) == 2_646_149
+    assert len(lignes) == 345 + 102
+    assert sum(r.valeurs for r in lignes) == 2_646_149 + 782_340
     for r in lignes:
-        _, _, basse, haute = _GRANDEURS[r.grandeur_code]
+        _, _, _, basse, haute = _GRANDEURS[r.grandeur_code]
         ecartee = int(r.code in _PLUIE_ECARTEE)
         assert (r.annees, r.premiere, r.derniere) == (21, 2005, 2025), r.code
         assert (r.valeurs, r.absentes) == (7_670 - ecartee, ecartee), r.code
@@ -175,13 +175,9 @@ def test_bissextiles(db_session: Session) -> None:
 @pytest.mark.parametrize("grandeur", sorted(_GRANDEURS))
 def test_accord_avec_la_province_au_meme_point(db_session: Session, grandeur: str) -> None:
     """Banfora et la province de la Comoé ont les mêmes coordonnées : mêmes valeurs depuis 2005."""
-    ids = _ids(
-        db_session,
-        [
-            f"nasa_power_{grandeur}_journalier_bfa_prov_comoe",
-            f"nasa_power_{grandeur}_journalier_bfa_dep_banfora",
-        ],
-    )
+    prefixe = f"{_GRANDEURS[grandeur][0]}_{grandeur}_journalier"
+    province, commune = f"{prefixe}_bfa_prov_comoe", f"{prefixe}_bfa_dep_banfora"
+    ids = _ids(db_session, [province, commune])
     accord = db_session.execute(
         text(
             """
@@ -193,10 +189,7 @@ def test_accord_avec_la_province_au_meme_point(db_session: Session, grandeur: st
             FROM p JOIN c USING (jour)
             """
         ),
-        {
-            "province": ids[f"nasa_power_{grandeur}_journalier_bfa_prov_comoe"],
-            "commune": ids[f"nasa_power_{grandeur}_journalier_bfa_dep_banfora"],
-        },
+        {"province": ids[province], "commune": ids[commune]},
     ).one()
     assert (accord.n, accord.egales) == (7_670, 7_670)
 

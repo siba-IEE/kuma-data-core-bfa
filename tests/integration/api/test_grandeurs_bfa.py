@@ -318,3 +318,25 @@ def test_grandeurs_sur_une_commune_dense(client: TestClient, headers_auth: dict[
     assert len(poa) == len(thermique) == 366
     assert 4.0 < statistics.mean(thermique) < 7.0
     assert len(djc) == 12 and sum(djc) > 0.0
+
+
+def test_salissure_aux_communes(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """Aux communes (stockage dense), la salissure se calcule ; le jour de pluie écarté de
+    Tiéfora compte 0 mm et la réponse le dit (ADR-0017)."""
+    reponses = {
+        commune: client.get(
+            f"/v1/grandeurs/taux_salissure_proxy/cams_eac4_pm2_5_journalier_bfa_dep_{commune}",
+            headers=headers_auth,
+        )
+        for commune in ("banfora", "tiefora")
+    }
+    for reponse in reponses.values():
+        assert reponse.status_code == 200, reponse.text
+        assert reponse.json()["periode"] == "2005-01-01/2025-12-31"
+        assert len(reponse.json()["mesures"]) == 7_670
+    assert "Pluie sans valeur comptée 0 mm" not in reponses["banfora"].json()["limite"]
+    assert (
+        reponses["tiefora"]
+        .json()["limite"]
+        .endswith("Pluie sans valeur comptée 0 mm, aucun nettoyage ce jour-là : 2025-12-02.")
+    )

@@ -44,8 +44,10 @@ l'amorçage et la montée en charge de la donnée burkinabè.
       351 communes, 2005-2025 : rayonnement et météo (ADR-0017).
 - [ ] CAMS Radiation journalier aux 398 localités, 2005-2025 : GHI, DNI, DHI
       et ciel clair.
-- [ ] CAMS EAC4 aux communes : PM2.5 et PM10 ; épaisseur optique des aérosols
-      (totale, poussières, matière organique) aux 398 localités.
+- [x] CAMS EAC4 aux communes : PM2.5 et PM10, salissure aux communes
+      (ADR-0018).
+- [ ] CAMS EAC4 : épaisseur optique des aérosols (totale, poussières, matière
+      organique) aux 398 localités.
 
 ## Jalon 5 : terrain (confiance A)
 

@@ -692,7 +692,7 @@ wheels = [
 
 [[package]]
 name = "kuma-data-core-bfa"
-version = "0.11.0"
+version = "0.12.0"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },

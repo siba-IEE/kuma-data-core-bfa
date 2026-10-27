@@ -3,6 +3,17 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.12.0
+
+- Particules fines CAMS EAC4 aux 351 communes (ADR-0018, migration 0017) :
+  PM2.5 et PM10 journaliers 2005-2025 en stockage dense, 702 séries sur
+  51 mailles. `scripts/ingest_cams_eac4_journalier.py --lot communes`.
+- Bornes hautes du PM2.5 et du PM10 relevées à 2 000 et 3 000 µg/m³ : le
+  panache de feux de brousse servi à Madjoari le 13 novembre 2013
+  (1 143 µg/m³ de PM2.5) est gardé.
+- Proxy de salissure et PR réaliste corrigé de la salissure aux communes ; un
+  jour de pluie sans valeur y compte 0 mm et la réponse le signale.
+
 ## 0.11.0
 
 - Stockage dense des séries journalières (ADR-0017, migration 0015) : table

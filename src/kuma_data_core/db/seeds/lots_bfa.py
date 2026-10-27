@@ -199,13 +199,13 @@ CONTRATS_HORAIRES: dict[str, ContratSerie] = {
 
 # Particules fines CAMS EAC4 (ADR-0015) : moyenne journalière (jour UTC) des huit
 # pas de 3 h de la réanalyse, à la maille de 0,75° la plus proche, en µg/m³.
-# 2005-2025, période de CAMS Radiation. Variable NetCDF et borne haute,
-# au-dessus des maxima servis aux provinces (PM2.5 744, PM10 1 017, le
-# 13 novembre 2013 dans la Gobnangou) ; valeurs strictement positives (minima
-# servis : 0,76 et 1,10).
+# 2005-2025, période de CAMS Radiation. Variable NetCDF et borne haute, au-dessus
+# des maxima servis aux 398 localités : PM2.5 1 143 et PM10 1 567 le 13 novembre
+# 2013 à Madjoari, panache de feux de brousse (744 et 1 017 le même jour dans la
+# Gobnangou, maximum des provinces). Valeurs strictement positives.
 PM_EAC4: dict[str, tuple[str, float]] = {
-    "pm2_5": ("pm2p5", 1000.0),
-    "pm10": ("pm10", 1500.0),
+    "pm2_5": ("pm2p5", 2000.0),
+    "pm10": ("pm10", 3000.0),
 }
 CONTRATS_PM: dict[str, ContratSerie] = {
     grandeur: ContratSerie(

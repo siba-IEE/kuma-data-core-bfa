@@ -63,7 +63,8 @@ Socle en place. La donnée nationale se construit par lots.
 - Particules fines CAMS EAC4 (PM2.5 et PM10 journaliers, 2005-2025) aux
   47 provinces, en confiance B, et grandeurs qui en dépendent : proxy de
   salissure et PR réaliste corrigé de la salissure. Voir
-  l'[ADR-0015](docs/decisions/0015-particules-fines-cams-eac4.md).
+  l'[ADR-0015](docs/decisions/0015-particules-fines-cams-eac4.md). Aux
+  351 communes, en stockage dense, depuis l'[ADR-0018](docs/decisions/0018-particules-fines-aux-communes.md).
 - Fiche d'incertitude inter-source aux 398 localités : écart de SARAH-3, ERA5
   et CAMS à NASA POWER sur 2005-2023, et nombre de localités qui partagent la
   même maille NASA POWER. Voir
@@ -75,9 +76,8 @@ d'ingestion.
 
 ### À faire
 
-- CAMS Radiation journalier aux 398 localités et CAMS EAC4 en stockage dense :
-  particules fines aux communes, épaisseur optique des aérosols aux
-  398 localités.
+- CAMS Radiation journalier aux 398 localités et épaisseur optique des
+  aérosols CAMS EAC4 aux 398 localités, en stockage dense.
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A.
 - Adaptation de la documentation `docs/` au contexte burkinabè.
 
