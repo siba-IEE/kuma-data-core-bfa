@@ -20,8 +20,10 @@ Stockage dense des mesures journalières (ADR-0017) :
   ``mesures_ressource`` et mesures denses dépliées, rendues à chaque série,
   porteuse ou non (statut ``brut``), lue par l'API et les grandeurs calculées ;
 - triggers de garde : aucune mise à jour de ligne dense, lignes denses
-  réservées aux séries porteuses, aucune mesure versionnée pour une série
-  dense, porteuse de même famille et sur un seul niveau.
+  réservées aux séries porteuses et aux années de leur période, aucune mesure
+  versionnée pour une série dense (ni à l'insertion, ni par changement de
+  série, ni par passage d'une série en stockage dense), porteuse de même
+  famille et sur un seul niveau.
 
 Aucune donnée : les séries denses arrivent par les migrations suivantes.
 """
@@ -75,10 +77,12 @@ END
         """
 BEGIN
     PERFORM 1 FROM series_metadonnees
-    WHERE id = NEW.serie_id AND stockage = 'dense' AND serie_porteuse_id IS NULL;
+    WHERE id = NEW.serie_id AND stockage = 'dense' AND serie_porteuse_id IS NULL
+      AND NEW.annee BETWEEN extract(year FROM periode_debut)
+                        AND extract(year FROM COALESCE(periode_fin, DATE '2100-12-31'));
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'série % : lignes denses réservées aux séries denses porteuses',
-            NEW.serie_id;
+        RAISE EXCEPTION 'série % : lignes denses réservées aux séries denses porteuses, '
+            'dans les années de leur période (année %)', NEW.serie_id, NEW.annee;
     END IF;
     RETURN NEW;
 END
@@ -86,7 +90,7 @@ END
     ),
     "kuma_refus_mesure_versionnee_dense": (
         "mesures_ressource",
-        "BEFORE INSERT",
+        "BEFORE INSERT OR UPDATE OF serie_id",
         "FOR EACH ROW",
         """
 BEGIN
@@ -118,6 +122,12 @@ BEGIN
                 'de même grandeur, source, période et granularité', NEW.code,
                 NEW.serie_porteuse_id;
         END IF;
+    END IF;
+    IF NEW.stockage = 'dense' AND (TG_OP = 'INSERT' OR OLD.stockage <> 'dense')
+       AND EXISTS (SELECT 1 FROM mesures_ressource WHERE serie_id = NEW.id)
+    THEN
+        RAISE EXCEPTION 'série % : des mesures versionnées, pas de passage en stockage dense',
+            NEW.code;
     END IF;
     IF TG_OP = 'UPDATE'
        AND (NEW.serie_porteuse_id, NEW.stockage, NEW.grandeur_code, NEW.source_id,

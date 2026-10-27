@@ -254,14 +254,18 @@ def test_notes_publiques(db_session: Session) -> None:
     tiefora = notes["nasa_power_precipitation_journalier_bfa_dep_tiefora"]
     assert "identique pour les 2 communes de la même maille" in tiefora
     assert (
-        "Le 2025-12-02, la source sert 514,64 mm, au-delà de la borne de plausibilité du "
+        "Le 2 décembre 2025, la source sert 514,64 mm, au-delà de la borne de plausibilité du "
         "contrat (500 mm) : valeur écartée, jour sans valeur." in tiefora
     )
-    assert "275,2 mm le 2025-06-15" in tiefora
+    assert "275,2 mm le 15 juin 2025" in tiefora
+    assert (
+        "514,6 mm le 2 (écartée), 6,7 mm le 3, 13,3 mm le 14 ; autres valeurs suspectes, "
+        "gardées telles que servies." in tiefora
+    )
     banfora = notes["nasa_power_precipitation_journalier_bfa_dep_banfora"]
     assert "Décembre 2025 sort de l'enveloppe 2005-2024" in banfora
     assert "321,8 mm le 2" in banfora
-    assert "345,4 mm le 2022-08-12" in notes["nasa_power_precipitation_journalier_bfa_dep_kpuere"]
+    assert "345,4 mm le 12 août 2022" in notes["nasa_power_precipitation_journalier_bfa_dep_kpuere"]
     ghi = notes["nasa_power_ghi_journalier_bfa_dep_fo"]
     assert ghi.startswith("Rayonnement global horizontal (GHI) : série journalière NASA POWER")
     assert "stockage dense (ADR-0017)" in ghi and "ne ferment pas" in ghi
@@ -321,6 +325,26 @@ def test_garde_fous_en_base(db_session: Session) -> None:
         (porteuse_de_tiefora, tiefora, ids["nasa_power_t2m_journalier_bfa_dep_banfora"]),
         (porteuse_de_tiefora, tiefora, ids["nasa_power_ghi_journalier_bfa_prov_comoe"]),
         (porteuse_de_tiefora, fo, tiefora),
+        # Ligne hors de la période de la série ; mesure versionnée déplacée sur une
+        # série dense ; série versionnée qui a des mesures passée en dense.
+        (
+            "INSERT INTO mesures_journalieres_denses "
+            "SELECT serie_id, 2030, niveau_confiance_derive, valeurs_e4 "
+            "FROM mesures_journalieres_denses WHERE serie_id = :a AND annee = 2025",
+            banfora,
+            0,
+        ),
+        (
+            "UPDATE mesures_ressource SET serie_id = :a WHERE id = "
+            "(SELECT min(id) FROM mesures_ressource WHERE serie_id = :b)",
+            banfora,
+            ids["nasa_power_ghi_journalier_bfa_prov_comoe"],
+        ),
+        (
+            "UPDATE series_metadonnees SET stockage = 'dense' WHERE id = :a",
+            ids["nasa_power_ghi_journalier_bfa_prov_comoe"],
+            0,
+        ),
         # Une porteuse lue par d'autres séries garde famille et stockage.
         (porteuse_de_tiefora, banfora, fo),
         (

@@ -49,7 +49,7 @@ l'amorçage et la montée en charge de la donnée burkinabè.
 
 ## Jalon 5 : terrain (confiance A)
 
-Annoncé au jalon 4 par les ADR-0012 à ADR-0016, avant que ce jalon ne passe à
+Annoncé au jalon 4 par les ADR-0012, ADR-0014 et ADR-0016, avant que ce jalon ne passe à
 la granularité journalière.
 
 - [ ] Intégrer les stations sol ESMAP/WAPP du Burkina Faso (Dédougou, Dori, Kaya,

@@ -18,7 +18,8 @@ le projet suit le versionnement sémantique.
 - Pluie de décembre 2025 : les deux valeurs servies au-delà de 500 mm le
   2 décembre (Sidéradougou, Tiéfora) sont écartées ; les autres jours de
   décembre 2025 au-dessus de 3 mm, hors de l'enveloppe 2005-2024, sont
-  signalés dans la note de 125 communes et de 13 provinces.
+  signalés dans la note de 125 communes et de 13 provinces, comme les valeurs
+  au-dessus du record national de 263 mm (Kpuéré, Sidéradougou, Tiéfora).
 
 ## 0.10.0
 

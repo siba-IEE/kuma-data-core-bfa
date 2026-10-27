@@ -39,7 +39,8 @@ Socle en place. La donnée nationale se construit par lots.
   l'[ADR-0010](docs/decisions/0010-series-journalieres-nasa-power.md).
 - Séries journalières NASA POWER aux 351 communes, 2005-2025, en confiance B :
   GHI, DNI, DHI, température, humidité et pluie, en stockage dense (une
-  série par maille, partagée par les communes qui s'y trouvent). Voir
+  série par commune, les communes d'une même maille partageant les mêmes
+  mesures). Voir
   l'[ADR-0017](docs/decisions/0017-stockage-dense-des-series-journalieres.md).
 - CAMS Radiation : séries mensuelles GHI, DNI et DHI aux 47 provinces et aux
   351 communes, 2005-2025, en confiance B. Voir

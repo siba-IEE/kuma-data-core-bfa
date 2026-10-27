@@ -60,6 +60,7 @@ from kuma_data_core.db.seeds.series_csv import ContratSerie
 from kuma_data_core.db.seeds.series_denses import (
     SeriesDenses,
     charger_series_denses,
+    date_en_clair,
     lire_series_denses,
 )
 
@@ -170,19 +171,31 @@ def _gardees(n: int, suspectes: bool = False) -> str:
     )
 
 
-def _decembre(valeurs: list[tuple[date, float]]) -> str:
-    """Mention des jours de décembre 2025 hors de l'enveloppe 2005-2024, vide s'il n'y en a pas."""
-    jours = [
-        (j, v)
+def _decembre(
+    valeurs: list[tuple[date, float]], ecartees: list[tuple[date, float]] | None = None
+) -> str:
+    """Mention des jours de décembre 2025 hors de l'enveloppe 2005-2024, vide s'il n'y en a pas.
+
+    Les valeurs écartées à l'ingestion y figurent aussi, marquées comme telles.
+    """
+    gardes = [
+        (j, v, False)
         for j, v in valeurs
         if DECEMBRE_2025[0] <= j <= DECEMBRE_2025[1] and v > SEUIL_DECEMBRE_MM
     ]
-    if not jours:
+    ecarts = [(j, v, True) for j, v in ecartees or [] if DECEMBRE_2025[0] <= j <= DECEMBRE_2025[1]]
+    if not gardes and not ecarts:
         return ""
-    liste = ", ".join(f"{_nombre(v)} mm le {j.day}" for j, v in jours)
+    liste = ", ".join(
+        f"{_nombre(v)} mm le {j.day}" + (" (écartée)" if ecartee else "")
+        for j, v, ecartee in sorted(gardes + ecarts)
+    )
+    fin = _gardees(len(gardes), True) if gardes else "valeur écartée"
+    if gardes and ecarts:
+        fin = ("autre " if len(gardes) == 1 else "autres ") + fin
     return (
         " Décembre 2025 sort de l'enveloppe 2005-2024, où aucun jour de décembre ne "
-        f"dépasse 3 mm sur les 398 localités : {liste} ; {_gardees(len(jours), True)}."
+        f"dépasse 3 mm sur les 398 localités : {liste} ; {fin}."
     )
 
 
@@ -194,7 +207,7 @@ def _records(valeurs: list[tuple[date, float]]) -> str:
     ]
     if not jours:
         return ""
-    liste = ", ".join(f"{_nombre(v)} mm le {j.isoformat()}" for j, v in jours)
+    liste = ", ".join(f"{_nombre(v)} mm le {date_en_clair(j)}" for j, v in jours)
     return (
         f" Au-dessus du record national de 263 mm (Ouagadougou, 2009) : {liste} ; "
         f"{_gardees(len(jours))}."
@@ -208,7 +221,7 @@ def _signalements(denses: SeriesDenses, rep: str) -> str:
         (denses.debut + timedelta(days=int(k)), float(valeurs[k]))
         for k in np.flatnonzero(valeurs > SEUIL_DECEMBRE_MM)
     ]
-    return _decembre(jours) + _records(jours)
+    return _decembre(jours, denses.ecartees_de(rep)) + _records(jours)
 
 
 def _notes(contrat: ContratSerie, denses: SeriesDenses) -> dict[str, str]:

@@ -134,7 +134,12 @@ def _verifier(contrat: ContratSerie, nom: str, denses: SeriesDenses) -> None:
         raise ValueError(f"{nom} : points interrogés et localités ne concordent pas.")
     if set(denses.source) != set(CHAMPS_SOURCE):
         raise ValueError(f"{nom} : source décrite par {sorted(denses.source)!r}.")
-    date.fromisoformat(denses.source["consultation"])
+    try:
+        date.fromisoformat(denses.source["consultation"])
+    except ValueError:
+        raise ValueError(
+            f"{nom} : date de consultation {denses.source['consultation']!r} illisible."
+        ) from None
     if denses.debut != date(contrat.annee_debut, 1, 1):
         raise ValueError(f"{nom} : début {denses.debut.isoformat()} hors du contrat.")
     for rep, valeurs in denses.valeurs.items():
@@ -338,12 +343,34 @@ def lire_series_denses(contrat: ContratSerie, lot: str) -> SeriesDenses:
     return _lire(contrat, DOSSIER_DENSES / nom, nom)
 
 
+MOIS: tuple[str, ...] = (
+    "janvier",
+    "février",
+    "mars",
+    "avril",
+    "mai",
+    "juin",
+    "juillet",
+    "août",
+    "septembre",
+    "octobre",
+    "novembre",
+    "décembre",
+)
+
+
+def date_en_clair(jour: date) -> str:
+    """Date écrite en français, ex. « 2 décembre 2025 », « 1er mars 2020 »."""
+    quantieme = "1er" if jour.day == 1 else str(jour.day)
+    return f"{quantieme} {MOIS[jour.month - 1]} {jour.year}"
+
+
 def _nombre(valeur: float) -> str:
     return f"{valeur:g}".replace(".", ",")
 
 
 def _jours(jours: list[date]) -> str:
-    liste = ", ".join(j.isoformat() for j in jours[:5])
+    liste = ", ".join(date_en_clair(j) for j in jours[:5])
     return liste + (f" et {len(jours) - 5} autres jours" if len(jours) > 5 else "")
 
 
@@ -408,7 +435,7 @@ def charger_series_denses(
         ecartees = denses.ecartees_de(code)
         for jour, valeur in ecartees:
             texte += (
-                f" Le {jour.isoformat()}, la source sert {_nombre(valeur)} {unite}, au-delà de "
+                f" Le {date_en_clair(jour)}, la source sert {_nombre(valeur)} {unite}, au-delà de "
                 f"la borne de plausibilité du contrat ({_nombre(contrat.borne_max)} {unite}) : "
                 "valeur écartée, jour sans valeur."
             )

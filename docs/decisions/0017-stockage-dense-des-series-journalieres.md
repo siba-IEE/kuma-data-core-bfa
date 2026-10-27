@@ -10,8 +10,8 @@ valeurs. `mesures_ressource` versionne chaque valeur (période de validité,
 contrainte d'exclusion GiST, statut éditorial, audit ligne à ligne) : environ
 260 octets par valeur, index compris, sur une base neuve. La CI rejoue toutes
 les migrations sur une base vide : sur `main`, le job d'intégration dure
-11 min 40 s, dont 10 min 40 s de migrations, pour un plafond de 20 minutes. Ces
-valeurs sont brutes, rejouables depuis des fichiers versionnés, et ne sont
+11 min 40 s, dont 10 min 40 s de migrations, pour un plafond de 20 minutes. Les
+valeurs du jalon sont brutes, rejouables depuis des fichiers versionnés, et ne sont
 jamais éditées une à une.
 
 Une source maillée sert en outre la même série à toutes les localités d'une
@@ -41,10 +41,12 @@ distinctes par grandeur (maille CERES de 1°) et 82 séries météo par grandeur
   contient elle-même une jointure) : une requête résout d'abord ses séries,
   puis lit la vue par `serie_id = ANY(ARRAY(...))`.
 - Garde-fous en base (triggers) : aucune mise à jour de ligne dense ; lignes
-  denses réservées aux séries denses porteuses ; aucune mesure versionnée
-  pour une série dense ; une porteuse est dense, de la même famille et ne lit
-  elle-même aucune porteuse (un seul niveau) ; une porteuse lue par d'autres
-  séries ne change ni de famille ni de stockage.
+  denses réservées aux séries denses porteuses, dans les années de leur
+  période ; aucune mesure versionnée pour une série dense (insertion,
+  changement de série ou passage d'une série en stockage dense) ; une
+  porteuse est dense, de la même famille et ne lit elle-même aucune porteuse
+  (un seul niveau) ; une porteuse lue par d'autres séries ne change ni de
+  famille ni de stockage.
 - Une correction réédite la série : la migration de réédition supprime ses
   lignes et la recharge depuis le nouveau fichier. L'édition précédente quitte
   la base et ne survit que dans l'historique du dépôt (fichier et migration).
@@ -77,7 +79,7 @@ Mesurées sur le lot NASA POWER des communes :
 |---|---|---|---|
 | Une ligne par jour, sans partage de maille | 16,2 millions | 1,35 Go | 2 min 22 s |
 | Une ligne par jour, avec partage | 2,65 millions | 222 Mo | 26 s |
-| Une ligne par année, avec partage (retenu) | 7 245 | 12 Mo | 7 s |
+| Une ligne par année, avec partage (retenu) | 7 245 | 14 Mo | 7 s |
 
 Une ligne par jour aurait porté CAMS Radiation (15 millions de lignes, sans
 partage possible) à 1,3 Go et ajouté environ trois minutes à la CI.
@@ -91,7 +93,8 @@ la taille.
   dont 345 porteuses ; 7 245 lignes annuelles, 2 646 149 valeurs ; 5,7 Mo de
   fichiers (33 Mo sans partage de maille).
 - Une série se lit par identifiant en 4 ms pour 21 ans ; la vue déplie les
-  tableaux de la série demandée seulement.
+  tableaux de la série demandée seulement, mais toutes ses années, même pour
+  une fenêtre d'un mois (2 ms).
 - Banfora et la province de la Comoé ont les mêmes coordonnées : leurs six
   grandeurs ont les mêmes valeurs depuis 2005, d'un stockage à l'autre. La
   moyenne des jours de chaque mois redonne la série mensuelle NASA POWER des
@@ -106,10 +109,10 @@ la taille.
   (notes de la migration 0010 complétées). Les valeurs
   au-dessus du record national de 263 mm (Kpuéré, 345,4 mm le 12 août 2022 ;
   Sidéradougou et Tiéfora, 275,2 mm le 15 juin 2025) sont signalées aussi.
-- Le proxy de salissure et le PR réaliste exigent une pluie sans trou. Quand
-  les particules fines arriveront aux communes, un jour de pluie sans valeur
-  y comptera 0 mm (aucun nettoyage), signalé dans la réponse : à Sidéradougou
-  et Tiéfora, le 2 décembre 2025 tombe en saison sèche.
+- Le proxy de salissure et le PR réaliste exigent une pluie sans trou. Le lot
+  des particules fines aux communes devra compter 0 mm un jour de pluie sans
+  valeur (aucun nettoyage) et le signaler dans la réponse : à Sidéradougou et
+  Tiéfora, le 2 décembre 2025 tombe en saison sèche.
 - Une série dense n'a ni statut éditorial ni override de confiance par
   mesure ; la passer en stockage versionné demanderait de la recharger dans
   `mesures_ressource`.
