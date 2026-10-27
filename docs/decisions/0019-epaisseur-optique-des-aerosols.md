@@ -62,7 +62,7 @@ modèle, qui répartit entre elles la correction du total.
   indicateur de feux.
 - Une AOD de maille de 0,75° moyenne la colonne sur une cinquantaine de
   kilomètres ; elle ne remplace pas une mesure photométrique au sol, qui
-  viendra avec le terrain (jalon 5).
+  viendra avec le terrain (jalon 6).
 - Ces séries ne corrigent encore aucune grandeur calculée : elles servent à
   lire les écarts entre sources de rayonnement et la saisonnalité de la
   ressource.

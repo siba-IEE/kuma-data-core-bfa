@@ -55,10 +55,20 @@ l'amorçage et la montée en charge de la donnée burkinabè.
       du direct horizontal (GHI moins DHI) et d'une géométrie intégrée sur le
       jour, au lieu du DNI du jour projeté au midi solaire (ADR-0020).
 
-## Jalon 5 : terrain (confiance A)
+## Jalon 5 : brut satellite et réanalyse
+
+- [x] Météo complémentaire NASA POWER aux 398 localités, 2005-2025 :
+      températures extrêmes, point de rosée, vent, pression, nébulosité
+      (ADR-0021).
+- [ ] SARAH-3 journalier aux 398 localités, 2005-2023 : GHI, DNI, DHI.
+- [ ] ERA5-Land journalier aux 398 localités, 2005-2025 : température, point
+      de rosée, pluie, vent, rayonnement, pression.
+- [ ] CAMS Radiation horaire aux cinq points pilotes, 2021-2025.
+
+## Jalon 6 : terrain (confiance A)
 
 Annoncé au jalon 4 par les ADR-0012, ADR-0014 et ADR-0016, avant que ce jalon ne passe à
-la granularité journalière.
+la granularité journalière, puis reporté après le brut du jalon 5.
 
 - [ ] Intégrer les stations sol ESMAP/WAPP du Burkina Faso (Dédougou, Dori, Kaya,
       Koupéla) comme première ancre de confiance A, et le calage terrain associé.

@@ -3,6 +3,17 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.15.0
+
+- Météo complémentaire NASA POWER aux 398 localités, 2005-2025 (ADR-0021,
+  migration 0020) : températures minimale et maximale, point de rosée, vent
+  moyen et maximal à 10 m, direction du vent, vent à 50 m, pression de
+  surface et nébulosité, en stockage dense ; huit grandeurs et deux unités
+  d'angle ajoutées au référentiel, 3 582 séries et 5 345 990 valeurs.
+  `scripts/ingest_nasa_power_journalier.py --famille meteo_complementaire
+  --lot localites`.
+- Fiche de la source `nasa_power` mise au Burkina Faso.
+
 ## 0.14.0
 
 - Rayonnement journalier CAMS Radiation aux 398 localités, 2005-2025

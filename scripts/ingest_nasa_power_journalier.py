@@ -5,8 +5,9 @@ Récupère, aux coordonnées d'un lot de localités, les valeurs journalières N
 POWER (communauté ``RE``) d'une famille de grandeurs et écrit un fichier par
 grandeur sous ``src/kuma_data_core/db/seeds/donnees/`` : CSV gzip pour les
 47 provinces (lot ``provinces``, 1991 ou 2001 à 2025), Parquet dense pour les
-351 communes (lot ``communes``, 2005-2025, ADR-0017). Les migrations relisent
-ces fichiers et n'accèdent jamais au réseau.
+351 communes (lot ``communes``) et pour les 398 localités (lot ``localites``),
+2005-2025 (ADR-0017). Les migrations relisent ces fichiers et n'accèdent
+jamais au réseau.
 
 Familles, en une requête par point :
 
@@ -18,6 +19,13 @@ Familles, en une requête par point :
   mm/jour).
 
 Aux communes, les deux familles couvrent 2005-2025.
+
+- ``meteo_complementaire`` (ADR-0021), 2005-2025 aux 398 localités (lot
+  ``localites``) : températures minimale et maximale (``T2M_MIN``,
+  ``T2M_MAX``), point de rosée (``T2MDEW``), en °C ; vent moyen et maximal à
+  10 m (``WS10M``, ``WS10M_MAX``) et vent moyen à 50 m (``WS50M``), en m/s ;
+  direction du vent à 10 m (``WD10M``, degrés depuis le nord) ; pression de
+  surface (``PS``, kPa) ; nébulosité (``CLOUD_AMT``, %).
 
 Une valeur de remplissage dans la période d'un contrat fait échouer
 l'ingestion. Le script affiche le nom et la version de l'API, à reporter dans
@@ -40,12 +48,15 @@ from typing import Any
 import httpx
 
 from kuma_data_core.db.seeds.lots_bfa import (
+    CONTRATS_METEO_COMPLEMENTAIRE,
     CONTRATS_METEO_JOURNALIERS,
     CONTRATS_METEO_JOURNALIERS_COMMUNES,
     CONTRATS_NASA_JOURNALIERS,
     CONTRATS_NASA_JOURNALIERS_COMMUNES,
+    LOT_LOCALITES,
     LOTS_JOURNALIERS,
     METEO_NASA,
+    METEO_NASA_COMPLEMENTAIRE,
     PARAMETRES_NASA,
     points_lot,
 )
@@ -81,6 +92,11 @@ FAMILLES: dict[str, Famille] = {
         },
         {grandeur: parametre for grandeur, (parametre, *_) in METEO_NASA.items()},
         "nasa_power_meteo_journalier",
+    ),
+    "meteo_complementaire": Famille(
+        {LOT_LOCALITES: CONTRATS_METEO_COMPLEMENTAIRE},
+        {g: parametre for g, (parametre, *_) in METEO_NASA_COMPLEMENTAIRE.items()},
+        "nasa_power_meteo_complementaire_journalier",
     ),
 }
 
@@ -135,6 +151,8 @@ def _mesures(brut: dict[str, float], contrat: ContratSerie) -> list[tuple[date, 
 
 def main(nom_famille: str, lot: str, cache: Path | None) -> None:
     famille = FAMILLES[nom_famille]
+    if lot not in famille.contrats:
+        raise SystemExit(f"Famille {nom_famille!r} : lots {sorted(famille.contrats)}, pas {lot!r}.")
     if cache:
         cache.mkdir(parents=True, exist_ok=True)
     points = points_lot(lot)
@@ -164,7 +182,7 @@ def main(nom_famille: str, lot: str, cache: Path | None) -> None:
             (code, lat, lon, _mesures(bruts[code]["properties"]["parameter"][parametre], contrat))
             for code, _, lat, lon in points
         ]
-        if lot == "communes":
+        if lot != "provinces":
             # Une valeur hors bornes est écartée si le contrat l'admet et
             # arrête l'écriture sinon (ADR-0017).
             cible = ecrire_series_denses(contrat, lot, list(series), source)

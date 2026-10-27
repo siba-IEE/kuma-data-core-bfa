@@ -69,6 +69,15 @@ LIBELLES_GRANDEURS: dict[str, str] = {
     "aod550_organique": "AOD 550 nm de la matière organique",
     "ghi_ciel_clair": "GHI ciel clair",
     "dni_ciel_clair": "DNI ciel clair",
+    "t2m_min": "T2M minimale",
+    "t2m_max": "T2M maximale",
+    "point_rosee_2m": "Point de rosée",
+    "vent_10m": "Vent à 10 m",
+    "vent_10m_max": "Vent maximal à 10 m",
+    "direction_vent_10m": "Direction du vent à 10 m",
+    "vent_50m": "Vent à 50 m",
+    "pression_surface": "Pression de surface",
+    "nebulosite": "Nébulosité",
 }
 
 

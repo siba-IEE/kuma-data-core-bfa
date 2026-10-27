@@ -9,16 +9,17 @@ pytestmark = pytest.mark.integration
 
 
 def test_listing_des_series_d_une_commune(client: TestClient, headers_auth: dict[str, str]) -> None:
-    """Une commune porte 26 séries brutes (NASA POWER, SARAH-3, ERA5, CAMS) et 8 dérivées.
+    """Une commune porte 35 séries brutes (NASA POWER, SARAH-3, ERA5, CAMS) et 8 dérivées.
 
-    NASA POWER : rayonnement mensuel et journalier, météo journalière (ADR-0017) ;
+    NASA POWER : rayonnement mensuel et journalier, météo journalière (ADR-0017),
+    météo complémentaire (ADR-0021) ;
     CAMS EAC4 : particules fines (ADR-0018) et aérosols (ADR-0019) journaliers ;
     CAMS Radiation : rayonnement mensuel et journalier, ciel clair (ADR-0020).
     """
     response = client.get("/v1/series?localite=bfa_dep_fo", headers=headers_auth)
     assert response.status_code == 200
     payload = response.json()
-    assert payload["total"] == 34
+    assert payload["total"] == 43
     familles = {(s["source_code"], s["grandeur_code"]) for s in payload["items"]}
     assert familles == {
         ("nasa_power", "ghi"),
@@ -27,6 +28,15 @@ def test_listing_des_series_d_une_commune(client: TestClient, headers_auth: dict
         ("nasa_power", "t2m"),
         ("nasa_power", "rh2m"),
         ("nasa_power", "precipitation"),
+        ("nasa_power", "t2m_min"),
+        ("nasa_power", "t2m_max"),
+        ("nasa_power", "point_rosee_2m"),
+        ("nasa_power", "vent_10m"),
+        ("nasa_power", "vent_10m_max"),
+        ("nasa_power", "direction_vent_10m"),
+        ("nasa_power", "vent_50m"),
+        ("nasa_power", "pression_surface"),
+        ("nasa_power", "nebulosite"),
         ("sarah3_monthly", "ghi"),
         ("sarah3_monthly", "dni"),
         ("era5_pvgis", "ghi"),

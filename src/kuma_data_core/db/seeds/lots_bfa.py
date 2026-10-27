@@ -29,7 +29,7 @@ from kuma_data_core.db.seeds.localites_bfa_seed_data import LOCALITES_SEED as _L
 from kuma_data_core.db.seeds.series_csv import ContratSerie
 
 LOTS: tuple[str, ...] = ("provinces", "communes")
-LOTS_JOURNALIERS: tuple[str, ...] = ("provinces", "communes")
+LOTS_JOURNALIERS: tuple[str, ...] = ("provinces", "communes", "localites")
 # Lot dense des 398 localités : les 47 provinces et les 351 communes (ADR-0017).
 LOT_LOCALITES: str = "localites"
 _NIVEAUX: dict[str, tuple[str, ...]] = {
@@ -304,6 +304,39 @@ CONTRATS_METEO_JOURNALIERS_COMMUNES: dict[str, ContratSerie] = {
         ecarts_admis=ECARTS_PLUIE_COMMUNES if g == "precipitation" else frozenset(),
     )
     for g, c in CONTRATS_METEO_JOURNALIERS.items()
+}
+
+
+# Météo complémentaire NASA POWER (ADR-0021), journalière aux 398 localités,
+# 2005-2025, en stockage dense : paramètre, bornes basse et haute (°C, m/s,
+# degrés depuis le nord, kPa, %). La nébulosité vient de CERES (satellite),
+# le reste de la réanalyse MERRA-2.
+METEO_NASA_COMPLEMENTAIRE: dict[str, tuple[str, float, float]] = {
+    "t2m_min": ("T2M_MIN", 0.0, 45.0),
+    "t2m_max": ("T2M_MAX", 5.0, 55.0),
+    "point_rosee_2m": ("T2MDEW", -30.0, 35.0),
+    "vent_10m": ("WS10M", 0.0, 30.0),
+    "vent_10m_max": ("WS10M_MAX", 0.0, 40.0),
+    "direction_vent_10m": ("WD10M", 0.0, 360.0),
+    "vent_50m": ("WS50M", 0.0, 40.0),
+    "pression_surface": ("PS", 85.0, 105.0),
+    "nebulosite": ("CLOUD_AMT", 0.0, 100.0),
+}
+CONTRATS_METEO_COMPLEMENTAIRE: dict[str, ContratSerie] = {
+    grandeur: ContratSerie(
+        source_code="nasa_power",
+        source_id=1,
+        source_libelle="NASA POWER",
+        prefixe_code=f"nasa_power_{grandeur}_journalier",
+        grandeur_code=grandeur,
+        methode_collecte="modele_satellitaire" if grandeur == "nebulosite" else "reanalyse",
+        annee_debut=2005,
+        annee_fin=2025,
+        borne_max=borne_max,
+        granularite="journalier",
+        borne_min=borne_min,
+    )
+    for grandeur, (_, borne_min, borne_max) in METEO_NASA_COMPLEMENTAIRE.items()
 }
 
 

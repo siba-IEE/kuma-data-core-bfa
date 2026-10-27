@@ -42,6 +42,10 @@ Socle en place. La donnée nationale se construit par lots.
   série par commune, les communes d'une même maille partageant les mêmes
   mesures). Voir
   l'[ADR-0017](docs/decisions/0017-stockage-dense-des-series-journalieres.md).
+- Météo complémentaire NASA POWER aux 398 localités, 2005-2025, en confiance
+  B et en stockage dense : températures minimale et maximale, point de rosée,
+  vent à 10 et 50 m, direction du vent, pression et nébulosité. Voir
+  l'[ADR-0021](docs/decisions/0021-meteo-complementaire-nasa-power.md).
 - CAMS Radiation : séries mensuelles GHI, DNI et DHI aux 47 provinces et aux
   351 communes, 2005-2025, en confiance B. Voir
   l'[ADR-0011](docs/decisions/0011-series-cams-radiation.md). Séries
@@ -99,11 +103,12 @@ Les séries proviennent de :
 
 - **NASA POWER** (CC BY 4.0), POWER Monthly and Annual API, POWER Daily API
   v2.10.0 et POWER Hourly API v2.10.2, consultées le 15 octobre 2026 ; POWER
-  Daily API v2.10.1 pour les communes, consultée le 27 octobre 2026. « The
+  Daily API v2.10.1 pour les communes et la météo complémentaire, consultée le
+  27 octobre 2026. « The
   data was obtained from National Aeronautics and Space Administration (NASA)
   Langley Research Center's Prediction Of Worldwide Energy Resources (POWER)
   project funded through the NASA Earth Science Division. » NASA POWER tire sa
-  météo de la réanalyse MERRA-2 du GMAO (NASA).
+  météo de la réanalyse MERRA-2 du GMAO (NASA), et sa nébulosité de CERES.
 - **PVGIS** (Joint Research Centre de la Commission européenne), API v5_3
   `MRcalc`, consultée le 15 octobre 2026 : « PVGIS © Union européenne,
   2001-2026 ». Réutilisation autorisée sous réserve de citer la source

@@ -24,9 +24,10 @@ def test_unites_et_grandeurs_peuplees(db_session: Session) -> None:
     """Les référentiels d'unités et de grandeurs sont peuplés (génériques)."""
     unites = db_session.execute(text("SELECT count(*) FROM unites")).scalar_one()
     grandeurs = db_session.execute(text("SELECT count(*) FROM grandeurs_referentiel")).scalar_one()
-    assert unites == 160
-    # 34 en 0002, + 7 écarts en 0009, + 3 aérosols en 0018, + 2 ciel clair en 0019.
-    assert grandeurs == 46
+    assert unites == 162  # 160 en 0002, + radian et degré en 0020
+    # 34 en 0002, + 7 écarts en 0009, + 3 aérosols en 0018, + 2 ciel clair en 0019,
+    # + 8 météo en 0020.
+    assert grandeurs == 54
 
 
 def test_source_guineenne_retiree(db_session: Session) -> None:
