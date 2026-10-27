@@ -106,6 +106,7 @@ from kuma_data_core.services.grandeurs.poa_parametrable import (
     MesureJourPOA,
     calculer_poa_parametrable,
     calculer_poa_parametrable_horaire,
+    ecart_horizontal_midi,
 )
 from kuma_data_core.services.grandeurs.pr_realiste import (
     MesureJourPRRealiste,
@@ -456,6 +457,7 @@ def _construire_reponse(
     parametres_appliques: dict[str, object],
     resultats: Sequence[ResultatJournalier | ResultatMensuel],
     format_sortie: Literal["json", "csv"],
+    limite: str | None = None,
 ) -> Response:
     """Construit la réponse HTTP finale (JSON par défaut, CSV si demandé)."""
     reponse = ReponseGrandeurF2(
@@ -463,6 +465,7 @@ def _construire_reponse(
         code_serie_source=code_serie_source,
         parametres_appliques=parametres_appliques,
         resultats=list(resultats),
+        limite=limite,
     )
     if format_sortie == "csv":
         return Response(
@@ -470,6 +473,26 @@ def _construire_reponse(
             media_type="text/csv",
         )
     return JSONResponse(content=reponse.model_dump(mode="json"))
+
+
+def _limite_poa_journalier(ecart: float | None) -> str | None:
+    """Champ ``limite`` du POA en moyenne journalière : biais du midi solaire (ADR-0020).
+
+    ``ecart`` est l'écart au GHI, sur un plan horizontal, des jours calculés
+    (:func:`ecart_horizontal_midi`) ; sans jour calculé, pas d'avertissement.
+    """
+    if ecart is None:
+        return None
+    pourcentage = f"{100 * ecart:+.1f}".replace(".", ",")
+    return (
+        "Méthode journalière : le direct du jour est projeté avec la géométrie du midi "
+        "solaire, où le soleil est le plus haut, ce qui surestime le POA. Sur un plan "
+        "horizontal, le direct et le diffus ainsi projetés s'écartent ici de "
+        f"{pourcentage} % du GHI de la série. Sur un plan incliné, l'écart à un calcul heure "
+        "par heure est du même ordre ou plus fort (environ 8 % à 15° plein sud au Kadiogo avec "
+        "NASA POWER, de l'ordre de 20 % avec CAMS Radiation). ADR-0013 et ADR-0020 ; une "
+        "correction de la méthode est prévue."
+    )
 
 
 # === Endpoint POA paramétrable ============================================
@@ -512,6 +535,9 @@ def grandeur_poa_parametrable(
       heure par heure, géométrie au milieu de l'heure ; le direct est
       reconstruit sur GHI et DHI, le DNI de NASA POWER ne refermant pas le
       GHI (ADR-0014). Seule la compagne DHI horaire est requise.
+    - **Biais du midi solaire** : en moyenne journalière, le DNI du jour est
+      projeté avec la géométrie du midi ; le champ ``limite`` de la réponse
+      donne l'écart au GHI qui en résulte sur un plan horizontal (ADR-0020).
     - **Traçabilité limitée v1** : la réponse JSON n'indique pas
       explicitement quel modèle a été appliqué.
     """
@@ -573,6 +599,7 @@ def grandeur_poa_parametrable(
             longitude_deg=longitude,
             parametres=params,
         )
+        limite = None
     else:
         dni_serie_id = _chercher_serie_compagne(
             session,
@@ -616,6 +643,7 @@ def grandeur_poa_parametrable(
             longitude_deg=longitude,
             parametres=params,
         )
+        limite = _limite_poa_journalier(ecart_horizontal_midi(mesures, latitude, longitude))
 
     return _construire_reponse(
         code_grandeur="poa_parametrable",
@@ -628,6 +656,7 @@ def grandeur_poa_parametrable(
         },
         resultats=resultats,
         format_sortie=params.format_sortie,
+        limite=limite,
     )
 
 
@@ -681,7 +710,8 @@ def grandeur_poa_bifacial(
     intégration horaire, seule la DHI est requise, le direct étant reconstruit
     sur GHI et DHI (ADR-0014). Albédo :
     série `albedo_surface` journalière (réel par localité ; repli `albedo_sol` si
-    absente ; broadcast aux heures en mode horaire).
+    absente ; broadcast aux heures en mode horaire). En moyenne journalière, le
+    champ `limite` chiffre le biais du midi solaire (ADR-0020).
     """
     serie = _resoudre_serie_source(session, params.code_serie_source)
     _exiger_grandeur(serie.grandeur_code, "ghi", params.code_serie_source, "poa_bifacial")
@@ -767,6 +797,7 @@ def grandeur_poa_bifacial(
             longitude_deg=longitude,
             parametres=params,
         )
+        limite = None
     else:
         assert dni_serie_id is not None  # garde ci-dessus, hors intégration horaire
         ghi_j = _lire_mesures_par_serie_id(
@@ -795,6 +826,17 @@ def grandeur_poa_bifacial(
             longitude_deg=longitude,
             parametres=params,
         )
+        # Même projection au midi solaire que le POA mono-plan.
+        face_avant: list[MesureJourPOA] = [
+            {
+                "instant_mesure": m["instant_mesure"],
+                "ghi": m["ghi"],
+                "dni": m["dni"],
+                "dhi": m["dhi"],
+            }
+            for m in mesures
+        ]
+        limite = _limite_poa_journalier(ecart_horizontal_midi(face_avant, latitude, longitude))
 
     return _construire_reponse(
         code_grandeur="poa_bifacial",
@@ -811,6 +853,7 @@ def grandeur_poa_bifacial(
         },
         resultats=resultats,
         format_sortie=params.format_sortie,
+        limite=limite,
     )
 
 

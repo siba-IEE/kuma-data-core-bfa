@@ -13,7 +13,10 @@ le projet suit le versionnement sémantique.
   Burkina Faso. `scripts/ingest_cams_radiation_journalier.py`.
 - Le POA en moyenne journalière surestime le direct avec la géométrie du midi
   solaire : 18,5 % de trop sur un plan horizontal avec CAMS à Fô, 6 % avec
-  NASA POWER (ADR-0020) ; une correction de la méthode est à prévoir.
+  NASA POWER, dont le DNI trop faible compense en partie le biais (ADR-0020).
+  En ce mode, la réponse de `poa_parametrable` et de `poa_bifacial` porte un
+  champ `limite` qui donne l'écart au GHI, sur un plan horizontal, des jours
+  demandés ; la correction de la méthode est inscrite à la feuille de route.
 
 ## 0.13.0
 

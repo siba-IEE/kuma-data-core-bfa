@@ -85,6 +85,8 @@ d'ingestion.
 ### À faire
 
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A.
+- Correction du POA en moyenne journalière, biaisé par la géométrie du midi
+  solaire (ADR-0020).
 - Adaptation de la documentation `docs/` au contexte burkinabè.
 
 ## Attribution des données amont

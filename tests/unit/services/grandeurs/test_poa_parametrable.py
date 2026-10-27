@@ -34,6 +34,7 @@ from kuma_data_core.services.grandeurs.poa_parametrable import (
     _irradiation_extraterrestre_jour,
     calculer_poa_parametrable,
     calculer_poa_parametrable_horaire,
+    ecart_horizontal_midi,
     geometrie_et_direct_horaires,
 )
 
@@ -295,6 +296,35 @@ def test_t_poa_7_inclinaison_optimale_sud() -> None:
     )
     # En decembre, plan incline plein sud capte plus que plan horizontal.
     assert r_incline[0].valeur > r_horizontal[0].valeur
+
+
+def test_t_poa_8_ecart_horizontal_midi() -> None:
+    """T-POA-8 : écart au GHI sur plan horizontal, celui du POA calculé à 0°.
+
+    Avec un DNI journalier, la géométrie du midi solaire donne plus que le GHI
+    (ADR-0020) ; le repli, qui reconstruit le direct, le redonne exactement.
+    """
+    jours = [date(2024, 1, 15), date(2024, 6, 15)]
+    perez: list[MesureJourPOA] = [
+        {"instant_mesure": jour, "ghi": 6.0, "dni": 6.5, "dhi": 2.0} for jour in jours
+    ]
+    params = ParametresPOA(
+        code_serie_source="x",
+        periode_debut=jours[0],
+        periode_fin=jours[-1],
+        inclinaison_deg=0,
+        orientation_deg=180,
+    )
+    poa = calculer_poa_parametrable(perez, _CONAKRY_LAT, _CONAKRY_LON, params)
+    attendu = sum(r.valeur for r in poa) / 12.0 - 1
+    assert attendu > 0.2
+    assert ecart_horizontal_midi(perez, _CONAKRY_LAT, _CONAKRY_LON) == pytest.approx(attendu)
+
+    repli: list[MesureJourPOA] = [
+        {"instant_mesure": jour, "ghi": 6.0, "dni": None, "dhi": None} for jour in jours
+    ]
+    assert ecart_horizontal_midi(repli, _CONAKRY_LAT, _CONAKRY_LON) == 0.0
+    assert ecart_horizontal_midi([], _CONAKRY_LAT, _CONAKRY_LON) is None
 
 
 # === Methode integration horaire (Perez par heure) ===========

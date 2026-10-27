@@ -304,6 +304,34 @@ def calculer_poa_parametrable(
     return resultats
 
 
+def ecart_horizontal_midi(
+    mesures: Sequence[MesureJourPOA], latitude_deg: float, longitude_deg: float
+) -> float | None:
+    """Écart relatif de la méthode journalière au GHI, sur un plan horizontal.
+
+    Sur un plan horizontal, Perez au midi solaire rend ``DNI·cos z + DHI``, avec
+    le zénith du midi, le plus petit du jour : un DNI servi (NASA POWER, CAMS
+    Radiation) donne ainsi plus que le GHI (ADR-0013, ADR-0020). Le repli, qui
+    reconstruit le direct sur le GHI, redonne le GHI. Renvoie
+    ``Σ POA horizontal / Σ GHI - 1`` sur les jours de ``mesures``, ``None`` si
+    leur GHI total est nul.
+    """
+    total = sum(m["ghi"] for m in mesures)
+    if total <= 0:
+        return None
+    index = pd.DatetimeIndex(
+        [_midi_solaire_utc(m["instant_mesure"], longitude_deg) for m in mesures]
+    )
+    zenith = pvlib.solarposition.get_solarposition(index, latitude_deg, longitude_deg)["zenith"]
+    horizontal = sum(
+        m["ghi"]
+        if m["dni"] is None or m["dhi"] is None
+        else m["dni"] * max(math.cos(math.radians(z)), 0.0) + m["dhi"]
+        for m, z in zip(mesures, zenith, strict=True)
+    )
+    return horizontal / total - 1
+
+
 def geometrie_et_direct_horaires(
     index: pd.DatetimeIndex,
     ghi: pd.Series,

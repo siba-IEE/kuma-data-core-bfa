@@ -49,6 +49,12 @@ l'amorçage et la montée en charge de la donnée burkinabè.
 - [x] CAMS EAC4 : épaisseur optique des aérosols (totale, poussières, matière
       organique) aux 398 localités (ADR-0019).
 
+## Moteur de calcul
+
+- [ ] POA en moyenne journalière (`poa_parametrable`, `poa_bifacial`) : partir
+      du direct horizontal (GHI moins DHI) et d'une géométrie intégrée sur le
+      jour, au lieu du DNI du jour projeté au midi solaire (ADR-0020).
+
 ## Jalon 5 : terrain (confiance A)
 
 Annoncé au jalon 4 par les ADR-0012, ADR-0014 et ADR-0016, avant que ce jalon ne passe à

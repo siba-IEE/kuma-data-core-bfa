@@ -124,7 +124,10 @@ def test_poa_horaire_plan_incline(client: TestClient, headers_auth: dict[str, st
 
 
 def test_poa_bifacial_horaire(client: TestClient, headers_auth: dict[str, str]) -> None:
-    """Le POA bifacial horaire se calcule sans compagne DNI et dépasse le monofacial."""
+    """Le POA bifacial horaire se calcule sans compagne DNI et dépasse le monofacial.
+
+    Sans le biais du midi solaire, la réponse ne porte pas de ``limite`` (ADR-0020).
+    """
     commun = {"code_serie_source": GHI, "inclinaison_deg": 15, "orientation_deg": 180}
     bifacial = _resultats(
         client,
@@ -143,6 +146,17 @@ def test_poa_bifacial_horaire(client: TestClient, headers_auth: dict[str, str]) 
     )
     assert len(bifacial) == len(monofacial) == 366
     assert statistics.mean(bifacial) > statistics.mean(monofacial)
+    for chemin, extra in (
+        ("poa_parametrable", {}),
+        ("poa_bifacial", {"gcr": 0.4, "hauteur_m": 1.5, "pitch_m": 5.0}),
+    ):
+        response = client.get(
+            f"/v1/grandeurs/{chemin}",
+            params={**commun, **HORAIRE_2024, "periode_fin": "2024-01-31", **extra},
+            headers=headers_auth,
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["limite"] is None, chemin
 
 
 def test_productible_thermique_horaire(client: TestClient, headers_auth: dict[str, str]) -> None:

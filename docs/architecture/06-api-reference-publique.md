@@ -397,6 +397,13 @@ paramètre libre, path-based).
 moyennage journalier. Une série non horaire avec ce mode renvoie
 `400 VALIDATION_VALEUR_INVALIDE`.
 
+En `moyenne_journaliere`, `poa_parametrable` et `poa_bifacial` projettent le
+DNI du jour avec la géométrie du midi solaire, ce qui surestime le POA : sur
+un plan horizontal, de 6 % avec NASA POWER et de 18,5 % avec CAMS Radiation
+(Kadiogo et Fô, 2024) ; autant ou plus sur un plan incliné (ADR-0013, ADR-0020).
+La réponse le signale par son champ `limite` (§3.7.5). Le mode horaire n'existe
+qu'aux cinq points pilotes, avec NASA POWER.
+
 #### 3.7.4 Pattern auto-compagne (F2)
 
 Plusieurs routes F2 ont besoin de plusieurs séries d'entrée. Le routeur
@@ -448,8 +455,13 @@ Résultats discriminés par `granularite` : `journalier` (`instant: date`)
 ou `mensuel` (`instant` au format `YYYY-MM`). `degre_jour_climatisation`
 sort en mensuel. Le niveau de confiance des sorties F2 est `B`.
 
+Le champ `limite` vaut `null`, sauf pour `poa_parametrable` et
+`poa_bifacial` en `moyenne_journaliere` : il dit alors le biais du midi
+solaire et donne l'écart au GHI, sur un plan horizontal, des jours calculés
+(par exemple « s'écartent ici de +18,5 % du GHI de la série »).
+
 Format CSV (`format=csv`) : header `granularite, instant, valeur, unite,
-niveau_confiance`.
+niveau_confiance`. Le CSV ne porte pas le champ `limite`.
 
 #### 3.7.6 Routes F1 calculées à la volée
 

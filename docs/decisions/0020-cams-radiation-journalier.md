@@ -34,27 +34,54 @@ au point : chaque localité a sa série.
   dans l'en-tête de la réponse, point de l'en-tête comparé au point demandé ;
   migration 0019, qui met aussi à jour la fiche de la source
   `cams_radiation`, restée celle du dépôt d'origine.
+- L'indice de fiabilité que le service joint à chaque jour n'est pas repris ;
+  les notes le disent.
+- Le POA en moyenne journalière, biaisé par la géométrie du midi solaire (voir
+  plus bas), n'est pas corrigé dans ce lot : la réponse de `poa_parametrable`
+  et de `poa_bifacial` en porte l'avertissement chiffré, champ `limite`.
 
 ## Conséquences
 
 - 1 990 séries, dont 1 970 porteuses ; 41 370 lignes annuelles et
-  15 104 026 valeurs, 63 Mo en base ; 33 Mo de fichiers ; la migration dure
+  15 104 026 valeurs, 63 Mo en base ; 31 Mo de fichiers ; la migration dure
   une trentaine de secondes. 1 978 jours-localités sans valeur par grandeur
-  tous temps (0,06 %), tous en 2005 et 2006.
+  tous temps (0,06 %), sur cinq dates de 2005 et 2006.
 - Sur les mois complets, la moyenne des jours redonne la série mensuelle CAMS
-  de l'ADR-0011 à 0,0001 kWh/m²/jour près.
+  de l'ADR-0011 à 0,0001 kWh/m²/jour près ; les trois mois qui comptent des
+  jours non servis (janvier 2005, janvier 2006, septembre 2006) s'en écartent
+  jusqu'à 0,20 kWh/m²/jour.
 - Moyennes sur 2005-2025 : GHI de 6,0 kWh/m²/jour (6,1 au nord de 13,5 °N,
   5,8 au sud de 10,5 °N ; 6,45 en mars, 5,4 en août), DNI de 4,9 (3,7 en
   août), DHI de 2,5 ; GHI par ciel clair de 6,7. Le GHI vaut 89 % du GHI par
-  ciel clair en moyenne ; un jour sur cinq, sans nuage détecté, il l'égale.
-- Aux 351 communes, le GHI de CAMS dépasse celui de NASA POWER de 3,6 % en
-  moyenne, avec une corrélation journalière de 0,91 ; CAMS compte ses jours
-  en temps universel, NASA POWER en heure solaire locale.
-- Le POA en moyenne journalière (ADR-0013) projette le DNI du jour avec la
-  géométrie du midi solaire. Sur un plan horizontal, il rend 18,5 % de plus
-  que le GHI avec les séries CAMS de Fô en 2024, contre 6 % avec NASA POWER,
-  dont le DNI est plus faible (3,8 contre 5,0 kWh/m²/jour). La fermeture
-  exacte de CAMS montre que l'écart vient de la méthode, non de la donnée :
-  une méthode qui part du direct horizontal (GHI moins DHI) et de la
-  géométrie intégrée sur le jour le corrigerait. À traiter dans un lot du
-  moteur ; d'ici là, l'intégration horaire reste la référence pour le POA.
+  ciel clair en moyenne. Les jours sans nuage détecté, il l'égale : 21 % des
+  jours, de 38 à 45 % de novembre à février, 1 % en août.
+- Aux 351 communes, CAMS dépasse NASA POWER de 3,6 % sur le GHI (corrélation
+  journalière de 0,91) et de 27 % sur le DNI (0,88) ; il sert 2,6 % de moins
+  sur le DHI (0,75). CAMS compte ses jours en temps universel, NASA POWER en
+  heure solaire locale. Le DNI de NASA POWER est trop faible : à Fô en 2024,
+  le direct horizontal (GHI moins DHI) le dépasse 101 jours sur 366, ce
+  qu'aucun direct réel ne permet ; jamais avec CAMS.
+- L'indice de fiabilité passe sous 0,9 pour 0,10 % des jours-localités
+  servis, en 2005 et 2006, et le 17 août 2024 partout. Le 18 avril 2005
+  (0,84 en moyenne), 20 localités tombent entre 0,5 et 1 kWh/m²/jour, avec un
+  DNI presque nul, quand CAMS sert environ 6 la veille et le lendemain et
+  NASA POWER de 4,5 à 6,1 le même jour. Artefact probable, mais des valeurs
+  aussi basses existent les jours réellement couverts (16 avril 2022, 5 août
+  2007) : les valeurs sont gardées.
+- Le POA en moyenne journalière (ADR-0013), celui de `poa_parametrable` comme
+  celui de `poa_bifacial`, projette le DNI du jour avec la géométrie du midi
+  solaire, où le soleil est le plus haut. Sur un plan horizontal, il rend
+  18,5 % de plus que le GHI avec les séries CAMS de Fô en 2024. La fermeture
+  exacte de CAMS montre que l'écart vient de la méthode, non de la donnée.
+  Avec NASA POWER, l'écart n'est que de 6 % parce que deux erreurs se
+  compensent, la méthode et un DNI trop faible (3,8 contre
+  5,0 kWh/m²/jour) : elle n'y est pas plus juste. Sur un plan à 15° plein
+  sud, l'excès est de l'ordre de 20 % avec CAMS.
+- Aucune série horaire n'existe pour CAMS : l'intégration horaire de
+  l'ADR-0014 ne couvre que les cinq points pilotes, avec NASA POWER, en
+  2021-2025. En moyenne journalière, la réponse des deux grandeurs porte donc
+  un champ `limite` qui donne l'écart au GHI, sur un plan horizontal, des
+  jours demandés. La correction de la méthode, qui partira du direct
+  horizontal (GHI moins DHI) et d'une géométrie intégrée sur le jour, est un
+  lot du moteur : elle changera aussi les résultats tirés de NASA POWER et
+  les chiffres de l'ADR-0013.

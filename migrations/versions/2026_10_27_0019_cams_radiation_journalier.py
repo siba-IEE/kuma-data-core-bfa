@@ -85,13 +85,18 @@ NOMS: dict[str, str] = {
     "ghi_ciel_clair": "Rayonnement global horizontal par ciel clair",
     "dni_ciel_clair": "Rayonnement direct normal par ciel clair",
 }
+FIABILITE = (
+    " L'indice de fiabilité que le service joint à chaque jour n'est pas repris ; il baisse "
+    "surtout en 2005 et 2006 (ADR-0020)."
+)
 MISES_EN_GARDE: dict[str, str] = {
     "ghi": (
-        " Le GHI est la somme exacte du direct horizontal et du diffus ; un jour sur "
-        "cinq, sans nuage détecté, il égale le GHI par ciel clair."
+        " Le GHI est la somme exacte du direct horizontal et du diffus. Les jours sans nuage "
+        "détecté, il égale le GHI par ciel clair : un jour sur cinq en moyenne, quatre sur dix "
+        f"de novembre à février, un sur cent en août.{FIABILITE}"
     ),
-    "dni": " Un jour très couvert, le DNI peut être presque nul.",
-    "dhi": "",
+    "dni": f" Un jour très couvert, le DNI peut être presque nul.{FIABILITE}",
+    "dhi": FIABILITE,
     "ghi_ciel_clair": " Calculé tous les jours, nuages exclus ; aucun jour sans valeur.",
     "dni_ciel_clair": " Calculé tous les jours, nuages exclus ; aucun jour sans valeur.",
 }

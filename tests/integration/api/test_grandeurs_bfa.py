@@ -347,33 +347,48 @@ def test_salissure_aux_communes(client: TestClient, headers_auth: dict[str, str]
 
 
 def test_poa_sur_cams_journalier(client: TestClient, headers_auth: dict[str, str]) -> None:
-    """CAMS Radiation journalier (ADR-0020) : le POA se calcule avec les compagnes CAMS.
+    """CAMS Radiation journalier (ADR-0020) : le POA se calcule avec les compagnes CAMS, et la
+    réponse chiffre le biais de la méthode journalière.
 
-    CAMS ferme exactement GHI = direct horizontal + diffus, mais la méthode journalière
-    projette le DNI du jour avec la géométrie du midi solaire : sur un plan horizontal,
-    elle rend 18 % de plus que le GHI, contre 6 % avec NASA POWER, dont le DNI est plus
-    faible (biais documenté, ADR-0013 et ADR-0020).
+    La méthode projette le direct du jour avec la géométrie du midi solaire : sur un plan
+    horizontal, le POA s'écarte du GHI (+18,5 % avec CAMS à Fô en 2024, +6,2 % avec NASA
+    POWER). Le champ ``limite`` donne l'écart des jours calculés ; le mode horaire n'en a pas.
     """
 
-    def _poa(source: str, inclinaison: int) -> list[float]:
-        return _resultats(
-            client,
-            headers_auth,
-            "poa_parametrable",
-            code_serie_source=f"{source}_ghi_journalier_bfa_dep_fo",
-            inclinaison_deg=inclinaison,
-            orientation_deg=180,
-            albedo_sol=0.2,
-            **ANNEE_2024,
+    def _reponse(chemin: str, source: str, inclinaison: int, **extra: Any) -> dict[str, Any]:
+        response = client.get(
+            f"/v1/grandeurs/{chemin}",
+            params={
+                "code_serie_source": f"{source}_ghi_journalier_bfa_dep_fo",
+                "inclinaison_deg": inclinaison,
+                "orientation_deg": 180,
+                "albedo_sol": 0.2,
+                **ANNEE_2024,
+                **extra,
+            },
+            headers=headers_auth,
         )
+        assert response.status_code == 200, response.text
+        resultat: dict[str, Any] = response.json()
+        return resultat
 
-    response = client.get(
-        "/v1/series/cams_ghi_journalier_bfa_dep_fo?from=2024-01-01&to=2024-12-31&limit=400",
-        headers=headers_auth,
-    )
-    assert response.status_code == 200
-    ghi = statistics.mean(m["valeur"] for m in response.json()["mesures"])
-    incline, horizontal = _poa("cams", 15), _poa("cams", 0)
-    assert len(incline) == len(horizontal) == 366
-    assert statistics.mean(incline) > statistics.mean(horizontal) > 1.1 * ghi
-    assert statistics.mean(horizontal) > statistics.mean(_poa("nasa_power", 0))
+    for source, prefixe in (("cams", "cams"), ("nasa_power", "nasa_power")):
+        response = client.get(
+            f"/v1/series/{prefixe}_ghi_journalier_bfa_dep_fo",
+            params={"from": "2024-01-01", "to": "2024-12-31", "limit": 400},
+            headers=headers_auth,
+        )
+        assert response.status_code == 200
+        ghi = sum(m["valeur"] for m in response.json()["mesures"])
+        horizontal = _reponse("poa_parametrable", source, 0)
+        assert len(horizontal["resultats"]) == 366
+        ecart = sum(r["valeur"] for r in horizontal["resultats"]) / ghi - 1
+        chiffre = f"s'écartent ici de {100 * ecart:+.1f} % du GHI".replace(".", ",")
+        assert chiffre in horizontal["limite"], (source, horizontal["limite"])
+        incline = _reponse("poa_parametrable", source, 15)
+        bifacial = _reponse(
+            "poa_bifacial", source, 15, gcr=0.4, hauteur_m=1.5, pitch_m=5.0, bifacialite=0.7
+        )
+        # L'écart sur plan horizontal ne dépend que des jours et des composantes servies.
+        assert incline["limite"] == bifacial["limite"] == horizontal["limite"]
+        assert "ADR-0020" in horizontal["limite"]

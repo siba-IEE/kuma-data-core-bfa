@@ -91,7 +91,8 @@ class ParametresPOA(ParametresCommunsF2):
             "Perez au midi solaire sur les totaux journaliers, serie source journaliere. "
             "'integration_horaire' : Perez par heure integre sur la journee, serie source "
             "horaire (GHI + compagnes DNI/DHI horaires) ; leve le biais de moyennage L-TR-6 "
-            "(surestimation +16 % pour un plan incline, etude §9.2)."
+            "(surestimation +16 % pour un plan incline, etude §9.2). En moyenne journaliere, "
+            "le champ 'limite' de la reponse chiffre ce biais (ADR-0020)."
         ),
     )
 
@@ -144,7 +145,8 @@ class ParametresBifacial(ParametresCommunsF2):
             "solaire sur les totaux journaliers (serie source journaliere). "
             "'integration_horaire' : infinite-sheds par heure integre sur la journee (serie "
             "source horaire + compagnes DNI/DHI horaires ; albedo journalier broadcast aux "
-            "heures) ; leve le biais de moyennage L-TR-6."
+            "heures) ; leve le biais de moyennage L-TR-6. En moyenne journaliere, le champ "
+            "'limite' de la reponse chiffre ce biais (ADR-0020)."
         ),
     )
 
@@ -562,6 +564,14 @@ class ReponseGrandeurF2(BaseModel):
     resultats: list[ResultatGrandeurF2] = Field(
         default_factory=list,
         description="Liste ordonnee des resultats F2 calcules sur la fenetre demandee.",
+    )
+    limite: str | None = Field(
+        None,
+        description=(
+            "Avertissement sur la methode, quand elle biaise le resultat : POA et POA "
+            "bifacial en moyenne journaliere, ecart chiffre sur la serie demandee "
+            "(ADR-0020). Nul sinon, et sans jour calcule ; absent du CSV."
+        ),
     )
 
 
