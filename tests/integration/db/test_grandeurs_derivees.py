@@ -176,3 +176,48 @@ def test_fraction_diffuse(db_session: Session) -> None:
     assert resultat.ecart_mensuel < 1e-12
     assert resultat.ecart_annuel < 1e-9
     assert resultat.hors_domaine == 0
+
+
+def test_fraction_diffuse_suit_la_regle_de_propagation(db_session: Session) -> None:
+    """Règle P (ADR-0025) : chaque fraction diffuse a le niveau le plus bas de ses entrées.
+
+    Ratio exact (plafond A), A exigeant une source de calcul de fiabilité haute.
+    Les niveaux étant ordonnés comme leurs lettres, le plus bas des DHI et GHI de
+    la période est le ``max`` de leurs niveaux effectifs.
+    """
+    resultat = db_session.execute(
+        text(
+            """
+            WITH entrees AS (
+                SELECT s.localite_id, m.annee, m.mois,
+                       coalesce(m.niveau_confiance_override, m.niveau_confiance_derive) AS niveau
+                FROM series_metadonnees s
+                JOIN sources so ON so.id = s.source_id
+                JOIN mesures_ressource_mensuelles m ON m.serie_id = s.id
+                WHERE so.code = 'nasa_power' AND s.grandeur_code IN ('dhi', 'ghi')
+                  AND s.granularite = 'mensuel' AND m.valide_au IS NULL
+            ),
+            propages AS (
+                SELECT gm.niveau_confiance_derive AS stocke,
+                       greatest(max(e.niveau),
+                                CASE so.fiabilite WHEN 'haute' THEN 'A' ELSE 'B' END) AS propage
+                FROM grandeurs_metier gm
+                JOIN series_metadonnees sc ON sc.id = gm.series_metadonnees_id
+                JOIN sources so ON so.id = sc.source_id
+                JOIN entrees e
+                  ON e.localite_id = gm.localite_id
+                 AND e.annee BETWEEN gm.annee_debut AND gm.annee_fin
+                 AND (gm.mois IS NULL OR e.mois = gm.mois)
+                WHERE gm.grandeur_code = 'fraction_diffuse' AND gm.valide_au IS NULL
+                GROUP BY gm.id, gm.niveau_confiance_derive, so.fiabilite
+            )
+            SELECT count(*) AS n,
+                   count(*) FILTER (WHERE stocke IS DISTINCT FROM propage) AS ecarts,
+                   array_agg(DISTINCT propage) AS niveaux
+            FROM propages
+            """
+        )
+    ).one()
+    assert resultat.n == 129_350
+    assert resultat.ecarts == 0
+    assert resultat.niveaux == ["B"]

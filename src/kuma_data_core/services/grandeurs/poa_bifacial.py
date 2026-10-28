@@ -9,8 +9,8 @@ sol (albedo). La grandeur expose ``poa_global`` = la sortie bifaciale du modèle
 vérifié : ``bifaciality=0`` -> ``poa_global == poa_front``).
 
 Modèle de diffus ciel : isotrope (défaut infinite-sheds ; moins anisotrope que
-le Perez du POA mono-plan). Niveau de confiance dérivé uniforme ``'B'``
-(doctrine F2 v1).
+le Perez du POA mono-plan). Niveau de confiance au plus B (plafond), par la règle
+de propagation P que la route applique (ADR-0025).
 
 Pattern fonctions publiques pures (``pvlib`` / ``pandas``, aucune dépendance
 SQL). Le biais de moyennage est acté pour la méthode journalière
@@ -40,6 +40,7 @@ from kuma_data_core.api.v1.schemas.grandeurs import (
     ParametresBifacial,
     ResultatJournalier,
 )
+from kuma_data_core.editorial.niveaux_confiance import NiveauConfiance
 
 # Réutilise le helper midi solaire du POA mono-plan : même approche journalière
 # (géométrie du midi appliquée aux totaux du jour, biais de moyennage acté). Import
@@ -50,13 +51,16 @@ from kuma_data_core.services.grandeurs.poa_parametrable import (
     geometrie_et_direct_horaires,
 )
 
+PLAFOND_CONFIANCE: NiveauConfiance = "B"
+"""Plafond de confiance : modèle de calcul et paramètres déclarés, invérifiables."""
+
 # === Constantes module ====================================================
 
 UNITE_POA_BIFACIAL: str = "kWh/m²/jour"
 """Unité de sortie (POA global bifacial journalier)."""
 
 NIVEAU_CONFIANCE_DERIVE_F2_V1: Literal["B"] = "B"
-"""Niveau de confiance uniforme v1 (doctrine F2)."""
+"""Niveau provisoire du calcul pur, remplacé par la route (règle de propagation P)."""
 
 
 # === TypedDict d'entree ===================================================
@@ -150,7 +154,7 @@ def calculer_poa_bifacial(
     journaliers (modèle linéaire -> sortie kWh/m²/jour). Biais de moyennage
     acté (cf. ``poa_parametrable``) ; levé par la méthode horaire.
 
-    Pure, idempotente. Niveau de confiance uniforme ``'B'``.
+    Pure, idempotente. Niveau de confiance provisoire ``'B'``, remplacé par la route (règle P).
     """
     if not mesures:
         return []
@@ -189,7 +193,7 @@ def calculer_poa_bifacial_horaire(
     (``poa_parametrable.geometrie_et_direct_horaires``). L'``albedo`` est
     fourni **par jour** (broadcast intra-journée).
 
-    Pure, idempotente. Niveau de confiance uniforme ``'B'``.
+    Pure, idempotente. Niveau de confiance provisoire ``'B'``, remplacé par la route (règle P).
     """
     if not mesures:
         return []

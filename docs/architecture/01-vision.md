@@ -47,15 +47,17 @@ Six principes non négociables guident les décisions techniques :
 
 Chaque mesure porte un niveau de confiance A / B / C :
 
-- **A** - haute confiance, réservée aux mesures terrain directes.
-- **B** - confiance moyenne (modèle satellitaire, réanalyse ou calcul
-  dérivé).
+- **A** - haute confiance, réservée aux mesures terrain directes et aux
+  calculs exacts qui n'utilisent qu'elles.
+- **B** - confiance moyenne (modèle satellitaire, réanalyse, ou grandeur
+  calculée par un modèle ou à partir de valeurs B).
 - **C** - confiance basse (estimation d'expert sans validation
-  instrumentale, ou source de fiabilité faible).
+  instrumentale, source de fiabilité faible, ou calcul tiré d'une valeur C).
 
 Ce niveau est dérivé automatiquement à partir de la méthode de collecte
-et de la fiabilité de la source, avec possibilité d'un override éditorial
-justifié.
+et de la fiabilité de la source ; une grandeur calculée prend le niveau le
+plus bas de ses entrées, sans dépasser le plafond de sa méthode (ADR-0025).
+Un override éditorial justifié reste possible.
 
 ## Instance : Burkina Faso
 

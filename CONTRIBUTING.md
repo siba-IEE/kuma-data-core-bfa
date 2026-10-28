@@ -62,7 +62,7 @@ mergée est immuable ; toute correction passe par une nouvelle migration.
   [docs/conventions/](docs/conventions/).
 - Chaque donnée porte source, méthode, confiance (A/B/C), validité et
   statut éditorial. La confiance A est réservée aux données validées au
-  sol.
+  sol et aux calculs exacts qui n'utilisent qu'elles.
 - Pas de mise à jour destructive : versionnement temporel.
 
 ## Style

@@ -33,9 +33,12 @@ albédo de 0,2 sauf mention contraire.
   DHI horaire.
 - Les productibles et l'énergie ECS appliquent leur modèle au GHI de la
   série source, sur le plan horizontal : ils ne passent pas par le POA.
-- Tous les résultats sont en confiance B : leurs entrées sont des séries
-  satellite ou de réanalyse de confiance B, et la justesse des paramètres
-  techniques relève de l'appelant.
+- Les résultats sont en confiance B au Burkina Faso : leurs entrées sont des
+  séries satellite ou de réanalyse de confiance B, et la justesse des
+  paramètres techniques relève de l'appelant. Ce B est un plafond (règle de
+  propagation P, ADR-0025) : une entrée qu'un override a descendue en C met
+  en C les seuls résultats de sa période, et des mesures au sol A laisseraient
+  ces grandeurs en B.
 
 ## 2. Séries utilisables
 
@@ -323,8 +326,8 @@ La méthode du point d'équilibre, qui ajuste la base à chaque bâtiment
 - Aucune de ces grandeurs n'est calée sur une mesure au sol : les
   stations ESMAP/WAPP du Burkina Faso ne sont pas intégrées (feuille de
   route).
-- L'incertitude des paramètres de l'appelant n'est pas propagée ; la
-  confiance B est qualitative.
+- L'incertitude des paramètres de l'appelant n'est pas propagée ; le
+  plafond B de la confiance est qualitatif.
 - Les grandeurs solaires ne tiennent compte ni de l'ombrage, ni du relief
   proche, ni de la salissure, traitée à part (section 9).
 

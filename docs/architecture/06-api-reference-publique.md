@@ -493,7 +493,9 @@ plein sud, depuis le GHI journalier de NASA POWER (`limite` abrégé) :
 
 Résultats discriminés par `granularite` : `journalier` (`instant: date`)
 ou `mensuel` (`instant` au format `YYYY-MM`). `degre_jour_climatisation`
-sort en mensuel. Le niveau de confiance des sorties F2 est `B`.
+sort en mensuel. Le niveau de confiance de chaque résultat suit la règle de
+propagation P (§5.2) : le plus bas des mesures lues pour son jour ou son mois,
+au plus B (modèle et paramètres déclarés).
 
 Le champ `limite` vaut `null`, sauf pour `poa_parametrable` et
 `poa_bifacial` en `moyenne_journaliere` : il dit alors le biais du midi
@@ -1172,7 +1174,9 @@ Chaque mesure porte :
 
 - `niveau_confiance_derive` : `A` / `B` / `C`, dérivé automatiquement par
   les règles R1-R4 à partir de la `methode_collecte` de la série et de la
-  `fiabilite` de la source.
+  `fiabilite` de la source. Une grandeur stockée garde le niveau fixé à son
+  calcul ; pour la fraction diffuse, un test vérifie que c'est celui de la
+  règle P (ADR-0025).
 - `niveau_confiance_override` : `A` / `B` / `C` ou `null`. Override
   éditorial avec justification obligatoire.
 - `niveau_effectif` (calculé) : `override` si non null, sinon `derive`.
@@ -1185,21 +1189,33 @@ l'ordre, la première qui matche l'emporte :
 | R1 | `source.fiabilite = 'faible'` | `C` |
 | R2 | `methode_collecte = 'expertise_humaine'` (R1 négative) | `C` |
 | R3 | `methode_collecte = 'mesure_directe'` ET `source.fiabilite = 'haute'` | `A` |
+| P | `methode_collecte = 'calcul_derive'`, niveaux des entrées connus | le plus bas des entrées et du plafond |
 | R4 | tous les autres cas (catch-all) | `B` |
+
+La règle de propagation P (ADR-0025) vaut aussi pour les calculs à la volée de
+`/v1/grandeurs` : une valeur calculée prend le niveau effectif le plus bas des
+mesures de sa période, sans dépasser le plafond de sa méthode (B par défaut, A
+pour un calcul exact sans modèle ni hypothèse, comme les P50/P90 de
+`ghi_exceedance`). `taux_salissure_proxy`, modèle cumulatif, prend le niveau
+de tous les jours retenus, comme `pr_realiste` quand il tient compte de la
+salissure.
 
 Interprétation :
 
-- `A` : haute confiance, réservée aux mesures terrain. Seule une source à
-  méthode `mesure_directe` et `fiabilite=haute` (une station sol) satisfait
-  R3. Aucune série n'est en confiance A au Burkina Faso.
+- `A` : haute confiance, réservée aux mesures terrain et aux calculs exacts
+  qui n'utilisent qu'elles (règle P). Seule une source à méthode
+  `mesure_directe` et `fiabilite=haute` (une station sol) satisfait R3.
+  Aucune série n'est en confiance A au Burkina Faso.
 - `B` : confiance moyenne (modèle satellitaire ou réanalyse, source haute
-  fiabilité), niveau dominant du substrat modélisé.
-- `C` : confiance basse (source faible, ou expertise sans validation
-  instrumentale).
+  fiabilité, ou grandeur calculée par un modèle ou à partir de valeurs B),
+  niveau dominant du substrat modélisé.
+- `C` : confiance basse (source faible, expertise sans validation
+  instrumentale, ou calcul tiré d'une valeur C).
 
 La confiance A n'est pas un champ de `sources` : elle est dérivée. Une
 source ne porte que sa `fiabilite` ; le A émerge de la combinaison R3 sur
-une mesure directe terrain.
+une mesure directe terrain, puis, par la règle P, des calculs exacts tirés de
+ces mesures.
 
 ### 5.3 Statut éditorial
 
@@ -1339,7 +1355,8 @@ un déploiement se lit via `/v1/series` (filtre `source`).
 
 Toutes ces sources portent `fiabilite=haute` ; leurs méthodes de collecte
 (`modele_satellitaire`, `reanalyse`, `calcul_derive`) donnent la confiance B
-par la règle R4.
+par la règle R4. La fraction diffuse de `kuma_calculs` a aussi le niveau que
+la règle P donne à ses entrées, B (ADR-0025).
 
 ### 7.2 Normes techniques mobilisées (couche C)
 

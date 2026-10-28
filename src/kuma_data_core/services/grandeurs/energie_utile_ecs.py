@@ -37,7 +37,8 @@ Limitations documentées :
   équivalent (responsabilité appelant).
 - T_amb = T2M MERRA-2 de NASA POWER, sans correction d'altitude.
 
-Niveau de confiance dérivé uniforme ``'B'``.
+Niveau de confiance : le plus bas des entrées, au plus ``PLAFOND_CONFIANCE``
+(B), par la règle de propagation P que la route applique (ADR-0025).
 
 Pattern fonction publique pure ``calculer_energie_utile_ecs`` +
 fonctions privées. Aucune dépendance SQL, testable unitairement.
@@ -73,6 +74,10 @@ from kuma_data_core.api.v1.schemas.grandeurs import (
     ParametresEnergieUtileECS,
     ResultatJournalier,
 )
+from kuma_data_core.editorial.niveaux_confiance import NiveauConfiance
+
+PLAFOND_CONFIANCE: NiveauConfiance = "B"
+"""Plafond de confiance : modèle de calcul et paramètres déclarés, invérifiables."""
 
 # === Constantes module ====================================================
 
@@ -80,7 +85,7 @@ UNITE_ENERGIE_UTILE: str = "kWh/m²"
 """Unité de sortie : énergie cumulée journalière par m² de capteur."""
 
 NIVEAU_CONFIANCE_DERIVE_F2_V1: Literal["B"] = "B"
-"""Niveau de confiance uniforme v1."""
+"""Niveau provisoire du calcul pur, remplacé par la route (règle de propagation P)."""
 
 
 # === TypedDict d'entree ===================================================
@@ -171,7 +176,7 @@ def calculer_energie_utile_ecs(
 
     Itère sur les mesures journalières (T2M + irradiance) et renvoie une
     liste ordonnée de :class:`ResultatJournalier` (unité kWh/m² de
-    capteur). Niveau de confiance dérivé uniforme ``'B'``.
+    capteur). Niveau de confiance provisoire ``'B'``, remplacé par la route (règle P).
     """
     resultats: list[ResultatJournalier] = []
     for mesure in mesures:

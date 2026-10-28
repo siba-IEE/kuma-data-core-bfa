@@ -14,7 +14,7 @@ Fraction diffuse de l'irradiation, calculée par la migration 0009 aux
 | Pas | mensuel et annuel |
 | Période | 2001-2025 |
 | Localités | 47 provinces et 351 communes |
-| Confiance | B |
+| Confiance | B, celle de ses entrées NASA POWER (règle P, ADR-0025) |
 
 ## 2. Définition
 
@@ -68,7 +68,8 @@ d'agrégation.
   L'écart mensuel du DHI de CAMS à celui de NASA POWER vaut en moyenne
   -3,0 % aux communes, de -10,8 % en décembre-février à +4,0 % en
   juin-août (ADR-0012).
-- Aucune mesure au sol ne la vérifie : la confiance reste B.
+- Aucune mesure au sol ne la vérifie : la confiance reste B. Ratio exact, elle
+  passerait en A avec des DHI et GHI mesurés au sol en A (règle P, ADR-0025).
 
 ## 5. Valeurs observées, 2001-2025
 

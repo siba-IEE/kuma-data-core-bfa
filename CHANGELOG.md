@@ -3,6 +3,37 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.22.0
+
+- Confiance : règle de propagation P (ADR-0025), reprise du moteur. Une valeur
+  calculée prend le niveau effectif le plus bas des valeurs dont elle est
+  tirée, sur sa seule période, sans dépasser le plafond de sa méthode : B par
+  défaut, A pour un calcul exact sans modèle ni hypothèse (fraction diffuse,
+  P50/P90) dont la source de calcul est de fiabilité haute.
+  `propager_niveau_confiance` applique la règle ;
+  `calculer_niveau_confiance_derive` prend `niveaux_entrees` et `plafond`,
+  `NiveauxEntrees` range les niveaux par jour et par mois, et chaque module de
+  calcul de `services/grandeurs/` déclare `PLAFOND_CONFIANCE`.
+- `/v1/grandeurs` : le `niveau_confiance` des résultats suit la règle P. Les
+  lecteurs rangent le niveau effectif de chaque valeur lue (journalier par la
+  vue `v_mesures_journalieres`, horaire par jour UTC, mensuel par mois). Les
+  grandeurs paramétrables, `taux_salissure_proxy` et `pr_realiste` restent au
+  plus B et passent en C pour les jours ou les mois dont une entrée est C, et
+  sur toute la fenêtre pour la salissure, cumulative (`taux_salissure_proxy`,
+  et `pr_realiste` quand il en tient compte). `ghi_exceedance` prend le niveau
+  des mois de la normale 1991-2020, et la description OpenAPI de son
+  `niveau_confiance` le dit. Les séries du Burkina Faso, toutes en B, donnent
+  toujours B. L'avertissement `limite` de `pr_realiste` dit « Proxy API
+  (confiance au plus B) » au lieu de « Proxy API confiance B ». La constante
+  `ghi_exceedance.NIVEAU_CONFIANCE_DERIVE` est retirée.
+- La fraction diffuse stockée par la migration 0009, inchangée, a déjà le
+  niveau que la règle P donne à ses entrées NASA POWER : un test
+  d'intégration le vérifie avec la forme SQL de la règle.
+- Migration 0025 : les descriptions de `pr_realiste` et de
+  `taux_salissure_proxy` disent « confiance au plus B », et le commentaire de
+  `grandeurs_metier.niveau_confiance_derive` cite la règle P. Aucune valeur ni
+  aucun niveau ne change.
+
 ## 0.21.0
 
 - Le niveau de confiance des séries chargées est dérivé par les règles R1 à R4

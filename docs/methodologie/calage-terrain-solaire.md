@@ -10,7 +10,8 @@
 Toutes les séries du dépôt sont en confiance B : modèles satellitaires et
 réanalyses (règle R4, voir
 [confiance et statuts](../contribution/confiance-et-statuts.md)). La
-confiance A est réservée à la mesure sol (règle R3) ; la couche A est vide.
+confiance A est réservée à la mesure sol (règle R3) et aux calculs exacts qui
+n'utilisent que des mesures A (règle P, ADR-0025) ; la couche A est vide.
 
 Le terrain sert à caler le satellite. Une station donne une vérité de
 point sur sa période de mesure ; le satellite et la réanalyse donnent la
@@ -91,6 +92,9 @@ chaque station (validation croisée).
 - B calé : le champ satellite corrigé sur la zone homogène, avec un résiduel
   documenté qui croît avec la distance climatique à la station.
 - B : hors de cette zone.
+- Grandeurs calculées : le plus bas de leurs entrées (règle P). Une station en
+  A fait passer en A la fraction diffuse ou les P50/P90 tirés de ses seules
+  mesures, pas les grandeurs paramétrables ni les proxys, plafonnés à B.
 
 Le schéma n'a pas de niveau « B calé » : un niveau de plus, un champ de
 résiduel ou un override éditorial restent à arbitrer.

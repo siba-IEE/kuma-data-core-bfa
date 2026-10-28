@@ -4,7 +4,9 @@ Vérifie que les fiches de sources, les descriptions de grandeurs, les notes
 d'unités, les notes publiques des séries et les commentaires du schéma ne portent
 plus le contexte guinéen ni le vocabulaire des chantiers du dépôt d'origine, que
 la fiche ``esmap_wapp`` décrit le jeu burkinabè, et que les notes ERA5 de PVGIS
-attribuent la hausse du GHI de 2021-2023 à ERA5 (ADR-0024).
+attribuent la hausse du GHI de 2021-2023 à ERA5 (ADR-0024). Vérifie aussi que les
+textes des grandeurs calculées suivent la règle de propagation P (migration 0025,
+ADR-0025).
 """
 
 from __future__ import annotations
@@ -186,3 +188,24 @@ def test_renvois_aux_documents(db_session: Session) -> None:
     renvois = {r for t in textes if t for r in re.findall(r"docs/[\w./-]+\.md", t)}
     assert renvois, "au moins un renvoi attendu"
     assert sorted(r for r in renvois if not (_RACINE / r).is_file()) == []
+
+
+def test_confiance_des_grandeurs_calculees(db_session: Session) -> None:
+    """Les grandeurs calculées à la volée sont au plus B, et la colonne cite la règle P."""
+    descriptions = list(
+        db_session.execute(
+            text(
+                "SELECT description FROM grandeurs_referentiel "
+                "WHERE code IN ('pr_realiste', 'taux_salissure_proxy')"
+            )
+        ).scalars()
+    )
+    assert len(descriptions) == 2
+    assert all("confiance au plus B" in d and "confiance B." not in d for d in descriptions)
+    commentaire = db_session.execute(
+        text(
+            "SELECT col_description(attrelid, attnum) FROM pg_attribute "
+            "WHERE attrelid = 'grandeurs_metier'::regclass AND attname = 'niveau_confiance_derive'"
+        )
+    ).scalar_one()
+    assert "règle de propagation P" in commentaire

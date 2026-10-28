@@ -18,8 +18,8 @@ Superpose les 3 mécaniques transverses + ``version_formule`` :
   ``valide_humain``, ``publie``, ``deprecie``.
 - Versioning temporel ``valide_du``/``valide_au`` TIMESTAMPTZ + EXCLUDE
   BTree-GiST.
-- Niveau de confiance A/B/C dérivé par règles R1-R4 + override éditorial
-  avec justification obligatoire.
+- Niveau de confiance A/B/C dérivé par règles R1-R4 et propagation P
+  + override éditorial avec justification obligatoire.
 
 Helper SQLAlchemy :
 
@@ -145,9 +145,11 @@ class GrandeurMetier(Base):
         String(1),
         nullable=False,
         comment=(
-            "Niveau de confiance dérivé par la couche de service à partir des règles R1 à R4 "
-            "(docs/contribution/confiance-et-statuts.md), selon la méthode de collecte et la "
-            "source de la série. A = haute, B = moyenne, C = basse."
+            "Niveau de confiance dérivé à partir des règles R1 à R4, selon la méthode de "
+            "collecte et la source de la série, et de la règle de propagation P pour une "
+            "grandeur calculée : le plus bas des niveaux de ses entrées, au plus le plafond "
+            "de sa méthode (docs/contribution/confiance-et-statuts.md). "
+            "A = haute, B = moyenne, C = basse."
         ),
     )
     niveau_confiance_override: Mapped[str | None] = mapped_column(

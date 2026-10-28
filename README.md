@@ -4,11 +4,13 @@
 
 Instance dédiée au Burkina Faso du moteur Kuma Data Core. Moteur de données à
 confiance tracée : chaque valeur porte sa source, sa méthode, son niveau de
-confiance (A/B/C), ses dates de validité et son statut éditorial. Versionnement
-temporel non destructif, audit applicatif par triggers. Les séries journalières
-brutes en masse font exception : stockage dense, sans versionnement par valeur,
-rééditées en bloc depuis des fichiers versionnés (ADR-0017). Base PostgreSQL,
-API FastAPI. Domaine : la ressource solaire au Burkina Faso.
+confiance (A/B/C ; pour une grandeur calculée, le plus bas de ses entrées,
+plafonné selon la méthode), ses dates de validité et son statut éditorial.
+Versionnement temporel non destructif, audit applicatif par triggers. Les
+séries journalières brutes en masse font exception : stockage dense, sans
+versionnement par valeur, rééditées en bloc depuis des fichiers versionnés
+(ADR-0017). Base PostgreSQL, API FastAPI. Domaine : la ressource solaire au
+Burkina Faso.
 
 Le code moteur est générique : le pays est un axe de classification, pas une base
 séparée. Cette instance repart d'un socle propre, sans donnée d'une autre

@@ -22,7 +22,7 @@ leur retrait passe par un soft delete (`actif`, `desactive_le`).
 - **C** (basse) : donnée estimée par expertise sans validation instrumentale, ou
   issue d'une source de fiabilité faible.
 
-La confiance est dérivée par quatre règles, évaluées dans l'ordre ; la première
+La confiance est dérivée par cinq règles, évaluées dans l'ordre ; la première
 qui s'applique fixe la valeur :
 
 | Ordre | Condition | Résultat |
@@ -30,6 +30,7 @@ qui s'applique fixe la valeur :
 | R1 | source de fiabilité `faible` | C |
 | R2 | méthode de collecte `expertise_humaine` | C |
 | R3 | méthode `mesure_directe` et source de fiabilité `haute` | A |
+| P | méthode `calcul_derive`, niveaux des entrées connus | le plus bas des entrées et du plafond |
 | R4 | tous les autres cas | B |
 
 R4 est le cas par défaut : une donnée satellitaire ou de réanalyse (NASA POWER,
@@ -37,20 +38,30 @@ CAMS, ERA5) est en confiance B. Une décision éditoriale peut poser un override
 sur une ligne, avec une justification obligatoire conservée dans le commentaire
 éditorial.
 
-Les règles s'appliquent au chargement. Le contrat d'une famille de séries
+Les règles R1 à R4 s'appliquent au chargement. Le contrat d'une famille de séries
 (`db/seeds/series_csv.py`) déclare la méthode de collecte et recopie la
 fiabilité de la fiche de sa source ; le niveau de ses valeurs en découle, sans
 saisie. Le chargement dense refuse un contrat dont la fiabilité n'est plus
 celle de la fiche. Pour toutes les séries, un test d'intégration compare le
 niveau stocké à celui que les règles donnent pour leur méthode et leur source.
 Une série `mesure_directe` d'une source de fiabilité haute (`esmap_wapp`, par
-exemple) entrerait donc en A sans saisie. Les grandeurs dérivées stockées
-(migrations 0009 et 0014) gardent le B écrit par leur migration : aucune règle
-ne propage encore le niveau des mesures dont elles sont calculées.
+exemple) entrerait donc en A sans saisie.
 
-**La confiance A est réservée aux données validées au sol.** Un fait exact tiré
-d'une source satellitaire reste B, avec un caveat documenté, tant qu'il n'a pas
-été confronté à une mesure terrain. La définition publiée est rappelée dans la
+La règle P ([ADR-0025](../decisions/0025-propagation-de-la-confiance.md))
+donne à une valeur calculée le niveau effectif (override compris) le plus bas
+des valeurs dont elle est tirée, sur sa seule période, sans dépasser le
+plafond de sa méthode. Le plafond est B, sauf pour un calcul exact sans modèle
+ni hypothèse de l'utilisateur (fraction diffuse, P50/P90), qui peut atteindre
+A à partir de mesures A. Les grandeurs paramétrables et les proxys de
+`/v1/grandeurs` restent au plus B et descendent en C avec leurs entrées. La
+fraction diffuse stockée (migration 0009) a le niveau que P donne à ses
+entrées NASA POWER, B, et un test le vérifie ; les écarts entre sources
+(0009) et la dégénérescence de pixel (0014) gardent le B de leurs migrations.
+
+**La confiance A est réservée aux données validées au sol** et aux calculs
+exacts qui n'utilisent qu'elles. Un fait exact tiré d'une source satellitaire
+reste B, avec un caveat documenté, tant qu'il n'a pas été confronté à une
+mesure terrain. La définition publiée est rappelée dans la
 [référence d'API](../architecture/06-api-reference-publique.md).
 
 ## Statut éditorial

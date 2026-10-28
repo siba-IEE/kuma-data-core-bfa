@@ -34,7 +34,8 @@ Limitations documentées :
   0,8 °C, ADR-0024).
 - Balanced Point Method (ASHRAE) hors périmètre F2.
 
-Niveau de confiance dérivé uniforme ``'B'``.
+Niveau de confiance : le plus bas des entrées, au plus ``PLAFOND_CONFIANCE``
+(B), par la règle de propagation P que la route applique (ADR-0025).
 
 Pattern fonction publique pure ``calculer_degre_jour_climatisation`` +
 fonctions privées. Aucune dépendance SQL, testable unitairement.
@@ -60,6 +61,10 @@ from kuma_data_core.api.v1.schemas.grandeurs import (
     ParametresDegreJourClimatisation,
     ResultatMensuel,
 )
+from kuma_data_core.editorial.niveaux_confiance import NiveauConfiance
+
+PLAFOND_CONFIANCE: NiveauConfiance = "B"
+"""Plafond de confiance : modèle de calcul et paramètres déclarés, invérifiables."""
 
 # === Constantes module ====================================================
 
@@ -71,7 +76,7 @@ HEURES_PAR_JOUR: float = 24.0
 (°C) en degrés-jours (°C·j). Méthode Erbs 1983."""
 
 NIVEAU_CONFIANCE_DERIVE_F2_V1: Literal["B"] = "B"
-"""Niveau de confiance uniforme v1."""
+"""Niveau provisoire du calcul pur, remplacé par la route (règle de propagation P)."""
 
 
 # === TypedDict d'entree ===================================================
@@ -144,7 +149,7 @@ def calculer_degre_jour_climatisation(
     Itère sur les mesures journalières T2M, calcule l'écart positif à la
     base T_b par jour, et agrège par mois calendaire. Retourne une liste
     ordonnée de :class:`ResultatMensuel` (format ``YYYY-MM``, unité
-    ``°C·j``). Niveau de confiance dérivé uniforme ``'B'``.
+    ``°C·j``). Niveau de confiance provisoire ``'B'``, remplacé par la route (règle P).
     """
     djc_par_mois = _agreger_djc_par_mois(
         mesures=mesures,
@@ -205,8 +210,8 @@ def calculer_degre_jour_climatisation_horaire(
         Liste de :class:`ResultatMensuel` (format ``YYYY-MM``, unité
         ``°C·j``). Liste vide si ``mesures`` est vide.
 
-    Aucune dépendance SQL, idempotent, pur. Niveau de confiance dérivé
-    uniformément ``'B'`` (qualité source, pas méthode).
+    Aucune dépendance SQL, idempotent, pur.
+    Niveau de confiance provisoire ``'B'``, remplacé par la route (règle P).
     """
     djc_par_mois = _agreger_djc_horaire_par_mois(
         mesures=mesures,
