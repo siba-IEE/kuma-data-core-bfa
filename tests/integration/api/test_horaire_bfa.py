@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import statistics
 from collections.abc import Iterator
+from datetime import date, timedelta
 from types import SimpleNamespace
 from typing import Any
 
@@ -19,6 +20,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from kuma_data_core.api.main import app
+from kuma_data_core.core.config import get_settings
 from kuma_data_core.db.session import get_engine, obtenir_session
 
 pytestmark = pytest.mark.integration
@@ -416,3 +418,74 @@ def test_plage_horaire_trop_longue_en_422(client: TestClient, headers_auth: dict
     )
     assert response.status_code == 422, response.text
     assert response.json()["erreur"]["code"] == "VALIDATION_VALEUR_INVALIDE"
+
+
+def _disponibilite(
+    client: TestClient, headers: dict[str, str], chemin: str, **params: Any
+) -> dict[str, Any]:
+    response = client.get(f"/v1/horaire/{chemin}/disponibilite", params=params, headers=headers)
+    assert response.status_code == 200, response.text
+    reponse: dict[str, Any] = response.json()
+    return reponse
+
+
+def test_disponibilite_selon_la_source(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """Sans source, la plage du relais NASA POWER ; avec CAMS, celle de la série stockée."""
+    relais = _disponibilite(client, headers_auth, "bfa_com_ouagadougou/ghi")
+    fin_relais = (date.today() - timedelta(days=151)).isoformat()
+    assert (relais["source"], relais["plage_disponible"], relais["statut_editorial"]) == (
+        "nasa_power",
+        {"debut": "2001-01-01", "fin": fin_relais},
+        "passe_plat_non_valide",
+    )
+    cams = _disponibilite(client, headers_auth, "bfa_com_ouagadougou/ghi", source="cams_radiation")
+    assert (cams["source"], cams["plage_disponible"], cams["statut_editorial"]) == (
+        "cams_radiation",
+        {"debut": "2021-01-01", "fin": "2025-12-31"},
+        "valide_auto",
+    )
+    # Le GHI par ciel clair, que seul CAMS sert, ne se relaie pas.
+    ciel_clair = _disponibilite(client, headers_auth, "bfa_com_ouagadougou/ghi_ciel_clair")
+    assert (ciel_clair["source"], ciel_clair["plage_disponible"]["fin"]) == (
+        "cams_radiation",
+        "2025-12-31",
+    )
+
+
+def test_disponibilite_en_edition_figee(
+    client: TestClient, headers_auth: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Sans relais, la plage est celle de la série stockée, et 404 hors des points pilotes."""
+    figee = get_settings().model_copy(update={"edition_figee": True})
+    monkeypatch.setattr("kuma_data_core.api.v1.horaire.get_settings", lambda: figee)
+    stockee = _disponibilite(client, headers_auth, "bfa_dep_dori/ghi")
+    assert (stockee["source"], stockee["plage_disponible"], stockee["statut_editorial"]) == (
+        "nasa_power",
+        {"debut": "2021-01-01", "fin": "2025-12-31"},
+        "valide_auto",
+    )
+    response = client.get("/v1/horaire/bfa_prov_kadiogo/ghi/disponibilite", headers=headers_auth)
+    assert response.status_code == 404, response.text
+    assert response.json()["erreur"]["code"] == "RESSOURCE_SERIE_INCONNUE"
+
+
+def test_code_court_inconnu(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """Seul le code complet de la localité est reconnu : un code court répond 404."""
+    response = client.get(
+        "/v1/horaire/com_ouagadougou/ghi",
+        params={"periode_debut": "2024-01-01", "periode_fin": "2024-01-01"},
+        headers=headers_auth,
+    )
+    assert response.status_code == 404, response.text
+    assert response.json()["erreur"]["code"] == "RESSOURCE_LOCALITE_INCONNUE"
+
+
+def test_disponibilite_sans_serie_stockee(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """L'horaire CAMS n'existe qu'aux points pilotes : ailleurs, 404."""
+    response = client.get(
+        "/v1/horaire/bfa_prov_kadiogo/ghi/disponibilite",
+        params={"source": "cams_radiation"},
+        headers=headers_auth,
+    )
+    assert response.status_code == 404, response.text
+    assert response.json()["erreur"]["code"] == "RESSOURCE_SERIE_INCONNUE"

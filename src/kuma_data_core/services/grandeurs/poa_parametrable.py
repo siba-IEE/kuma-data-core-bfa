@@ -373,8 +373,9 @@ def calculer_poa_parametrable_horaire(
     heure) puis somme sur la journée calendaire (UTC) pour obtenir un POA
     journalier. Contrairement à la méthode journalière (Perez au midi
     solaire appliqué au total du jour), l'intégration horaire ne surestime
-    pas le gain d'un plan incliné : elle lève le biais de moyennage
-    (+16 % mesuré pour un plan incliné).
+    pas le gain d'un plan incliné : elle lève le biais de moyennage (à
+    Ouagadougou en 2024, plan à 15° plein sud, la méthode journalière la
+    dépasse de 8 % avec NASA POWER et de 21 % avec CAMS Radiation).
 
     Vectorisé via ``pvlib`` (position solaire + transposition sur tous les
     instants en une passe). Géométrie au milieu de l'heure et direct

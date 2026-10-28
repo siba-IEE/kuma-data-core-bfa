@@ -1,8 +1,9 @@
 """Modèle SQLAlchemy de la table ``mesures_ressource``.
 
 Table métier opérationnelle. Stocke les mesures journalières des
-données brutes ingérées depuis sources externes (NASA POWER ; ECMWF
-ERA5, ANM Guinée, etc. en phases ultérieures).
+données brutes ingérées depuis sources externes en stockage épars (au
+Burkina Faso : NASA POWER et CAMS EAC4 aux provinces ; les séries denses
+sont dans ``mesures_journalieres_denses``).
 
 Identité métier (Option D) : 2-uplet ``(serie_id, instant_mesure)`` via
 FK vers ``series_metadonnees`` qui porte le triplet
@@ -23,7 +24,7 @@ Helper SQLAlchemy :
 
 - ``@hybrid_property niveau_effectif`` : renvoie l'override si non NULL,
   sinon le dérive. Équivalent Python de la vue SQL
-  ``v_mesures_avec_niveau_effectif`` créée en migration 018.
+  ``v_mesures_avec_niveau_effectif``.
 """
 
 from __future__ import annotations
@@ -156,9 +157,9 @@ class MesureRessource(Base):
     def niveau_effectif(self) -> str:
         """Renvoie ``niveau_confiance_override`` si non NULL, sinon ``niveau_confiance_derive``.
 
-        Équivalent Python de la vue SQL ``v_mesures_avec_niveau_effectif``
-        (à créer en migration 018). Permet aux callers d'obtenir le niveau
-        consommable sans logique conditionnelle dispersée.
+        Équivalent Python de la vue SQL ``v_mesures_avec_niveau_effectif``. Permet aux
+        callers d'obtenir le niveau consommable sans logique conditionnelle
+        dispersée.
         """
         return (
             self.niveau_confiance_override
@@ -191,8 +192,8 @@ class MesureRessource(Base):
             "instant_mesure",
             postgresql_where=text("valide_au IS NULL"),
         ),
-        # Commentaire de table porté sur l'ORM pour cohérence avec la
-        # migration 014 (alembic check).
+        # Commentaire de table porté sur l'ORM pour cohérence avec la base
+        # (migration 0024, alembic check).
         {
             "comment": (
                 "Mesures journalières ingérées depuis les sources externes, en stockage versionné "

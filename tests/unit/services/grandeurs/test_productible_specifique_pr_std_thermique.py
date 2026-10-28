@@ -68,8 +68,8 @@ def test_moyenne_sur_deux_annees_identiques_egale_une_annee() -> None:
         assert math.isclose(a, b, rel_tol=1e-12, abs_tol=1e-12)
 
 
-def test_ordre_de_grandeur_janvier_kankan_type() -> None:
-    """Test de sanity : Kankan à 5.7 kWh/m²/j en janvier, 25°C ambiant type sec,
+def test_ordre_de_grandeur_janvier_sec_type() -> None:
+    """Test de sanity : 5.7 kWh/m²/j en janvier, 25°C ambiant type sec,
     NOCT 45, coeff -0.4 %/°C, PR_STD 0.78975. Sur 31 jours, on attend
     une centaine de kWh/kWc.
     """
@@ -90,7 +90,7 @@ def test_ordre_de_grandeur_janvier_kankan_type() -> None:
     attendu_par_jour = ghi * PR_STD * ratio
     attendu_mois = attendu_par_jour * 31
     assert math.isclose(res[0], attendu_mois, rel_tol=1e-12)
-    # Sanity : ordre de grandeur 120-160 kWh/kWc pour janvier chaud Kankan.
+    # Sanity : ordre de grandeur 120-160 kWh/kWc pour un janvier chaud et sec.
     assert 100.0 < res[0] < 200.0
 
 

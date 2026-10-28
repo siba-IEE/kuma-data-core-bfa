@@ -2,12 +2,9 @@
 
 Premier modèle de Kuma Data Core, support de toutes les autres tables
 via les colonnes d'audit ``cree_par`` et ``modifie_par`` (FK vers
-``contributeurs.id``). La table est auto-référente : la première ligne
-(seed initial inséré par la migration 001) est créée avec
-``cree_par = NULL`` et ``modifie_par = NULL``, faute d'antécédent.
-
-Note : la colonne ``localite_id`` n'apparaît pas ici. Elle sera ajoutée
-par une migration ultérieure, une fois la table ``localites`` créée.
+``contributeurs.id``). La table est auto-référente : la première ligne,
+insérée par la migration 0002, est créée avec ``cree_par = NULL`` et
+``modifie_par = NULL``, faute d'antécédent.
 """
 
 from __future__ import annotations

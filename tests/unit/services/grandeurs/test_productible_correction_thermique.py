@@ -1,11 +1,11 @@
 """Tests unitaires de ``services.grandeurs.productible_correction_thermique``.
 
-Couvre le modele NOCT simple (Ross 1980) sur la localite pilote
-Conakry-Kaloum. Fonctions pures sans mock DB.
+Couvre le modele NOCT simple (Ross 1980) sur des series tropicales
+simulees. Fonctions pures sans mock DB.
 
 Convention fixtures : valeurs T2M en plage tropicale realiste
-(20-35 °C, mediane Conakry 27 °C), irradiance en plage realiste
-(3-7 kWh/m²/jour pour la Guinee selon saison). Aucune valeur arbitraire
+(20-35 °C, mediane 27 °C), irradiance en plage realiste
+(3-7 kWh/m²/jour selon la saison). Aucune valeur arbitraire
 hors physique tropicale.
 """
 
@@ -33,7 +33,7 @@ pytestmark = pytest.mark.unit
 def _parametres_standard() -> ParametresProductibleCorrectionThermique:
     """Parametres typiques c-Si : NOCT 45 °C, gamma_Pmax -0.4 %/°C, 1 kWc."""
     return ParametresProductibleCorrectionThermique(
-        code_serie_source="gin_conakry_ghi_nasa_power_2021_2025",
+        code_serie_source="nasa_power_ghi_journalier_bfa_com_ouagadougou",
         periode_debut=date(2024, 6, 15),
         periode_fin=date(2024, 6, 15),
         noct_degc=45,
@@ -45,7 +45,7 @@ def _parametres_standard() -> ParametresProductibleCorrectionThermique:
 def test_t_therm_1_cas_standard() -> None:
     """T-THERM-1 : cas standard journalier, productible coherent positif.
 
-    Conakry juin (saison chaude), T2M=28°C, GHI=5.5 kWh/m²/jour.
+    Juin (saison chaude), T2M=28°C, GHI=5.5 kWh/m²/jour.
     Productible attendu : 5 kWh/jour (1 kWc x 5 h equivalentes
     x facteur thermique < 1).
     """
@@ -96,7 +96,7 @@ def test_t_therm_2_temperature_stc_facteur_unite() -> None:
 
 
 def test_t_therm_3_temperature_haute_degrade() -> None:
-    """T-THERM-3 : T_amb elevee (Conakry saison chaude) degrade le productible."""
+    """T-THERM-3 : T_amb elevee (saison chaude) degrade le productible."""
     mesures_froide: list[MesureJourThermique] = [
         {
             "instant_mesure": date(2024, 1, 15),

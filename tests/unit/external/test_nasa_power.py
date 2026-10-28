@@ -34,7 +34,7 @@ pytestmark = pytest.mark.unit
 
 
 # ---------------------------------------------------------------------------
-# Payload de référence (Conakry-Kaloum, 3 jours, 2 paramètres)
+# Payload de référence (point à 9,5 °N, 3 jours, 2 paramètres)
 # ---------------------------------------------------------------------------
 
 

@@ -46,7 +46,7 @@ def fiche_exemple() -> dict[str, Any]:
             "logiciel": {"version": "1.1.0", "enregistre_le": "2026-10-02"},
             "lieu": {"sous_prefecture": "GN00400113"},
             "panneaux": {"inclinaison_deg": 12, "orientation_deg": 0, "module_wc": 450},
-            "ressource": {"mode": "brut", "version_base": "calage-guinee-v3"},
+            "ressource": {"mode": "brut", "version_base": "calage-bfa-v1"},
             "appareils": [
                 {
                     "nom": "Réfrigérateur",
@@ -108,7 +108,7 @@ def test_fiche_minimale_acceptee() -> None:
     [
         ((), "nom_etude", "Habitation Camara"),
         (("logiciel",), "chemin_fichier", "C:/Users/x/etude.json"),
-        (("lieu",), "nom_localite", "Tokounou"),
+        (("lieu",), "nom_localite", "Dori"),
         (("panneaux",), "marque", "X"),
     ],
 )
@@ -194,7 +194,7 @@ def fiche_minireseau_exemple() -> dict[str, Any]:
         "fiche": {
             "logiciel": {"version": "1.1.0", "enregistre_le": "2026-10-02"},
             "lieu": {"point": {"latitude_deg": 7.7769, "longitude_deg": -9.1861}},
-            "ressource": {"mode": "cale", "version_base": "calage-guinee-v3"},
+            "ressource": {"mode": "cale", "version_base": "calage-bfa-v1"},
             "champ": {
                 "pr": 0.78,
                 "convention_pr": "tout_compris",
@@ -352,7 +352,7 @@ def fiche_pv_champ_exemple() -> dict[str, Any]:
         "fiche": {
             "logiciel": {"version": "1.1.0", "enregistre_le": "2026-10-02"},
             "lieu": {"sous_prefecture": "GN00400113"},
-            "ressource": {"mode": "cale", "version_base": "calage-guinee-v3"},
+            "ressource": {"mode": "cale", "version_base": "calage-bfa-v1"},
             "plan": {"inclinaison_deg": 12, "orientation_deg": 0},
             "conditions": {"kwc_cible": 50, "t_min_c": 12, "t_max_c": 42, "hse_moyenne": None},
             "module": {

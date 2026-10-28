@@ -1073,7 +1073,7 @@ def grandeur_productible_pr_fourni(
       ``INCOMPATIBILITE_SOURCE_GRANDEUR`` (une série F1 calculée Kuma
       n'est pas admissible comme source brute d'un calcul F2).
 
-    Variantes PR_W et PR_C non exposées v1 (TMY Guinée non disponible).
+    Variantes PR_W et PR_C non exposées, faute d'année météorologique type.
     """
     serie = _resoudre_serie_source(session, params.code_serie_source)
 
@@ -1492,7 +1492,7 @@ def grandeur_degre_jour_climatisation(
 def _resoudre_serie_ghi_mensuelle_1991_2020(
     session: Session, code_localite: str
 ) -> tuple[int, str]:
-    """Résout (serie_id, code_serie) de la série GHI mensuelle 1991-2020 d'une ville.
+    """Résout (serie_id, code_serie) de la série GHI mensuelle 1991-2020 d'une localité.
 
     Cherche dans ``series_metadonnees`` la série **mensuelle** active de la
     localité ciblée avec ``grandeur_code = 'ghi'``, ``source.code =
@@ -1500,7 +1500,7 @@ def _resoudre_serie_ghi_mensuelle_1991_2020(
     POWER peut commencer le même jour : le filtre de granularité l'écarte).
 
     Raises:
-        ExceptionKuma : HTTP 404 ``RESSOURCE_INCONNUE`` si la localité
+        ExceptionKuma : HTTP 404 ``RESSOURCE_LOCALITE_INCONNUE`` si la localité
             n'est pas trouvée ou si aucune série GHI mensuelle NASA POWER
             commençant en 1991 n'y est rattachée.
     """
@@ -1589,12 +1589,12 @@ def grandeur_ghi_exceedance(
     _cle: CleApiValidee,
     session: Annotated[Session, Depends(obtenir_session)],
 ) -> ReponseGhiExceedance:
-    """Calcule à la volée P50 et P90 de l'irradiation annuelle d'une ville.
+    """Calcule à la volée P50 et P90 de l'irradiation annuelle d'une localité.
 
     Pipeline :
 
     1. Résolution de la série GHI mensuelle 1991-2020 de la localité
-       (404 ``RESSOURCE_INCONNUE`` si la ville n'est pas couverte).
+       (404 ``RESSOURCE_LOCALITE_INCONNUE`` si la localité n'est pas couverte).
     2. Lecture des 360 mesures mensuelles courantes (kWh/m²/jour).
     3. Calcul des totaux annuels (kWh/m²/an) par pondération
        journalière ``calendar.monthrange`` (années bissextiles incluses).

@@ -43,6 +43,8 @@ l'intégration horaire avec une autre source que NASA POWER.
   que seul CAMS sert, ne se relaie pas : une plage non couverte répond 400
   `PLAGE_TEMPORELLE_NON_DISPONIBLE`, avec la plage de la série stockée dans
   les détails. La capsule d'étude retient aussi la série de NASA POWER.
+  Depuis la version 0.20.0, `/v1/horaire/.../disponibilite` prend aussi
+  `source` et donne la plage de la série que sert `/v1/horaire`.
 - **Ingesteur :** `scripts/ingest_cams_radiation_horaire.py`, une requête
   par point, réponses brutes en cache. Il contrôle le pas d'une heure, la
   référence au temps universel, le point rappelé par l'en-tête et la version
@@ -100,8 +102,5 @@ l'intégration horaire avec une autre source que NASA POWER.
     température horaire (productible corrigé de la température, énergie utile
     ECS, productible à PR fourni avec correction de température) restent
     liées à la série NASA POWER ;
-  - `/v1/horaire/.../disponibilite` donne la plage du relais NASA POWER ; la
-    couverture d'une série CAMS ou du GHI par ciel clair se lit dans
-    `/v1/series` ;
   - le choix entre les deux séries reste à l'appelant : le calage sur les
     stations sol dira laquelle s'écarte (ADR-0014).

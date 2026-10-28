@@ -3,6 +3,28 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.20.0
+
+- `/v1/horaire/{localite}/{grandeur}/disponibilite` prend le paramètre
+  `source` et choisit la série comme `/v1/horaire` : plage du relais NASA
+  POWER, ou plage de la série stockée pour `source=cams_radiation`, pour le
+  GHI par ciel clair, que seul CAMS sert, et toujours en édition figée
+  (ADR-0023). La plage stockée est recoupée avec la fenêtre que
+  `/v1/horaire` accepte. La réponse nomme la source. Sans série stockée,
+  ou pour une grandeur inconnue, 404 `RESSOURCE_SERIE_INCONNUE` (200
+  auparavant) ; hors relais, une localité inconnue répond 404
+  `RESSOURCE_LOCALITE_INCONNUE` ; une `source` invalide répond 422.
+- `/v1/horaire` ne connaît plus que les codes complets du référentiel :
+  l'alias `gin_` hérité du dépôt d'origine est retiré.
+- `/v1/series` donne pour les séries horaires l'unité des valeurs servies
+  par `/v1/horaire` (Wh/m² pour le rayonnement) ; `/v1/health/db` et
+  `info.version` du schéma OpenAPI donnent la version du paquet installé,
+  au lieu de 0.1.0.
+- Textes du code ramenés au Burkina Faso : descriptions OpenAPI,
+  avertissements `limite` de `pr_realiste` et de `taux_salissure_proxy`
+  (sans les codes de limites du dépôt d'origine), docstrings, exemples des
+  tests et commentaires de `docker/`.
+
 ## 0.19.0
 
 - Textes publics du référentiel ramenés au Burkina Faso (migration 0024) :

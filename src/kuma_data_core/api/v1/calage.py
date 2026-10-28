@@ -6,7 +6,7 @@ k = 1/(1+biais), provenance et portée de transport. Donnée
 éditoriale de l'édition, lue telle quelle - aucun calcul amont,
 conforme au profil édition figée (D6).
 
-Codes localité complets (``gin_kankan``), alignés sur ``/v1/series``
+Codes localité complets (``bfa_dep_dori``), alignés sur ``/v1/series``
 et ``/v1/localites``. 404 ``RESSOURCE_INTROUVABLE`` si aucun
 référentiel actif n'existe pour le couple.
 """
@@ -47,9 +47,8 @@ def lister_referentiels_calage(
 
     Une entree par referentiel (code) : station, grandeur, version,
     serie sol de fondation et localites couvertes. C'est l'endpoint de
-    DECOUVERTE des consommateurs d'etude (genericite pays, residu 3) :
-    ajouter une station = publier son referentiel, aucun changement
-    cote consommateurs.
+    DECOUVERTE des consommateurs d'etude : ajouter une station =
+    publier son referentiel, aucun changement cote consommateurs.
     """
     rows = session.execute(
         text(

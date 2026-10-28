@@ -14,8 +14,8 @@ specifiques (``PvgisRateLimitError``, ``PvgisHttpError``,
 - T-RETRY-SARAH3-4 : 4x 503 -> raise PvgisHttpError.
 - T-RETRY-SARAH3-5 : 4x httpx.TimeoutException -> raise PvgisTimeoutError.
 - T-RETRY-SARAH3-6 : 4x httpx.RemoteProtocolError -> raise PvgisTimeoutError
-  (cas exact du flake CI observe sur migration 041 : disconnect
-  serveur PVGIS depuis les runners GitHub Actions).
+  (flake CI observe : disconnect serveur PVGIS depuis les runners
+  GitHub Actions).
 
 Patch ``time.sleep`` via ``conftest.py`` autouse pour acceleration
 (backoffs reels 1s+4s+16s neutralises).
@@ -151,10 +151,9 @@ def test_t_retry_sarah3_5_timeout_x4_raises_pvgis_timeout_error() -> None:
 def test_t_retry_sarah3_6_remote_protocol_error_x4_raises_pvgis_timeout_error() -> None:
     """T-RETRY-SARAH3-6 : 4 x httpx.RemoteProtocolError -> raise PvgisTimeoutError.
 
-    Cas exact du flake CI observe sur migration 041 : disconnect
-    serveur PVGIS upstream depuis les runners GitHub Actions. Le retry
-    transverse l'absorbe au meme titre que TimeoutException et leve
-    PvgisTimeoutError a l'epuisement.
+    Flake CI observe : disconnect serveur PVGIS upstream depuis les
+    runners GitHub Actions. Le retry transverse l'absorbe au meme titre
+    que TimeoutException et leve PvgisTimeoutError a l'epuisement.
     """
 
     def handler(request: httpx.Request) -> httpx.Response:

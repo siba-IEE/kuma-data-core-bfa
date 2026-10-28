@@ -1,7 +1,6 @@
 """Modèle SQLAlchemy de la table ``audit_log``.
 
-Reflet ORM de la table créée par la migration 005
-(``migrations/versions/2026_05_04_1700_creer_table_audit_log.py``).
+Reflet ORM de la table créée par la baseline (migration 0001).
 
 Cette table est conçue pour être consultée en lecture seule depuis
 l'applicatif. Les écritures sont effectuées exclusivement par la
@@ -19,8 +18,8 @@ Le modèle est néanmoins déclaré pour deux raisons :
 
 Conventions de stockage (``id_ligne_auditee TEXT`` plutôt que
 ``BIGINT``, ``type_operation CHAR(1)``, ``horodatage`` via
-``clock_timestamp()`` plutôt que ``now()``…) sont justifiées dans la
-docstring de la migration 005.
+``clock_timestamp()`` plutôt que ``now()``…) sont justifiées dans
+``docs/architecture/03-audit.md``.
 """
 
 from __future__ import annotations
@@ -73,7 +72,7 @@ class AuditLog(Base):
 
     # === Horodatage ===
     # clock_timestamp() (instant réel) et non now() (début de
-    # transaction). Cf. migration 005 et docs/architecture/03-audit.md.
+    # transaction). Cf. docs/architecture/03-audit.md.
     horodatage: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -82,7 +81,7 @@ class AuditLog(Base):
 
     # === Contraintes et index ===
     # Les noms exacts (CheckConstraint, Index) sont strictement alignés
-    # sur ceux de la migration 005 pour qu'``alembic check`` reste vert.
+    # sur ceux de la baseline (0001) pour qu'``alembic check`` reste vert.
     # Le tri DESC sur ``horodatage`` reflète l'usage dominant des
     # requêtes : « événements les plus récents en premier ».
     __table_args__ = (

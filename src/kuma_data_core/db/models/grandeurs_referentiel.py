@@ -8,7 +8,7 @@ Kuma (15 entrées prévues). Cité en aval par
 ``code`` (``UNIQUE NOT NULL``).
 
 PK ``id BIGINT IDENTITY`` + clé naturelle ``code`` : la fonction
-d'audit ``kuma_log_audit()`` (migration 005) suppose une colonne
+d'audit ``kuma_log_audit()`` (baseline 0001) suppose une colonne
 ``id`` sur les tables auditées (cf. ``docs/conventions/01-naming.md``
 §*Audit et convention de PK pour les tables auditées*).
 
@@ -154,8 +154,8 @@ class GrandeurReferentiel(Base):
             name="ck_grandeurs_referentiel_actif_desactive_coherent",
         ),
         Index("idx_grandeurs_referentiel_actif", "actif"),
-        # Commentaire de table porté sur l'ORM pour cohérence avec la
-        # migration 007 (alembic check). Le dict doit être le dernier
+        # Commentaire de table porté sur l'ORM pour cohérence avec la base
+        # (migration 0024, alembic check). Le dict doit être le dernier
         # élément du tuple __table_args__ selon la convention SQLAlchemy.
         {
             "comment": (

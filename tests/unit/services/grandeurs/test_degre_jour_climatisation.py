@@ -1,11 +1,10 @@
 """Tests unitaires de ``services.grandeurs.degre_jour_climatisation``.
 
 Couvre la methode moyenne journaliere (Erbs 1983 + Schoenau & Kehrig 1990)
-sur la localite pilote Conakry-Kaloum. Fonctions pures
-sans mock DB.
+sur des series T2M tropicales simulees. Fonctions pures sans mock DB.
 
-Convention fixtures : T_moy_jour en plage tropicale realiste Guinee
-(20-32 °C, T_amb moyenne annuelle Conakry 26.5 °C). Bases T_b standards :
+Convention fixtures : T_moy_jour en plage tropicale realiste
+(20-32 °C). Bases T_b standards :
 24 °C (RTAA DOM, CEDEAO), 26 °C (Butera 2014 tropical chaud humide).
 """
 
@@ -31,7 +30,7 @@ pytestmark = pytest.mark.unit
 def _parametres_base_24() -> ParametresDegreJourClimatisation:
     """Base T_b = 24°C (consigne CEDEAO climatisation tropicale)."""
     return ParametresDegreJourClimatisation(
-        code_serie_source="gin_conakry_t2m_nasa_power_2021_2025",
+        code_serie_source="nasa_power_t2m_journalier_bfa_com_ouagadougou",
         periode_debut=date(2024, 1, 1),
         periode_fin=date(2024, 1, 31),
         base_temperature_degc=24.0,
@@ -39,7 +38,7 @@ def _parametres_base_24() -> ParametresDegreJourClimatisation:
 
 
 def test_t_djc_1_cas_standard_un_mois() -> None:
-    """T-DJC-1 : 5 jours janvier Conakry T_moy=27°C, base=24°C.
+    """T-DJC-1 : 5 jours de janvier, T_moy=27°C, base=24°C.
 
     Ecart par jour = 27-24 = 3 °C·j. Cumule sur 5 jours = 15 °C·j.
     Resultat unique mensuel pour 2024-01.
@@ -138,7 +137,7 @@ def test_t_djc_7_idempotence() -> None:
 def test_t_djc_8_agregation_mensuelle_coherente() -> None:
     """T-DJC-8 : agregation 30 jours -> 1 ResultatMensuel.
 
-    Conakry saison chaude T_moy=29°C constant pendant 30 jours.
+    Saison chaude, T_moy=29°C constant pendant 30 jours.
     Ecart par jour = 29-24 = 5 °C·j. Cumule = 150 °C·j.
     """
     mesures: list[MesureJourTemperature] = [
@@ -159,7 +158,7 @@ def test_t_djc_8_agregation_mensuelle_coherente() -> None:
 def _parametres_horaire_base_26() -> ParametresDegreJourClimatisation:
     """Base T_b = 26°C, methode integration horaire."""
     return ParametresDegreJourClimatisation(
-        code_serie_source="gin_conakry_t2m_nasa_power_2001_2025",
+        code_serie_source="nasa_power_t2m_horaire_bfa_com_ouagadougou",
         periode_debut=date(2024, 1, 1),
         periode_fin=date(2024, 1, 31),
         base_temperature_degc=26.0,

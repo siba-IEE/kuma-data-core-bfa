@@ -3,8 +3,8 @@
 Deux endpoints :
 
 - ``GET /v1/localites`` (authentifie) : listing paginee des localites
-  presentes dans la table ``localites`` (6 villes Guinee +
-  entrees hierarchie : Afrique, Guinee pays, regions administratives).
+  presentes dans la table ``localites`` (au Burkina Faso : continent,
+  pays, 17 regions, 47 provinces et 351 communes, ADR-0007).
   Filtrage optionnel par ``pays_iso3``, ``type_localite``,
   ``parent_code``, ``actif``. Pagination offset-based
   ``limit=100/max=1000``.
@@ -111,20 +111,20 @@ def lister_localites(
     session: Annotated[Session, Depends(obtenir_session)],
     pays_iso3: Annotated[
         str | None,
-        Query(description="Filtre pays ISO 3166-1 alpha-3 (ex. GIN, SEN)"),
+        Query(description="Filtre pays ISO 3166-1 alpha-3 (ex. BFA)"),
     ] = None,
     type_localite: Annotated[
         str | None,
         Query(
             description=(
                 "Filtre type : continent, region_supranationale, pays, "
-                "region_administrative, commune, site"
+                "region_administrative, prefecture, commune, site"
             ),
         ),
     ] = None,
     parent_code: Annotated[
         str | None,
-        Query(description="Filtre code de la localite parente (ex. gin pour villes guineennes)"),
+        Query(description="Filtre code de la localite parente (ex. bfa pour les regions)"),
     ] = None,
     actif: Annotated[
         bool | None, Query(description="Filtre actif (TRUE/FALSE), defaut TRUE")
@@ -245,8 +245,7 @@ def lister_localites(
         "dont la climatologie mensuelle echantillonne la cellule de "
         "grille contenant le point. Le plus-proche-voisin naif est "
         "faux : la localite la plus proche peut appartenir a une autre "
-        "cellule (cas demontre : Tokounou est plus proche de Kankan "
-        "mais dans la cellule de Kerouane)."
+        "cellule."
     ),
 )
 def resoudre_point(
@@ -262,10 +261,9 @@ def resoudre_point(
     mensuelle active de la grandeur demandee sur la periode de
     reference 1991-2020 (les points d'ingestion du referentiel). La
     cellule est celle de la grille de la source de climatologie
-    (1 degre x 1 degre, frontieres aux degres entiers - verification
-    empirique du 2026-07-20 : la moyenne 1991-2020 de la serie de
-    Kerouane reproduit le releve au point de Tokounou, meme cellule,
-    ecart nul sur les 12 mois).
+    (1 degre x 1 degre, frontieres aux degres entiers) : les localites
+    d'une meme cellule ont une serie mensuelle GHI NASA POWER identique
+    (degenerescence de pixel, migration 0014, ADR-0016).
 
     Si aucune candidate ne partage la cellule du point,
     ``meme_cellule`` vaut ``false`` et la candidate la plus proche est

@@ -168,9 +168,9 @@ def test_t6_runtime_error_si_serie_dhi_amont_absente() -> None:
     with pytest.raises(RuntimeError, match=r"Serie DHI amont .* introuvable"):
         calculer_et_inserer_fraction_diffuse(
             session=session,
-            code_serie_fraction_diffuse="gin_test_fraction_diffuse",
-            code_serie_dhi_amont="gin_test_dhi_inexistant",
-            code_serie_ghi_amont="gin_test_ghi",
+            code_serie_fraction_diffuse="bfa_test_fraction_diffuse",
+            code_serie_dhi_amont="bfa_test_dhi_inexistant",
+            code_serie_ghi_amont="bfa_test_ghi",
         )
 
 
@@ -187,9 +187,9 @@ def test_t7_runtime_error_si_version_formule_desalignee() -> None:
     with pytest.raises(RuntimeError, match="Desalignement version_formule"):
         calculer_et_inserer_fraction_diffuse(
             session=session,
-            code_serie_fraction_diffuse="gin_test_fraction_diffuse",
-            code_serie_dhi_amont="gin_test_dhi",
-            code_serie_ghi_amont="gin_test_ghi",
+            code_serie_fraction_diffuse="bfa_test_fraction_diffuse",
+            code_serie_dhi_amont="bfa_test_dhi",
+            code_serie_ghi_amont="bfa_test_ghi",
             version_formule=2,
         )
 
@@ -200,7 +200,7 @@ def test_t7_runtime_error_si_version_formule_desalignee() -> None:
 
 
 def test_t8_niveau_b_pour_calcul_derive_avec_fiabilite_haute() -> None:
-    """T-8 : régression Drift 6 - niveau dérivé attendu 'B' (R4 catch-all)."""
+    """T-8 : régression sur le niveau de confiance d'une série calculée : B (R4)."""
     niveau = calculer_niveau_confiance_derive(
         methode_collecte="calcul_derive",
         fiabilite_source="haute",

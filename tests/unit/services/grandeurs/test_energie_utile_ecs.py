@@ -1,7 +1,7 @@
 """Tests unitaires de ``services.grandeurs.energie_utile_ecs``.
 
-Couvre le modele Hottel-Whillier-Bliss bord-capteur sur la localite
-pilote Conakry-Kaloum. Fonctions pures sans mock DB.
+Couvre le modele Hottel-Whillier-Bliss bord-capteur sur des series
+tropicales simulees. Fonctions pures sans mock DB.
 
 Convention fixtures : T2M en plage tropicale realiste (24-32 °C),
 irradiance en plage realiste (4-7 kWh/m²/jour), parametres capteur
@@ -31,7 +31,7 @@ pytestmark = pytest.mark.unit
 def _parametres_plan_vitre() -> ParametresEnergieUtileECS:
     """Parametres typiques capteur plan vitre Solar Keymark (T_in 45 °C ECS)."""
     return ParametresEnergieUtileECS(
-        code_serie_source="gin_conakry_ghi_nasa_power_2021_2025",
+        code_serie_source="nasa_power_ghi_journalier_bfa_com_ouagadougou",
         periode_debut=date(2024, 6, 15),
         periode_fin=date(2024, 6, 15),
         rendement_optique_eta0=0.78,
@@ -55,7 +55,7 @@ def _parametres_tube_sous_vide() -> ParametresEnergieUtileECS:
 
 
 def test_t_ecs_1_cas_standard_plan_vitre() -> None:
-    """T-ECS-1 : cas standard plan vitre Conakry juin, energie positive coherente.
+    """T-ECS-1 : cas standard plan vitre en juin, energie positive coherente.
 
     G_jour=5.5 kWh/m²/jour, T_amb=28°C, T_in=45°C.
     Rendement attendu : 0.50-0.60 (HWB en climat tropical chaud).

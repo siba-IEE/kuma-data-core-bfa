@@ -1,7 +1,7 @@
 """Tests unitaires de ``services.grandeurs.poa_bifacial``.
 
-Couvre le POA global bifacial (modele infinite-sheds, pvlib) sur la localite
-pilote Conakry-Kaloum. Fonctions pures sans mock DB.
+Couvre le POA global bifacial (modele infinite-sheds, pvlib) en un point
+tropical de reference (9,5 °N). Fonctions pures sans mock DB.
 
 Invariants verifies : ``bifaciality=0`` -> ``poa_global == poa_front`` ;
 monotonie en bifacialite et en albedo (la face arriere capte plus quand l'un
@@ -30,13 +30,13 @@ from kuma_data_core.services.grandeurs.poa_bifacial import (
 
 pytestmark = pytest.mark.unit
 
-_LAT, _LON = 9.5092, -13.7122  # Conakry-Kaloum
+_LAT, _LON = 9.5092, -13.7122  # point de reference des fixtures
 
 
 def _parametres(bifacialite: float = 0.8, albedo_sol: float = 0.2) -> ParametresBifacial:
     """Parametres bifacial typiques (rangees fixes plein sud, 20°)."""
     return ParametresBifacial(
-        code_serie_source="gin_conakry_ghi_nasa_power_2021_2025",
+        code_serie_source="nasa_power_ghi_journalier_bfa_com_ouagadougou",
         periode_debut=date(2024, 6, 15),
         periode_fin=date(2024, 6, 15),
         inclinaison_deg=20,

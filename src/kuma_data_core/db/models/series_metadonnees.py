@@ -217,8 +217,8 @@ class SerieMetadonnees(Base):
             "OR (actif = FALSE AND desactive_le IS NOT NULL)",
             name="ck_series_metadonnees_actif_desactive_coherent",
         ),
-        # CHECK methode_collecte (migration 016) : 6 valeurs anticipees par les
-        # mecaniques transverses, + 'reanalyse' ajoutee en 0005 (ERA5).
+        # CHECK methode_collecte (baseline 0001) : six valeurs, plus 'reanalyse'
+        # ajoutee en 0005 (ERA5).
         CheckConstraint(
             "methode_collecte IS NULL OR methode_collecte IN ("
             "'mesure_directe', 'modele_satellitaire', 'interpolation_geographique', "
@@ -247,8 +247,8 @@ class SerieMetadonnees(Base):
             "granularite",
             name="uq_series_metadonnees_identite_metier_plage_granularite",
         ),
-        # Commentaire de table porté sur l'ORM pour cohérence avec la
-        # migration 008 (alembic check). Le dict doit être le dernier
+        # Commentaire de table porté sur l'ORM pour cohérence avec la base
+        # (baseline 0001, alembic check). Le dict doit être le dernier
         # élément du tuple __table_args__ selon la convention SQLAlchemy.
         {
             "comment": (

@@ -6,10 +6,9 @@ l'édition (ADR-0004). Une ligne par (station, grandeur, saison).
 
 Pourquoi une table et non une grandeur calculée à la volée : les
 biais sont des RÉSULTATS de recherche, produits par des analyses
-documentées (notes ``docs/methodologie/calage-*-terrain-lite.md``,
-scripts reproductibles) sur des appariements horaires sol/satellite
-dont les lignes satellite ne sont plus stockées en base. L'édition
-publie le résultat avec sa provenance ; le recalcul appartient à la
+documentées (notes de méthode, scripts reproductibles) sur des
+appariements horaires sol/satellite dont les lignes satellite ne sont
+plus stockées en base. L'édition publie le résultat avec sa provenance ; le recalcul appartient à la
 chaîne de recherche, pas au serveur public (doctrine D6 : le VPS ne
 détient et ne calcule que du reconstructible).
 
@@ -69,7 +68,7 @@ class ReferentielCalage(Base):
     # Serie sol de fondation du referentiel (machine-lisible) : la
     # sequence horaire de reference que les consommateurs d'etude
     # doivent utiliser avec ce calage. Decouverte par l'API, jamais
-    # une constante cote consommateur (genericite pays, residu 3).
+    # une constante cote consommateur.
     serie_sol: Mapped[str] = mapped_column(String(120), nullable=False)
 
     # === Provenance et portée (traçabilité, jamais un nombre nu) ===

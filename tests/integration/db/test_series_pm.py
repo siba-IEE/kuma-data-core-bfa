@@ -178,7 +178,7 @@ def test_note_publique(db_session: Session) -> None:
 
 
 def test_fiche_source(db_session: Session) -> None:
-    """La fiche de la source ``cams_eac4`` décrit le Burkina Faso, plus la Guinée."""
+    """La fiche de la source ``cams_eac4`` décrit le Burkina Faso, et non plus la Guinée."""
     fiche = db_session.execute(
         text(
             "SELECT doi, notes, metadonnees->>'periode_reelle' AS periode "

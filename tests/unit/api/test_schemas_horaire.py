@@ -36,21 +36,21 @@ pytestmark = pytest.mark.unit
 def test_t_hschema_1_parametres_cas_standard() -> None:
     """T-HSCHEMA-1 : parametres standards valides."""
     p = ParametresHoraire(
-        localite="conakry_kaloum",
+        localite="bfa_com_ouagadougou",
         grandeur="ghi",
         periode_debut=date(2024, 1, 1),
         periode_fin=date(2024, 1, 31),
     )
     assert p.format_sortie == "json"
-    assert p.localite == "conakry_kaloum"
+    assert p.localite == "bfa_com_ouagadougou"
 
 
 def test_t_hschema_2_localite_invalide() -> None:
     """T-HSCHEMA-2 : caracteres hors motif -> ValidationError.
 
-    Contrat generalise (genericite pays, residu 1) : l'enumeration
-    fermee a disparu, le schema n'impose plus qu'un motif de code
-    (minuscules, chiffres, underscores). Un code bien forme mais
+    Contrat generalise : l'enumeration fermee a disparu, le schema
+    n'impose plus qu'un motif de code (minuscules, chiffres,
+    underscores). Un code bien forme mais
     inconnu passe le schema : c'est le handler qui repond 404
     RESSOURCE_LOCALITE_INCONNUE apres resolution contre la table.
     """
@@ -76,7 +76,7 @@ def test_t_hschema_3_grandeur_invalide() -> None:
     """T-HSCHEMA-3 : grandeur hors enum -> ValidationError."""
     with pytest.raises(ValidationError):
         ParametresHoraire(
-            localite="kindia",
+            localite="bfa_com_ouagadougou",
             grandeur="poa",  # hors enum des grandeurs horaires
             periode_debut=date(2024, 1, 1),
             periode_fin=date(2024, 1, 31),
@@ -87,7 +87,7 @@ def test_t_hschema_4_periode_debut_avant_2001() -> None:
     """T-HSCHEMA-4 : periode_debut < 2001-01-01 -> ValidationError."""
     with pytest.raises(ValidationError):
         ParametresHoraire(
-            localite="kindia",
+            localite="bfa_com_ouagadougou",
             grandeur="ghi",
             periode_debut=date(2000, 12, 31),
             periode_fin=date(2001, 1, 5),
@@ -98,7 +98,7 @@ def test_t_hschema_5_periode_fin_avant_debut() -> None:
     """T-HSCHEMA-5 : periode_fin < periode_debut -> ValidationError."""
     with pytest.raises(ValidationError, match="periode_fin"):
         ParametresHoraire(
-            localite="kindia",
+            localite="bfa_com_ouagadougou",
             grandeur="ghi",
             periode_debut=date(2024, 1, 31),
             periode_fin=date(2024, 1, 1),
@@ -108,7 +108,7 @@ def test_t_hschema_5_periode_fin_avant_debut() -> None:
 def test_t_hschema_6_plage_366_jours_ok() -> None:
     """T-HSCHEMA-6 : plage exactement 366 jours -> accepte."""
     p = ParametresHoraire(
-        localite="kindia",
+        localite="bfa_com_ouagadougou",
         grandeur="ghi",
         periode_debut=date(2024, 1, 1),
         periode_fin=date(2024, 12, 31),  # 366 jours bissextile
@@ -122,7 +122,7 @@ def test_t_hschema_7_plage_367_jours_rejete() -> None:
     """T-HSCHEMA-7 : plage > 366 jours -> ValidationError."""
     with pytest.raises(ValidationError, match="366 jours"):
         ParametresHoraire(
-            localite="kindia",
+            localite="bfa_com_ouagadougou",
             grandeur="ghi",
             periode_debut=date(2024, 1, 1),
             periode_fin=date(2025, 1, 5),  # 370 jours
@@ -133,7 +133,7 @@ def test_t_hschema_8_alias_format_url() -> None:
     """T-HSCHEMA-8 : alias URL 'format' fonctionne pour format_sortie."""
     p = ParametresHoraire.model_validate(
         {
-            "localite": "kindia",
+            "localite": "bfa_com_ouagadougou",
             "grandeur": "ghi",
             "periode_debut": date(2024, 1, 1),
             "periode_fin": date(2024, 1, 5),
@@ -171,8 +171,9 @@ def test_t_hschema_10_resultat_avec_valeur_null() -> None:
 def test_t_hschema_11_reponse_disponibilite() -> None:
     """T-HSCHEMA-11 : ReponseDisponibilite avec PlageTemporelle."""
     r = ReponseDisponibilite(
-        localite="kindia",
+        localite="bfa_com_ouagadougou",
         grandeur="ghi",
+        source="nasa_power",
         plage_disponible=PlageTemporelle(debut=date(2001, 1, 1), fin=date(2025, 12, 15)),
     )
     assert r.statut_editorial == "passe_plat_non_valide"
@@ -181,7 +182,7 @@ def test_t_hschema_11_reponse_disponibilite() -> None:
 def test_t_hschema_12_reponse_horaire_vide() -> None:
     """T-HSCHEMA-12 : ReponseHoraire avec liste resultats vide."""
     r = ReponseHoraire(
-        localite="kindia",
+        localite="bfa_com_ouagadougou",
         grandeur="ghi",
         source="nasa_power",
         periode_demandee=PlageTemporelle(debut=date(2024, 1, 1), fin=date(2024, 1, 5)),

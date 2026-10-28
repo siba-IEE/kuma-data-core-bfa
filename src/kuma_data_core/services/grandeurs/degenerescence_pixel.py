@@ -2,13 +2,13 @@
 
 2e couche d'honnêteté de l'atlas (distincte de l'écart inter-source) : pour chaque
 (localite, source, parametre), dit si ce point **partage sa cellule source** avec
-d'autres préfectures (donnée qui se répète) ou s'il est **réellement résolu**.
+d'autres localités (donnée qui se répète) ou s'il est **réellement résolu**.
 
 Méthode empirique : sur une **grille fixe** (NASA POWER), deux points dans la même
 cellule lisent **la valeur de la cellule** -> leurs séries mensuelles sont
 **strictement identiques**. On groupe les localités par vecteur de valeurs identique
-(égalité exacte) : un groupe de taille > 1 = des **jumeaux-pixel**. C'est ainsi que le
-cas Kindia/Mamou a été constaté. Aucune définition de grille n'est inventée.
+(égalité exacte) : un groupe de taille > 1 = des **jumeaux-pixel**. Aucune définition
+de grille n'est inventée.
 
 Nuance par type de source :
 
@@ -20,11 +20,10 @@ Nuance par type de source :
 
 Sortie : 1 ligne ``grandeurs_metier`` par (localite x source x parametre),
 ``periode_type='statique'``, ``valeur`` = nombre de jumeaux (0 = point résolu),
-``niveau_confiance_derive='B'`` (la confiance **A est réservée aux mesures terrain**,
-déjà tenue par le GHI/DNI sol Kankan/Tarambaly ESMAP-WAPP. La dégénérescence est
-**exacte**, mais l'échelle A/B/C classe la fiabilité d'une *mesure de substrat*, pas la
-certitude d'un fait structurel : B + caveat, jamais A). La série source (climato
-mensuelle) porte le FK ``series_metadonnees_id`` (précédent
+``niveau_confiance_derive='B'`` (la confiance **A est réservée aux mesures terrain**.
+La dégénérescence est **exacte**, mais l'échelle A/B/C classe la fiabilité d'une
+*mesure de substrat*, pas la certitude d'un fait structurel : B + caveat, jamais A).
+La série source (climato mensuelle) porte le FK ``series_metadonnees_id`` (précédent
 ``indicateur_qualite_donnees``, lui-même B). Le groupe de jumeaux + les caveats vivent
 dans ``commentaire_editorial``.
 
@@ -205,8 +204,7 @@ def _commentaire(cfg: _ConfigSource, grandeur: str, codes_jumeaux: list[str]) ->
         base = (
             f"Degenerescence de pixel : partage la cellule {cfg['grille']} ({cfg['resolution']}) "
             f"avec {len(codes_jumeaux)} autre(s) point(s) ({liste}). Series {grandeur} identiques "
-            f"(meme pixel source) -> ne pas presenter comme des mesures independantes "
-            f"(D-29 generalise)."
+            f"(meme pixel source) -> ne pas presenter comme des mesures independantes."
         )
     else:
         base = (

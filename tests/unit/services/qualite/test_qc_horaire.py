@@ -3,7 +3,7 @@
 Vérifie les bornes BSRN (jour/nuit, ok/rare/impossible), les tests de
 fermeture et de ratio diffus, et l'agrégation par instant. Pas de DB ni
 de pvlib (le runner ``executer_qc_horaire`` est couvert en intégration
-via la migration 055).
+via les migrations 0012 et 0022).
 """
 
 from __future__ import annotations

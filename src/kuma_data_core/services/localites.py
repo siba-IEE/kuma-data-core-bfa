@@ -57,15 +57,11 @@ def coordonnees_localite(code: str) -> tuple[float, float]:
     """Renvoie le tuple ``(latitude, longitude)`` pour une localite Kuma.
 
     Le helper accepte n'importe quel code present en table
-    ``localites`` (20 villes Guinee seedees par migration, cf.
-    ``localites_seed_data.py``), pas uniquement les 6 villes pilotes.
-    Le sous-ensemble pilotes (Conakry-Kaloum, Kindia, Mamou, Labe,
-    Kankan, Nzerekore) est applique par les enums Pydantic des
-    endpoints API consommateurs.
+    ``localites``, pas seulement les points pilotes de l'horaire.
 
     Args:
-        code : code naturel de la localite (ex. ``"gin_kindia"``,
-            ``"gin_conakry_kaloum"``).
+        code : code naturel de la localite (ex. ``"bfa_com_ouagadougou"``,
+            ``"bfa_prov_kadiogo"``).
 
     Returns:
         Tuple ``(latitude_deg, longitude_deg)`` en degres decimaux WGS84.

@@ -1,7 +1,7 @@
 """Tests unitaires de ``services.grandeurs.poa_parametrable``.
 
 Couvre les cas standards Perez (DNI+DHI disponibles) et fallback
-Liu-Jordan (GHI seul) sur la localite pilote Conakry-Kaloum.
+Liu-Jordan (GHI seul) en un point tropical de reference (9,5 °N).
 
 Fonctions pures sans mock DB.
 
@@ -41,22 +41,23 @@ from kuma_data_core.services.grandeurs.poa_parametrable import (
 pytestmark = pytest.mark.unit
 
 
-# Coordonnees Conakry-Kaloum (localite pilote).
-_CONAKRY_LAT = 9.5092
-_CONAKRY_LON = -13.7122
+# Point de reference des fixtures (9,5 °N, 13,7 °O) : les bornes des tests
+# sont calees sur sa geometrie solaire.
+_REF_LAT = 9.5092
+_REF_LON = -13.7122
 
 
 def _zenith_solaire_midi_local(jour: date) -> float:
-    """Renvoie l'angle zenithal solaire (degres) a midi solaire Conakry.
+    """Renvoie l'angle zenithal solaire (degres) a midi solaire au point de reference.
 
     Reproduit la convention de ``poa_parametrable._midi_solaire_utc`` :
     midi solaire local UTC = 12:00 UTC - longitude/15. Permet de
     construire des fixtures DNI/DHI/GHI physiquement coherentes.
     """
-    decalage_heures = -_CONAKRY_LON / 15.0
+    decalage_heures = -_REF_LON / 15.0
     instant_utc = datetime(jour.year, jour.month, jour.day, 12, 0, 0, tzinfo=UTC)
     instant_midi = pd.DatetimeIndex([instant_utc + pd.Timedelta(hours=decalage_heures)])
-    solpos = pvlib.solarposition.get_solarposition(instant_midi, _CONAKRY_LAT, _CONAKRY_LON)
+    solpos = pvlib.solarposition.get_solarposition(instant_midi, _REF_LAT, _REF_LON)
     return float(solpos["zenith"].iloc[0])
 
 
@@ -71,9 +72,9 @@ def _ghi_coherent(dni: float, dhi: float, zenith_deg: float) -> float:
 
 
 def _parametres_poa_standard() -> ParametresPOA:
-    """Parametres POA typiques pour Conakry : plein sud (180°), inclinaison 10°."""
+    """Parametres POA typiques : plein sud (180°), inclinaison 10°."""
     return ParametresPOA(
-        code_serie_source="gin_conakry_ghi_nasa_power_2021_2025",
+        code_serie_source="nasa_power_ghi_journalier_bfa_com_ouagadougou",
         periode_debut=date(2024, 6, 15),
         periode_fin=date(2024, 6, 15),
         inclinaison_deg=10,
@@ -98,8 +99,8 @@ def test_t_poa_1_cas_standard_perez() -> None:
     ]
     resultats = calculer_poa_parametrable(
         mesures=mesures,
-        latitude_deg=_CONAKRY_LAT,
-        longitude_deg=_CONAKRY_LON,
+        latitude_deg=_REF_LAT,
+        longitude_deg=_REF_LON,
         parametres=_parametres_poa_standard(),
     )
     assert len(resultats) == 1
@@ -108,8 +109,8 @@ def test_t_poa_1_cas_standard_perez() -> None:
     assert r.instant == date(2024, 6, 15)
     assert r.unite == UNITE_POA
     assert r.niveau_confiance == NIVEAU_CONFIANCE_DERIVE_F2_V1
-    # POA Conakry plein sud 10° autour de juin doit etre proche de la GHI
-    # (Conakry quasi-equatorial, inclinaison faible -> POA ~ GHI).
+    # POA plein sud 10° autour de juin doit etre proche de la GHI
+    # (point a 9,5 °N, inclinaison faible -> POA ~ GHI).
     assert 400.0 < r.valeur < 800.0
 
 
@@ -131,8 +132,8 @@ def test_t_poa_2_fallback_liu_jordan() -> None:
     ]
     resultats = calculer_poa_parametrable(
         mesures=mesures,
-        latitude_deg=_CONAKRY_LAT,
-        longitude_deg=_CONAKRY_LON,
+        latitude_deg=_REF_LAT,
+        longitude_deg=_REF_LON,
         parametres=_parametres_poa_standard(),
     )
     assert len(resultats) == 1
@@ -156,8 +157,8 @@ def test_t_poa_3_liste_vide() -> None:
     """T-POA-3 : mesures vide -> liste resultats vide."""
     resultats = calculer_poa_parametrable(
         mesures=[],
-        latitude_deg=_CONAKRY_LAT,
-        longitude_deg=_CONAKRY_LON,
+        latitude_deg=_REF_LAT,
+        longitude_deg=_REF_LON,
         parametres=_parametres_poa_standard(),
     )
     assert resultats == []
@@ -176,8 +177,8 @@ def test_t_poa_4_serie_pluri_jours() -> None:
     ]
     resultats = calculer_poa_parametrable(
         mesures=mesures,
-        latitude_deg=_CONAKRY_LAT,
-        longitude_deg=_CONAKRY_LON,
+        latitude_deg=_REF_LAT,
+        longitude_deg=_REF_LON,
         parametres=_parametres_poa_standard(),
     )
     assert len(resultats) == 5
@@ -198,14 +199,14 @@ def test_t_poa_5_idempotence() -> None:
     params = _parametres_poa_standard()
     r1 = calculer_poa_parametrable(
         mesures=mesures,
-        latitude_deg=_CONAKRY_LAT,
-        longitude_deg=_CONAKRY_LON,
+        latitude_deg=_REF_LAT,
+        longitude_deg=_REF_LON,
         parametres=params,
     )
     r2 = calculer_poa_parametrable(
         mesures=mesures,
-        latitude_deg=_CONAKRY_LAT,
-        longitude_deg=_CONAKRY_LON,
+        latitude_deg=_REF_LAT,
+        longitude_deg=_REF_LON,
         parametres=params,
     )
     assert r1[0].valeur == r2[0].valeur
@@ -217,7 +218,7 @@ def test_t_poa_6_inclinaison_zero_proche_ghi() -> None:
     Fixture physiquement coherente : DNI et DHI sont choisis arbitrairement
     en plage tropicale realiste, puis GHI est derive via la relation
     fondamentale GHI = DNI x cos(zenith) + DHI ou zenith est l'angle
-    zenithal solaire reel pour Conakry-Kaloum a midi solaire local le
+    zenithal solaire reel au point de reference a midi solaire local le
     15 juin 2024. Sous cette contrainte, pvlib doit retourner une POA
     horizontale identique au GHI a la precision numerique pres
     (tolerance 1% pour absorber d'eventuels arrondis pvlib internes).
@@ -245,8 +246,8 @@ def test_t_poa_6_inclinaison_zero_proche_ghi() -> None:
     )
     resultats = calculer_poa_parametrable(
         mesures=mesures,
-        latitude_deg=_CONAKRY_LAT,
-        longitude_deg=_CONAKRY_LON,
+        latitude_deg=_REF_LAT,
+        longitude_deg=_REF_LON,
         parametres=params,
     )
     # Plan horizontal : POA doit etre numeriquement egal a GHI a 1% pres
@@ -257,7 +258,7 @@ def test_t_poa_6_inclinaison_zero_proche_ghi() -> None:
 def test_t_poa_7_inclinaison_optimale_sud() -> None:
     """T-POA-7 : inclinaison ~latitude, orientation sud -> POA superieur a plan horizontal.
 
-    En equateur boreal (Guinee 9°N) sur l'annee, plan horizontal capte
+    En zone tropicale boreale (9,5 °N), plan horizontal capte
     plus en juin que plan incline ; mais en decembre, plan incline
     sud-orient capte plus. Le test verifie que pvlib retourne des POA
     differencies.
@@ -284,14 +285,14 @@ def test_t_poa_7_inclinaison_optimale_sud() -> None:
     )
     r_horizontal = calculer_poa_parametrable(
         mesures=[mesure_decembre],
-        latitude_deg=_CONAKRY_LAT,
-        longitude_deg=_CONAKRY_LON,
+        latitude_deg=_REF_LAT,
+        longitude_deg=_REF_LON,
         parametres=params_horizontal,
     )
     r_incline = calculer_poa_parametrable(
         mesures=[mesure_decembre],
-        latitude_deg=_CONAKRY_LAT,
-        longitude_deg=_CONAKRY_LON,
+        latitude_deg=_REF_LAT,
+        longitude_deg=_REF_LON,
         parametres=params_incline,
     )
     # En decembre, plan incline plein sud capte plus que plan horizontal.
@@ -315,16 +316,16 @@ def test_t_poa_8_ecart_horizontal_midi() -> None:
         inclinaison_deg=0,
         orientation_deg=180,
     )
-    poa = calculer_poa_parametrable(perez, _CONAKRY_LAT, _CONAKRY_LON, params)
+    poa = calculer_poa_parametrable(perez, _REF_LAT, _REF_LON, params)
     attendu = sum(r.valeur for r in poa) / 12.0 - 1
     assert attendu > 0.2
-    assert ecart_horizontal_midi(perez, _CONAKRY_LAT, _CONAKRY_LON) == pytest.approx(attendu)
+    assert ecart_horizontal_midi(perez, _REF_LAT, _REF_LON) == pytest.approx(attendu)
 
     repli: list[MesureJourPOA] = [
         {"instant_mesure": jour, "ghi": 6.0, "dni": None, "dhi": None} for jour in jours
     ]
-    assert ecart_horizontal_midi(repli, _CONAKRY_LAT, _CONAKRY_LON) == 0.0
-    assert ecart_horizontal_midi([], _CONAKRY_LAT, _CONAKRY_LON) is None
+    assert ecart_horizontal_midi(repli, _REF_LAT, _REF_LON) == 0.0
+    assert ecart_horizontal_midi([], _REF_LAT, _REF_LON) is None
 
 
 # === Methode integration horaire (Perez par heure) ===========
@@ -334,10 +335,11 @@ def _mesures_horaires_journee(
     jour: date, heures_utc: range, dni: float = 800.0, dhi: float = 120.0
 ) -> list[MesureHeurePOA]:
     """Mesures horaires closure-consistantes (GHI = DNI·cos z + DHI, z au milieu
-    de l'heure) pour des heures diurnes Conakry (zenith modere, Perez sans NaN)."""
+    de l'heure) pour des heures diurnes au point de reference (zenith modere,
+    Perez sans NaN)."""
     instants = [datetime(jour.year, jour.month, jour.day, h, tzinfo=UTC) for h in heures_utc]
     zeniths = pvlib.solarposition.get_solarposition(
-        pd.DatetimeIndex(instants) + pd.Timedelta(minutes=30), _CONAKRY_LAT, _CONAKRY_LON
+        pd.DatetimeIndex(instants) + pd.Timedelta(minutes=30), _REF_LAT, _REF_LON
     )["zenith"]
     mesures: list[MesureHeurePOA] = []
     for instant, z in zip(instants, zeniths, strict=True):
@@ -348,7 +350,7 @@ def _mesures_horaires_journee(
 
 def _params_horaire(inclinaison: float, orientation: float = 180.0) -> ParametresPOA:
     return ParametresPOA(
-        code_serie_source="gin_conakry_ghi_nasa_power_2001_2025",
+        code_serie_source="nasa_power_ghi_horaire_bfa_com_ouagadougou",
         periode_debut=date(2024, 6, 1),
         periode_fin=date(2024, 6, 30),
         inclinaison_deg=inclinaison,
@@ -360,14 +362,14 @@ def _params_horaire(inclinaison: float, orientation: float = 180.0) -> Parametre
 
 def test_poa_h1_vide() -> None:
     """POA horaire sur mesures vides -> liste vide."""
-    r = calculer_poa_parametrable_horaire([], _CONAKRY_LAT, _CONAKRY_LON, _params_horaire(20))
+    r = calculer_poa_parametrable_horaire([], _REF_LAT, _REF_LON, _params_horaire(20))
     assert r == []
 
 
 def test_poa_h2_structure_un_jour() -> None:
     """Un jour d'heures diurnes -> 1 ResultatJournalier (structure + valeur > 0)."""
     mesures = _mesures_horaires_journee(date(2024, 6, 15), range(10, 16))
-    r = calculer_poa_parametrable_horaire(mesures, _CONAKRY_LAT, _CONAKRY_LON, _params_horaire(20))
+    r = calculer_poa_parametrable_horaire(mesures, _REF_LAT, _REF_LON, _params_horaire(20))
     assert len(r) == 1
     assert r[0].instant == date(2024, 6, 15)
     assert r[0].granularite == "journalier"
@@ -384,7 +386,7 @@ def test_poa_h3_tilt_zero_egale_ghi() -> None:
     detail du modele Perez.
     """
     mesures = _mesures_horaires_journee(date(2024, 6, 15), range(10, 16))
-    r = calculer_poa_parametrable_horaire(mesures, _CONAKRY_LAT, _CONAKRY_LON, _params_horaire(0))
+    r = calculer_poa_parametrable_horaire(mesures, _REF_LAT, _REF_LON, _params_horaire(0))
     ghi_jour_kwh = sum(m["ghi"] for m in mesures) / 1000.0
     assert abs(r[0].valeur - ghi_jour_kwh) < 1e-2
 
@@ -394,7 +396,7 @@ def test_poa_h4_multi_jours() -> None:
     mesures = _mesures_horaires_journee(
         date(2024, 6, 15), range(10, 16)
     ) + _mesures_horaires_journee(date(2024, 6, 16), range(10, 16))
-    r = calculer_poa_parametrable_horaire(mesures, _CONAKRY_LAT, _CONAKRY_LON, _params_horaire(20))
+    r = calculer_poa_parametrable_horaire(mesures, _REF_LAT, _REF_LON, _params_horaire(20))
     assert len(r) == 2
     assert r[0].instant == date(2024, 6, 15)
     assert r[1].instant == date(2024, 6, 16)
@@ -406,7 +408,7 @@ def _journee_ciel_clair(jour: date) -> list[MesureHeurePOA]:
         datetime(jour.year, jour.month, jour.day, tzinfo=UTC), periods=24, freq="h"
     )
     zenith = pvlib.solarposition.get_solarposition(
-        index + pd.Timedelta(minutes=30), _CONAKRY_LAT, _CONAKRY_LON
+        index + pd.Timedelta(minutes=30), _REF_LAT, _REF_LON
     )["apparent_zenith"]
     ghi = pvlib.clearsky.haurwitz(zenith)["ghi"].to_numpy()
     return [
@@ -423,7 +425,7 @@ def test_poa_h5_journee_complete_horizontal_egale_ghi() -> None:
     énergie, quel que soit le DNI de la source (ADR-0014).
     """
     mesures = _journee_ciel_clair(date(2024, 6, 15))
-    r = calculer_poa_parametrable_horaire(mesures, _CONAKRY_LAT, _CONAKRY_LON, _params_horaire(0))
+    r = calculer_poa_parametrable_horaire(mesures, _REF_LAT, _REF_LON, _params_horaire(0))
     ghi_jour_kwh = sum(m["ghi"] for m in mesures) / 1000.0
     assert abs(r[0].valeur - ghi_jour_kwh) < 1e-3 * ghi_jour_kwh
 
@@ -432,9 +434,9 @@ def test_poa_h6_geometrie_au_milieu_de_l_heure() -> None:
     """La position solaire d'un instant HH:00 est celle de HH:30 (NASA POWER, ADR-0014)."""
     index = pd.DatetimeIndex([datetime(2024, 6, 15, h, tzinfo=UTC) for h in (7, 12, 18)])
     nul = pd.Series(0.0, index=index)
-    solpos, _ = geometrie_et_direct_horaires(index, nul, nul, _CONAKRY_LAT, _CONAKRY_LON)
+    solpos, _ = geometrie_et_direct_horaires(index, nul, nul, _REF_LAT, _REF_LON)
     attendu = pvlib.solarposition.get_solarposition(
-        index + pd.Timedelta(minutes=30), _CONAKRY_LAT, _CONAKRY_LON
+        index + pd.Timedelta(minutes=30), _REF_LAT, _REF_LON
     )["zenith"].to_numpy()
     assert list(solpos.index) == list(index)
     assert solpos["zenith"].to_numpy() == pytest.approx(attendu)
@@ -445,7 +447,7 @@ def test_poa_h7_direct_reconstruit() -> None:
     index = pd.DatetimeIndex([datetime(2024, 6, 15, h, tzinfo=UTC) for h in (2, 12, 13, 7)])
     ghi = pd.Series([0.0, 900.0, 300.0, 1000.0], index=index)
     dhi = pd.Series([0.0, 200.0, 350.0, 0.0], index=index)
-    solpos, dni = geometrie_et_direct_horaires(index, ghi, dhi, _CONAKRY_LAT, _CONAKRY_LON)
+    solpos, dni = geometrie_et_direct_horaires(index, ghi, dhi, _REF_LAT, _REF_LON)
     cosz = math.cos(math.radians(float(solpos["zenith"].iloc[1])))
     assert dni.iloc[0] == 0.0
     assert dni.iloc[1] == pytest.approx(700.0 / cosz)

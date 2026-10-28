@@ -48,7 +48,7 @@ circuite l'appel réseau (séries seedées, 0 mesure). Cohérence opérationnell
 CI avec ``KUMA_SKIP_NASA_POWER_INGESTION``.
 
 Ingestion **live uniquement** dans cette instance : le repli offline sur
-seed committé et son canari de dérive amont (patron de l'instance Guinée)
+seed committé et son canari de dérive amont (patron de l'instance d'origine)
 sont retirés tant qu'aucune donnée n'est versée pour le Burkina Faso.
 """
 
@@ -268,7 +268,7 @@ def ingerer_serie_sarah3_monthly(
     Args:
         session : session SQLAlchemy active.
         code_serie : code naturel de la série dans ``series_metadonnees``
-            (ex. ``gin_conakry_ghi_sarah3_2021_2025``). Doit exister.
+            (ex. ``sarah3_ghi_mensuel_bfa_prov_kadiogo``). Doit exister.
         latitude, longitude : coordonnées WGS84.
         annee_debut, annee_fin : bornes inclusives (ex. 2021 / 2025).
         timeout : timeout HTTP en secondes.
@@ -304,7 +304,7 @@ def ingerer_serie_sarah3_monthly(
     if row is None:
         raise RuntimeError(
             f"Serie {code_serie!r} introuvable dans series_metadonnees. "
-            f"Verifier que la migration de seed 1-7a a bien ete appliquee."
+            f"Verifier que la migration qui cree la serie a bien ete appliquee."
         )
 
     serie_id: int = int(row.serie_id)

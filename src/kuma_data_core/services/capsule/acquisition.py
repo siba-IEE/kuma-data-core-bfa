@@ -8,7 +8,7 @@ Lit trois choses au point :
 - la **climatologie mensuelle** : moyenne par mois calendaire sur 1991-2020 des
   mesures mensuelles de cette série (12 valeurs, kWh/m²/j = HEP) ;
 - la **séquence horaire satellite** : la série GHI horaire NASA de la localité,
-  le brut au point (heure UTC = heure locale en Guinée).
+  le brut au point (heure UTC = heure locale au Burkina Faso).
 
 Rien de calé ici : la séquence et la climatologie sortent brutes, le moteur cale
 via le champ ``calage``, présent en ligne seulement. Aucun appel à kuma-calage

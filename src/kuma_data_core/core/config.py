@@ -14,6 +14,7 @@ valeur par défaut (mot de passe) doivent être fournis via ``.env``.
 from __future__ import annotations
 
 from functools import lru_cache
+from importlib import metadata
 from pathlib import Path
 from typing import Literal
 
@@ -48,17 +49,19 @@ class Settings(BaseSettings):
     postgres_port: int = Field(default=5432)
 
     # === Seeds initiaux ===
-    # Email du contributeur principal inséré par la migration 001.
+    # Email du contributeur principal. Le contributeur initial inséré par la
+    # migration 0002 porte une adresse fixe : ce réglage ne l'alimente pas.
     kuma_initial_editor_email: str = Field(default="editeur.principal@kuma-science.org")
 
     # === Settings API ===
     # Configuration de l'application FastAPI privée.
     api_titre: str = Field(default="Kuma Data Core API")
-    api_version: str = Field(default="0.1.0")
+    # Version du paquet installé, sauf API_VERSION explicite.
+    api_version: str = Field(default_factory=lambda: metadata.version("kuma-data-core-bfa"))
     api_environnement: Literal["dev", "integration", "prod"] = Field(default="dev")
     api_docs_actives: bool = Field(default=True)
-    # Clés API valides (stockage en variables d'environnement).
-    # Migration vers une table ``cles_api`` prévue ultérieurement.
+    # Clés API d'environnement ; les clés émises en libre-service sont dans
+    # la table ``cles_api`` (ADR-0003).
     api_cle_solar_bridge: SecretStr | None = Field(default=None)
     api_cle_admin: SecretStr | None = Field(default=None)
     kuma_calage_base: str | None = Field(default=None)

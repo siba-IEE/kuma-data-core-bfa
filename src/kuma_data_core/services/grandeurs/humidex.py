@@ -19,8 +19,7 @@ T = 30 °C, RH = 70 % → H ≈ 40.96 °C apparents.
 Agrégat annuel + mensuel : **moyenne arithmétique** des humidex journaliers.
 
 Stockage en `grandeurs_metier` : seul `humidex_moyen` annuel + mensuel
-est persisté (78 lignes attendues pour 6 villes * 5 ans). Le compteur
-`nb_jours_inconfort_modere` (seuil 40 °C) est calculé en interne et
+est persisté. Le compteur `nb_jours_inconfort_modere` (seuil 40 °C) est calculé en interne et
 retourné dans `CalculHumidexResultat` pour traçabilité, mais **pas
 persisté** : sa persistance nécessiterait une nouvelle entrée du
 référentiel `humidex_nb_jours_inconfort` (à acter ultérieurement si

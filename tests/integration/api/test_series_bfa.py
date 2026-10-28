@@ -73,6 +73,19 @@ def test_listing_des_series_d_une_commune(client: TestClient, headers_auth: dict
     }
 
 
+def test_unite_des_series_horaires(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """Une série horaire porte l'unité servie par /v1/horaire, non celle du journalier."""
+    response = client.get(
+        "/v1/series?localite=bfa_com_ouagadougou&limit=1000", headers=headers_auth
+    )
+    assert response.status_code == 200, response.text
+    unites = {s["code"]: s["grandeur_unit"] for s in response.json()["items"]}
+    assert unites["nasa_power_ghi_horaire_bfa_com_ouagadougou"] == "Wh/m²"
+    assert unites["cams_ghi_ciel_clair_horaire_bfa_com_ouagadougou"] == "Wh/m²"
+    assert unites["nasa_power_t2m_horaire_bfa_com_ouagadougou"] == "°C"
+    assert unites["nasa_power_ghi_journalier_bfa_com_ouagadougou"] == "kWh/m²/jour"
+
+
 def test_detail_d_une_serie_mensuelle(client: TestClient, headers_auth: dict[str, str]) -> None:
     """Le détail renvoie les mesures mensuelles bornées dans le temps."""
     response = client.get(

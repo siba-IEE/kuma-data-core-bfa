@@ -7,9 +7,8 @@ versionnées, et fait l'INSERT bulk via SQLAlchemy.
 
 Cas d'usage :
 
-- Extension temporelle NASA POWER 1991-2020 pour les 6 villes
-  guinéennes pilotes : 30 ans x 12 mois x 6 villes = 2 160 valeurs
-  ingérées dans la nouvelle table dédiée.
+- Série mensuelle NASA POWER d'une localité (par exemple la
+  climatologie 1991-2020 : 30 ans x 12 mois = 360 valeurs).
 
 La fonction principale ``ingerer_serie_monthly`` parse les clés de la
 réponse au format ``YYYYMM`` et filtre les clés non-mensuelles
@@ -21,7 +20,7 @@ pour la fonction journalière. Utile pour CI sans accès réseau et tests
 d'intégration qui préfèrent mocker le client httpx.
 
 Ingestion **live uniquement** dans cette instance : le repli offline sur
-seed committé et son canari de dérive amont (patron de l'instance Guinée)
+seed committé et son canari de dérive amont (patron de l'instance d'origine)
 sont retirés tant qu'aucune donnée n'est versée pour le Burkina Faso.
 """
 
@@ -115,7 +114,7 @@ def ingerer_serie_monthly(
         session : session SQLAlchemy active. La fonction add+flush mais
             ne commit pas (responsabilité du caller).
         code_serie : code naturel de la série dans ``series_metadonnees``
-            (ex. ``gin_conakry_ghi_power_1991_2020``). Doit exister
+            (ex. ``nasa_power_ghi_mensuel_bfa_prov_kadiogo``). Doit exister
             sinon ``RuntimeError``.
         parametre_nasa : code NASA POWER à ingérer (ex.
             ``ALLSKY_SFC_SW_DWN`` pour GHI).

@@ -18,7 +18,8 @@
 services:
   # -------------------------------------------------------------------------
   # PostgreSQL 16 - base de données principale de Kuma Data Core.
-  # Les migrations Alembic seront introduites à l'étape 3.
+  # Le schéma et les données viennent des migrations Alembic
+  # (uv run alembic upgrade head).
   # -------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine

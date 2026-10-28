@@ -75,7 +75,7 @@ def _bail(client: TestClient, cle: str) -> tuple[int, dict[str, object]]:
 def _accorder(prefixe: str, expire_le: datetime | None = None) -> None:
     with Session(get_engine_meta()) as session:
         licences.accorder(
-            session, prefixe, "Aïssatou Camara", "Bureau d'études de Kankan", expire_le
+            session, prefixe, "Aïssatou Camara", "Bureau d'études de Bobo-Dioulasso", expire_le
         )
 
 
@@ -96,7 +96,7 @@ def test_licence_ouvre_un_bail_verifiable(client: TestClient, serveur_licences: 
         charger_cle_publique(PUBLIQUE),
     )
     assert charge["titulaire"] == "Aïssatou Camara"
-    assert charge["organisation"] == "Bureau d'études de Kankan"
+    assert charge["organisation"] == "Bureau d'études de Bobo-Dioulasso"
     assert charge["prefixe_cle"] == prefixe
     assert corps["expire_le"] == charge["expire_le"]
     emis = datetime.fromisoformat(str(charge["emis_le"]))

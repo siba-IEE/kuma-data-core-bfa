@@ -101,7 +101,7 @@ def ingerer_serie_horaire(
         session : session SQLAlchemy active. La fonction add+flush mais
             ne commit pas (responsabilité du caller).
         code_serie : code naturel de la série dans ``series_metadonnees``
-            (ex. ``gin_conakry_ghi_nasa_power_2021_2023``). Doit exister
+            (ex. ``nasa_power_ghi_horaire_bfa_com_ouagadougou``). Doit exister
             sinon ``RuntimeError``.
         parametre_nasa : code NASA POWER à ingérer (ex.
             ``ALLSKY_SFC_SW_DWN`` pour GHI).

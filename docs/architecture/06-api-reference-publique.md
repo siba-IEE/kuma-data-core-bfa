@@ -214,12 +214,15 @@ Deux régimes coexistent :
   le nombre de séries matchant les filtres dans le déploiement interrogé.
 - La granularité n'est ni un filtre ni un champ du listing : elle se lit
   dans le code de la série (`_horaire_`, `_journalier_`, `_mensuel_`, voir
-  5.4). `grandeur_unit` est l'unité de la grandeur au référentiel, pas
-  celle des valeurs horaires (Wh/m² sur l'heure, 3.8).
+  5.4). `grandeur_unit` est l'unité de la grandeur au référentiel, sauf
+  pour les séries horaires, où c'est celle des valeurs servies par
+  `/v1/horaire` (Wh/m² sur l'heure pour le rayonnement, 3.8).
 - Note de stabilité : le contrat de cet endpoint est figé. Les
   renommages publics `cree_le` vers `created_at`, `modifie_le` vers
   `updated_at`, `note_publique` vers `notes_fr`, `sources.titre`
   vers `source_label` sont assumés et ne dérivent pas du nom de colonne DB.
+  Seul le sens de `grandeur_unit` a changé, pour les séries horaires
+  (version 0.20.0).
 
 ### 3.4 `GET /v1/series/{code_serie}` : détail d'une série + mesures
 
@@ -681,17 +684,19 @@ Une `periode_fin` antérieure à `periode_debut` ou une plage de plus de
 
 ### 3.9 `GET /v1/horaire/{localite}/{grandeur}/disponibilite`
 
-Retourne la plage temporelle utilisable par le relais (NASA POWER). Elle
-ne vaut ni pour `ghi_ciel_clair` ni pour `source=cams_radiation`, servis
-seulement depuis le stocké : leur couverture se lit dans `/v1/series`.
+Retourne la plage temporelle de la série que sert `/v1/horaire` pour les
+mêmes `localite`, `grandeur` et `source` (ADR-0023).
 
 - Auth : Bearer requise
-- Réponse 200 :
+- Paramètre : `source` (`nasa_power` ou `cams_radiation`), facultatif,
+  comme pour `/v1/horaire`.
+- Réponse 200, sans `source` (relais NASA POWER) :
 
 ```json
 {
   "localite": "bfa_dep_dori",
   "grandeur": "ghi",
+  "source": "nasa_power",
   "plage_disponible": {
     "debut": "2001-01-01",
     "fin": "2026-05-30"
@@ -700,11 +705,31 @@ seulement depuis le stocké : leur couverture se lit dans `/v1/series`.
 }
 ```
 
-- `debut` est fixé à `2001-01-01` (borne historique du substrat solaire
-  amont).
-- `fin` est dynamique : la date du jour moins 151 jours (cinq mois de
-  30 jours et un jour), pour la latence du service amont. L'exemple date
-  du 28 octobre 2026.
+- Pour la source du relais et une grandeur qu'il sert (GHI, DNI, DHI,
+  T2M…), la plage est celle du relais : `debut` est fixé à `2001-01-01`
+  (borne historique du substrat solaire amont), `fin` est la date du jour
+  moins 151 jours (cinq mois de 30 jours et un jour), pour la latence du
+  service amont. L'exemple date du 28 octobre 2026. Le couple
+  `(localite, grandeur)` n'est alors pas vérifié : une localité inconnue
+  reçoit aussi cette plage.
+- Avec `source=cams_radiation`, ou pour `ghi_ciel_clair`, que seul CAMS
+  sert et qui ne se relaie pas, la plage est celle de la série stockée,
+  avec `statut_editorial` à `valide_auto` : par exemple
+  `{"debut": "2021-01-01", "fin": "2025-12-31"}` et `"source":
+  "cams_radiation"` à Dori. Sans `source`, la série de NASA POWER passe
+  avant les autres.
+- En profil édition figée, celui du serveur public, il n'y a pas de
+  relais : la plage est toujours celle de la série stockée, en
+  `valide_auto` (2021-01-01 à 2025-12-31 aux cinq points pilotes, avec
+  `"source": "nasa_power"` sans paramètre `source`) ; ailleurs, 404.
+- La plage d'une série stockée est recoupée avec la fenêtre du relais, que
+  `/v1/horaire` impose à toute requête : elle est donc toujours acceptée
+  par `/v1/horaire`.
+- Sans série stockée pour la source demandée (l'horaire CAMS n'existe
+  qu'aux cinq points pilotes), ou si le recoupement est vide : 404
+  `RESSOURCE_SERIE_INCONNUE`. Hors du cas du relais, une localité inconnue
+  répond 404 `RESSOURCE_LOCALITE_INCONNUE`. Une `source` hors des deux
+  valeurs répond 422 `VALIDATION_VALEUR_INVALIDE`.
 
 ### 3.10 `GET /v1/edition` : édition publiée servie
 

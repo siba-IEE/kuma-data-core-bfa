@@ -72,8 +72,8 @@ def test_t3_completude_mensuelle_skip_si_mois_incomplet() -> None:
     assert (2025, 2) in resultat["mois_skip_completude"]
 
 
-def test_t4_sanity_nb_jours_inconfort_conakry_tropical() -> None:
-    """T-4 : fixture Conakry simulée (T=28°C, RH=80% constant → H ≈ 38°C
+def test_t4_sanity_nb_jours_inconfort_tropical() -> None:
+    """T-4 : fixture tropicale simulée (T=28°C, RH=80% constant → H ≈ 38°C
     apparents < seuil 40°C, donc nb_jours_inconfort = 0). Avec
     T = 30°C constants → H ≈ 42°C donc nb_jours_inconfort = 365 (tous
     les jours)."""
@@ -127,9 +127,9 @@ def test_t6_runtime_error_si_serie_t2m_amont_absente() -> None:
     with pytest.raises(RuntimeError, match=r"Serie T2M amont .* introuvable"):
         calculer_et_inserer_humidex(
             session=session,
-            code_serie_humidex="gin_test_humidex",
-            code_serie_t2m_amont="gin_test_t2m_inexistant",
-            code_serie_rh2m_amont="gin_test_rh2m",
+            code_serie_humidex="bfa_test_humidex",
+            code_serie_t2m_amont="bfa_test_t2m_inexistant",
+            code_serie_rh2m_amont="bfa_test_rh2m",
         )
 
 
@@ -140,15 +140,15 @@ def test_t7_runtime_error_si_version_formule_desalignee() -> None:
     with pytest.raises(RuntimeError, match="Desalignement version_formule"):
         calculer_et_inserer_humidex(
             session=session,
-            code_serie_humidex="gin_test_humidex",
-            code_serie_t2m_amont="gin_test_t2m",
-            code_serie_rh2m_amont="gin_test_rh2m",
+            code_serie_humidex="bfa_test_humidex",
+            code_serie_t2m_amont="bfa_test_t2m",
+            code_serie_rh2m_amont="bfa_test_rh2m",
             version_formule=2,
         )
 
 
 def test_t8_niveau_b_pour_calcul_derive_avec_fiabilite_haute() -> None:
-    """T-8 : régression Drift 6."""
+    """T-8 : régression sur le niveau de confiance d'une série calculée."""
     assert (
         calculer_niveau_confiance_derive(methode_collecte="calcul_derive", fiabilite_source="haute")
         == "B"

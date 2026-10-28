@@ -5,7 +5,7 @@ Core. Pilier de la traçabilité éditoriale : chaque mesure publiée doit
 pouvoir être tracée jusqu'à sa source originale.
 
 10 types de sources supportés :
-- ``rapport`` (IRENA, IEA, IPCC, BCRG, ONEE, MASEN, BCEAO, BEAC, BAD…)
+- ``rapport`` (IRENA, IEA, IPCC, ONEE, MASEN, BCEAO, BEAC, BAD…)
 - ``article_scientifique`` (IEEE, Energy Policy, Renewable Energy,
   Nature, Joule…)
 - ``texte_legal`` (lois, codes, directives UEMOA…)
@@ -32,16 +32,15 @@ Validation des identifiants externes
 - ``isbn`` : ``^(97[89][0-9]{10}|[0-9]{9}[0-9X])$`` - stocké SANS
   tirets.
 
-Lien sources <-> localites différé
------------------------------------
-Aucun lien direct dans cette migration. Le lien transitif passera par
-la future table ``mesures`` qui aura à la fois ``source_id`` et
-``localite_id``.
+Lien sources <-> localites
+--------------------------
+Pas de lien direct : il passe par ``series_metadonnees``, qui porte à la
+fois ``source_id`` et ``localite_id``.
 
 Qualification éditoriale ``fiabilite`` à 3 niveaux
 --------------------------------------------------
 - ``haute``   : organismes officiels (IRENA, IEA, IPCC, BIPM, ISO,
-  BCRG, ONEE, MASEN, BCEAO, BEAC, BAD, Africa Energy Portal), normes
+  ONEE, MASEN, BCEAO, BEAC, BAD, Africa Energy Portal), normes
   techniques, peer-reviewed.
 - ``moyenne`` : ONG sérieuses, presse spécialisée, organisations
   professionnelles, thèses.

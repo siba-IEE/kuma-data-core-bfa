@@ -1,10 +1,16 @@
-"""Couche service de calcul des grandeurs Kuma F1 stockées.
+"""Couche service de calcul des grandeurs Kuma.
 
-Sous-package par grandeur : chaque module orchestre la lecture des mesures
-amont (typiquement ``mesures_ressource``), l'agrégation selon la formule
-documentée en fiche méthodologique, et l'insertion dans ``grandeurs_metier``.
+Un module par grandeur. Les grandeurs calculées à la volée (POA, productibles,
+énergie ECS, degrés-jours, P50/P90, salissure, PR réaliste) sont des fonctions
+pures appelées par les routes de ``/v1/grandeurs``. Les modules des grandeurs
+stockées lisent les mesures amont, agrègent selon la formule de la fiche
+méthodologique et insèrent dans ``grandeurs_metier``.
 
-Grandeurs stockées : ``hep`` (Heures équivalentes pleines, agrégation
-cumulative GHI), ``kt``, ``fraction_diffuse``, ``productible_*``,
-``variabilite_*``, ``humidex``, ``indicateur_qualite_donnees``.
+Au Burkina Faso, la fraction diffuse et les écarts entre sources sont calculés
+en SQL par la migration 0009 (ADR-0012), la dégénérescence de pixel par la
+migration 0014 (ADR-0016). Les modules ``hep``, ``humidex``,
+``variabilite_journaliere``, ``productible_specifique_*``,
+``indicateur_qualite_donnees``, ``fraction_diffuse``, ``ecart_dni_cams``,
+``degenerescence_pixel`` et ``referentiels``, hérités de l'instance d'origine,
+ne sont appelés nulle part ici.
 """

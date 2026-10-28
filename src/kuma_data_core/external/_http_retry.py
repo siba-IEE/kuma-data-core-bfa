@@ -12,8 +12,8 @@ exceptions génériques ``HttpRetryTimeoutError``, ``HttpRetryRateLimitError``,
 exceptions domaine-spécifiques (``NasaPower*Error``, ``Pvgis*Error``,
 etc.) via try/except + raise from.
 
-Couvre un scénario CI observé (migration 041 SARAH-3) :
-disconnect serveur PVGIS intermittent depuis les runners GitHub Actions
+Couvre un scénario CI observé avec PVGIS (SARAH-3) :
+disconnect serveur intermittent depuis les runners GitHub Actions
 manifesté comme ``httpx.RemoteProtocolError``. Inclus dans le catch
 retry au même titre que ``httpx.TimeoutException`` (deux symptômes de
 panne réseau transitoire).

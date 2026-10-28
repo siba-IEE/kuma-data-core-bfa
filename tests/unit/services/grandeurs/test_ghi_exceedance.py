@@ -48,7 +48,7 @@ def test_t_exc_2_p90_strictement_inferieur_p50() -> None:
     Garantie de la semantique exceedance : P90 = valeur depassee
     90 % des annees = percentile 10 (cote bas de distribution).
     """
-    # Plage realiste guineenne : 1750-2050 kWh/m²/an
+    # Plage realiste en Afrique de l'Ouest : 1750-2050 kWh/m²/an
     totaux = [1750.0 + i * 10.0 for i in range(30)]
     r = calculer_ghi_exceedance(totaux)
     assert r.p90 < r.p50

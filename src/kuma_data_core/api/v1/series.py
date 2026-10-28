@@ -47,6 +47,7 @@ from kuma_data_core.api.v1.schemas.series import (
     SerieListeePaginee,
 )
 from kuma_data_core.db.session import obtenir_session
+from kuma_data_core.services.horaire import unite_cible
 
 routeur = APIRouter(prefix="/series", tags=["series"])
 
@@ -111,6 +112,22 @@ def _valider_format(format_demande: str) -> str:
 # === Endpoint listing =====================================================
 
 
+def _unite_servie(grandeur: str, granularite: str | None, unite_referentiel: str) -> str:
+    """Unité des valeurs servies pour la série.
+
+    L'unité du référentiel est celle du journalier et du mensuel ; une série
+    horaire prend celle de ``/v1/horaire`` (Wh/m² sur l'heure pour le
+    rayonnement), ou celle du référentiel pour une grandeur que l'horaire ne
+    connaît pas.
+    """
+    if granularite != "horaire":
+        return unite_referentiel
+    try:
+        return unite_cible(grandeur)
+    except KeyError:
+        return unite_referentiel
+
+
 @routeur.get(
     "",
     response_model=SerieListeePaginee,
@@ -126,8 +143,10 @@ def _valider_format(format_demande: str) -> str:
 def lister_series(
     _cle: CleApiValidee,
     session: Annotated[Session, Depends(obtenir_session)],
-    localite: Annotated[str | None, Query(description="Code localite (ex. gin_kindia)")] = None,
-    grandeur: Annotated[str | None, Query(description="Code grandeur (ex. ghi, hep)")] = None,
+    localite: Annotated[
+        str | None, Query(description="Code localite (ex. bfa_com_ouagadougou)")
+    ] = None,
+    grandeur: Annotated[str | None, Query(description="Code grandeur (ex. ghi, t2m)")] = None,
     source: Annotated[
         str | None, Query(description="Code source (ex. nasa_power, kuma_calculs)")
     ] = None,
@@ -191,6 +210,7 @@ def lister_series(
                 l.nom AS localite_nom,
                 l.pays_iso3 AS localite_iso3,
                 sm.grandeur_code,
+                sm.granularite,
                 gr.libelle AS grandeur_label,
                 u.symbole AS grandeur_unit,
                 sm.source_id,
@@ -228,7 +248,7 @@ def lister_series(
             localite_iso3=r.localite_iso3,
             grandeur_code=r.grandeur_code,
             grandeur_label=r.grandeur_label,
-            grandeur_unit=r.grandeur_unit,
+            grandeur_unit=_unite_servie(r.grandeur_code, r.granularite, r.grandeur_unit),
             source_id=int(r.source_id),
             source_code=r.source_code,
             source_label=r.source_label,
@@ -491,10 +511,10 @@ def _serialiser_csv(serie_detail: SerieDetail) -> str:
     status_code=status.HTTP_200_OK,
     summary="Detail d'une serie avec ses mesures",
     description=(
-        "Retourne le detail d'une serie identifiee par son code naming "
-        "D-32, avec ses mesures resolues sur la table-cible adequate "
-        "(mesures_ressource, mesures_ressource_mensuelles, ou "
-        "grandeurs_metier via v_grandeurs_metier_courantes)."
+        "Retourne le detail d'une serie identifiee par son code, avec ses mesures "
+        "lues dans la table de sa granularite (journalier epars ou dense, mensuel) "
+        "ou, pour une grandeur calculee, dans v_grandeurs_metier_courantes. Une "
+        "serie horaire se lit par /v1/horaire."
     ),
 )
 def detailler_serie(

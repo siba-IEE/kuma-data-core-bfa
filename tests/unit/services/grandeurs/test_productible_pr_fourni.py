@@ -1,7 +1,7 @@
 """Tests unitaires de ``services.grandeurs.productible_pr_fourni``.
 
 Couvre les variantes PR brut (Marion 2005) et PR_T temperature-corrected
-(Dierauf 2013) sur la localite pilote Conakry-Kaloum.
+(Dierauf 2013) sur des series tropicales simulees.
 Fonctions pures sans mock DB.
 
 Convention fixtures : T2M en plage tropicale realiste (24-32°C),
@@ -31,7 +31,7 @@ pytestmark = pytest.mark.unit
 def _parametres_pr_brut() -> ParametresProductiblePRFourni:
     """Parametres typiques PR brut sans correction temperature."""
     return ParametresProductiblePRFourni(
-        code_serie_source="gin_conakry_ghi_nasa_power_2021_2025",
+        code_serie_source="nasa_power_ghi_journalier_bfa_com_ouagadougou",
         periode_debut=date(2024, 6, 15),
         periode_fin=date(2024, 6, 15),
         pr_fourni=0.80,
@@ -43,7 +43,7 @@ def _parametres_pr_brut() -> ParametresProductiblePRFourni:
 def _parametres_pr_t() -> ParametresProductiblePRFourni:
     """Parametres typiques PR temperature-corrected (NOCT + gamma fournis)."""
     return ParametresProductiblePRFourni(
-        code_serie_source="gin_conakry_ghi_nasa_power_2021_2025",
+        code_serie_source="nasa_power_ghi_journalier_bfa_com_ouagadougou",
         periode_debut=date(2024, 6, 15),
         periode_fin=date(2024, 6, 15),
         pr_fourni=0.80,

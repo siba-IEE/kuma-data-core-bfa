@@ -75,7 +75,7 @@ def _payload_nasa_avec_sentinelles() -> dict[str, Any]:
     """Payload NASA POWER mocké avec 1 sentinelle pour tester le filtrage."""
     return {
         "type": "Feature",
-        "geometry": {"type": "Point", "coordinates": [-13.7, 9.5, 6.0]},
+        "geometry": {"type": "Point", "coordinates": [-1.5, 12.33, 300.0]},
         "properties": {
             "parameter": {
                 "ALLSKY_SFC_SW_DWN": {
@@ -115,8 +115,8 @@ def test_u15_mock_httpx_pipeline_smoke() -> None:
         httpx.Client(transport=httpx.MockTransport(handler)) as client,
     ):
         response = fetch_daily(
-            latitude=9.5,
-            longitude=-13.7,
+            latitude=12.33,
+            longitude=-1.5,
             parameters=["ALLSKY_SFC_SW_DWN"],
             start=date(2021, 1, 1),
             end=date(2021, 1, 4),
@@ -131,7 +131,7 @@ def test_u15_mock_httpx_pipeline_smoke() -> None:
 
 
 # ---------------------------------------------------------------------------
-# U16-U18 : ingerer_series_daily_groupe (1-3)
+# U16-U18 : ingerer_series_daily_groupe
 # ---------------------------------------------------------------------------
 
 
@@ -186,10 +186,10 @@ def test_u16_ingerer_series_groupe_skip_via_env() -> None:
     with patch.dict(os.environ, {"KUMA_SKIP_NASA_POWER_INGESTION": "1"}):
         result = ingerer_series_daily_groupe(
             session=session,
-            codes_series=["gin_conakry_dni_nasa_power_2021_2025"],
+            codes_series=["nasa_power_dni_journalier_bfa_prov_kadiogo"],
             mapping_grandeur_parametre_nasa={"dni": "ALLSKY_SFC_SW_DNI"},
-            latitude=9.5,
-            longitude=-13.7,
+            latitude=12.33,
+            longitude=-1.5,
             periode_debut=date(2021, 1, 1),
             periode_fin=date(2021, 1, 3),
         )
@@ -210,8 +210,8 @@ def test_u17_ingerer_series_groupe_codes_vides_retourne_dict_vide() -> None:
             session=session,
             codes_series=[],
             mapping_grandeur_parametre_nasa={},
-            latitude=9.5,
-            longitude=-13.7,
+            latitude=12.33,
+            longitude=-1.5,
             periode_debut=date(2021, 1, 1),
             periode_fin=date(2021, 1, 3),
         )
@@ -231,8 +231,8 @@ def test_u18_payload_multi_grandeurs_filtre_sentinelles() -> None:
 
     with httpx.Client(transport=httpx.MockTransport(handler)) as client:
         response = fetch_daily(
-            latitude=9.5,
-            longitude=-13.7,
+            latitude=12.33,
+            longitude=-1.5,
             parameters=[
                 "ALLSKY_SFC_SW_DNI",
                 "ALLSKY_SFC_SW_DIFF",

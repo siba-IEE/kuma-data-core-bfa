@@ -25,12 +25,11 @@ erreurs binaires IEEE 754 incompatibles avec l'exigence métrologique
 de Kuma : 1 atm = 101 325 Pa exactement, 1 cal_IT = 4,1868 J
 exactement, année grégorienne moyenne = 365,2425 j exactement).
 
-Conventions pragmatiques adoptées (voir migration 002 pour détails) :
+Conventions pragmatiques adoptées (voir la migration 0002 pour les valeurs) :
 - intensite_carbone : référence interne en gCO2/kWh (pas kg/J)
 - irradiation_solaire : référence interne en MJ/m²/jour
 - pouvoir_calorifique : convention PCI par défaut
-- devises économiques : Stratégie B (pas de conversion automatique)
-- GNF prioritaire dans l'ordre du seed (signal éditorial Kuma)
+- devises économiques : pas de conversion automatique entre devises
 """
 
 from __future__ import annotations
@@ -138,8 +137,8 @@ class Unite(Base):
             postgresql_where=text("est_unite_de_base = TRUE"),
         ),
         Index("idx_unites_code_unite_si", "code_unite_si"),
-        # Commentaire de table porté sur l'ORM pour cohérence avec la
-        # migration 002 (alembic check). Le dict doit être le dernier
+        # Commentaire de table porté sur l'ORM pour cohérence avec la base
+        # (migration 0024, alembic check). Le dict doit être le dernier
         # élément du tuple __table_args__ selon la convention SQLAlchemy.
         {
             "comment": (

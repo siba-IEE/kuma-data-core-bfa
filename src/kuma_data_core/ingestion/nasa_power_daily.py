@@ -7,8 +7,7 @@ bulk via SQLAlchemy.
 Le module expose deux fonctions complémentaires :
 
 - ``ingerer_serie_daily`` : ingère **1 série** (1 paramètre
-  NASA POWER) en 1 appel. Utilisé par la migration 018 pour Conakry
-  GHI initial.
+  NASA POWER) en 1 appel.
 
 - ``ingerer_series_daily_groupe`` : ingère **N séries** d'une
   même localité en **1 seul appel multi-paramètres** NASA POWER.
@@ -23,7 +22,7 @@ dict vide). Utile pour CI sans accès réseau et pour les tests
 d'intégration qui préfèrent mocker le client httpx via ``httpx_client``.
 
 Ingestion **live uniquement** dans cette instance : le repli offline sur
-seed committé (patron de l'instance Guinée) et son canari de dérive amont
+seed committé (patron de l'instance d'origine) et son canari de dérive amont
 sont retirés tant qu'aucune donnée n'est versée pour le Burkina Faso.
 """
 
@@ -107,7 +106,7 @@ def ingerer_serie_daily(
         session : session SQLAlchemy active. La fonction add+flush mais ne
             commit pas (responsabilité du caller).
         code_serie : code naturel de la série dans ``series_metadonnees``
-            (ex. ``gin_conakry_ghi_nasa_power_2021_2025``). Doit exister
+            (ex. ``nasa_power_ghi_journalier_bfa_prov_kadiogo``). Doit exister
             sinon ``RuntimeError``.
         parametre_nasa : code NASA POWER à ingérer (ex.
             ``ALLSKY_SFC_SW_DWN`` pour GHI).
@@ -153,7 +152,7 @@ def ingerer_serie_daily(
     if row is None:
         raise RuntimeError(
             f"Série {code_serie!r} introuvable dans series_metadonnees. "
-            f"Vérifier que la migration 016 a bien ete appliquee."
+            f"Vérifier le seed de la série."
         )
 
     serie_id: int = int(row.serie_id)
@@ -236,7 +235,6 @@ def ingerer_series_daily_groupe(
 ) -> dict[str, int]:
     """Ingère N séries d'une même localité en 1 appel NASA POWER multi-paramètres.
 
-    Élargissement Conakry à toutes grandeurs brutes.
     Économie réseau (1 appel pour N grandeurs) + cohérence transactionnelle
     (même version API, même release CERES SYN1deg + MERRA-2 pour les N
     valeurs ingérées).
@@ -245,8 +243,8 @@ def ingerer_series_daily_groupe(
         session : session SQLAlchemy active. La fonction add+flush mais ne
             commit pas (responsabilité du caller).
         codes_series : codes naturels des séries dans
-            ``series_metadonnees`` (ex. ``['gin_conakry_dni_nasa_power_2021_2025',
-            'gin_conakry_dhi_*', 'gin_conakry_t2m_*', 'gin_conakry_rh2m_*']``).
+            ``series_metadonnees`` (ex. ``['nasa_power_dni_journalier_bfa_prov_kadiogo',
+            'nasa_power_dhi_journalier_bfa_prov_kadiogo', ...]``).
             Toutes doivent exister sinon ``RuntimeError``. Toutes doivent
             partager la même localité (latitude/longitude fournies en
             arguments, pas re-déduites de la série).
@@ -309,7 +307,7 @@ def ingerer_series_daily_groupe(
         codes_manquants = set(codes_series) - codes_trouves
         raise RuntimeError(
             f"Séries introuvables dans series_metadonnees : "
-            f"{sorted(codes_manquants)}. Vérifier le seed (migration 019)."
+            f"{sorted(codes_manquants)}. Vérifier le seed des séries."
         )
 
     # Vérification que chaque grandeur_code a son paramètre NASA POWER mappé.

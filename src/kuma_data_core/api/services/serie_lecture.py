@@ -7,8 +7,8 @@ granularité** :
 - Les séries ``kuma_calculs`` vont dans ``grandeurs_metier`` (routées par
   source ; ``granularite`` NULL pour ces séries).
 - Les autres séries sont routées par leur ``granularite``
-  (``journalier`` / ``mensuel`` / ``horaire``), discriminant posé en
-  migration 052 sur ``series_metadonnees``.
+  (``journalier`` / ``mensuel`` / ``horaire``), discriminant de
+  ``series_metadonnees``.
 
 Auparavant le routage des séries ``nasa_power`` reposait sur
 ``periode_debut.year`` (bascule 2021). Cette heuristique ne
@@ -77,5 +77,5 @@ def resolve_table_from_series_metadata(
         f"Routage non resolu pour resolve_table_from_series_metadata : "
         f"source={source_code!r}, granularite={granularite!r}. Une serie "
         f"non-kuma_calculs doit porter une granularite "
-        f"'journalier'/'mensuel'/'horaire' (cf. migration 052, dette D-36)."
+        f"'journalier'/'mensuel'/'horaire'."
     )

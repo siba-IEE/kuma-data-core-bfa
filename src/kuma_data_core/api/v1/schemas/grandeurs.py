@@ -90,9 +90,10 @@ class ParametresPOA(ParametresCommunsF2):
             "Methode de calcul. 'moyenne_journaliere' (defaut, retro-compatible) : "
             "Perez au midi solaire sur les totaux journaliers, serie source journaliere. "
             "'integration_horaire' : Perez par heure integre sur la journee, serie source "
-            "horaire (GHI + compagnes DNI/DHI horaires) ; leve le biais de moyennage L-TR-6 "
-            "(surestimation +16 % pour un plan incline, etude §9.2). En moyenne journaliere, "
-            "le champ 'limite' de la reponse chiffre ce biais (ADR-0020)."
+            "horaire (GHI + compagnes DNI/DHI horaires) ; leve le biais de la methode "
+            "journaliere, qui projette le direct du jour au midi solaire et surestime le POA. "
+            "En moyenne journaliere, le champ 'limite' de la reponse chiffre ce biais "
+            "(ADR-0020)."
         ),
     )
 
@@ -145,8 +146,8 @@ class ParametresBifacial(ParametresCommunsF2):
             "solaire sur les totaux journaliers (serie source journaliere). "
             "'integration_horaire' : infinite-sheds par heure integre sur la journee (serie "
             "source horaire + compagnes DNI/DHI horaires ; albedo journalier broadcast aux "
-            "heures) ; leve le biais de moyennage L-TR-6. En moyenne journaliere, le champ "
-            "'limite' de la reponse chiffre ce biais (ADR-0020)."
+            "heures) ; leve le biais de la methode journaliere au midi solaire. En moyenne "
+            "journaliere, le champ 'limite' de la reponse chiffre ce biais (ADR-0020)."
         ),
     )
 
@@ -184,8 +185,8 @@ class ParametresProductibleCorrectionThermique(ParametresCommunsF2):
             "T_cell calcule sur l'irradiance moyennee 24 h (serie source journaliere). "
             "'integration_horaire' : T_cell et correction appliques par heure sur le GHI "
             "horaire (serie source horaire + T2M horaire), integres sur la journee ; "
-            "leve le biais de moyennage L-TR-6 (la moyenne 24 h sous-estime le pic de "
-            "midi -> surestime le productible)."
+            "leve le biais de moyennage (la moyenne 24 h sous-estime le pic de midi, donc "
+            "T_cell, et surestime le productible)."
         ),
     )
 
@@ -235,8 +236,8 @@ class ParametresProductiblePRFourni(ParametresCommunsF2):
             "'integration_horaire' : PR applique par heure (serie source horaire ; + T2M "
             "horaire si correction='temperature'), integre sur la journee. Pour "
             "correction='aucune' (PR brut, lineaire), l'horaire est identique au journalier "
-            "(expose pour coherence d'interface) ; le gain L-TR-6 ne porte que sur "
-            "correction='temperature' (T_cell non-lineaire, biais de Jensen)."
+            "(expose pour coherence d'interface) ; le gain de l'integration horaire ne "
+            "porte que sur correction='temperature' (T_cell non-lineaire, biais de Jensen)."
         ),
     )
 
@@ -287,7 +288,7 @@ class ParametresEnergieUtileECS(ParametresCommunsF2):
             "rendement HWB calcule sur l'irradiance moyennee 24 h (serie source journaliere). "
             "'integration_horaire' : rendement applique par heure sur le GHI horaire reel "
             "(serie source horaire + T2M horaire), integre sur la journee ; leve le biais de "
-            "moyennage L-TR-6 (rendement HWB non-lineaire en G, biais de Jensen)."
+            "moyennage (rendement HWB non-lineaire en G, biais de Jensen)."
         ),
     )
 
@@ -307,8 +308,8 @@ class ParametresDegreJourClimatisation(ParametresCommunsF2):
             "Methode de calcul. 'moyenne_journaliere' (defaut, retro-compatible) : "
             "ecart de la moyenne quotidienne a T_b, serie source journaliere. "
             "'integration_horaire' (Erbs 1983) : integration des ecarts horaires "
-            "positifs a T_b, leve le biais de moyennage tropical (-5 a -15 %, dette "
-            "D-42) ; exige une serie source horaire (granularite='horaire')."
+            "positifs a T_b, leve le biais de la moyenne quotidienne, qui sous-estime les "
+            "degres-jours ; exige une serie source horaire (granularite='horaire')."
         ),
     )
 
@@ -319,21 +320,21 @@ class ParametresDegreJourClimatisation(ParametresCommunsF2):
 class ReponseGhiExceedance(BaseModel):
     """Réponse de l'endpoint ``/v1/grandeurs/ghi_exceedance/{code_localite}``.
 
-    Exceedance inter-annuelle de l'irradiation annuelle pour une ville
-    pilote, dérivée de la série GHI mensuelle 1991-2020 NASA POWER.
+    Exceedance inter-annuelle de l'irradiation annuelle pour une localité,
+    dérivée des années 1991-2020 de la série GHI mensuelle NASA POWER.
     Calculée à la volée à chaque appel, jamais stockée.
     """
 
     code_grandeur: Literal["ghi_exceedance"] = "ghi_exceedance"
     code_localite: str = Field(
         ...,
-        description="Code de la localite cible (ex. gin_kankan, gin_conakry_kaloum).",
+        description="Code de la localite cible (ex. bfa_prov_kadiogo, bfa_com_ouagadougou).",
     )
     code_serie_source: str = Field(
         ...,
         description=(
-            "Code D-32 de la serie GHI mensuelle source 1991-2020 utilisee "
-            "pour le calcul (ex. gin_kankan_ghi_power_1991_2020)."
+            "Code de la serie GHI mensuelle source dont les annees 1991-2020 servent au "
+            "calcul (ex. nasa_power_ghi_mensuel_bfa_prov_kadiogo)."
         ),
     )
     periode: str = Field(
@@ -370,15 +371,14 @@ class ReponseGhiExceedance(BaseModel):
     )
     niveau_confiance: Literal["A", "B", "C"] = Field(
         ...,
-        description="Niveau de confiance du calcul. 'B' (modele satellitaire) en phase 1.",
+        description="Niveau de confiance du calcul : 'B' (modele satellitaire).",
     )
     limite: str = Field(
         ...,
         description=(
             "Avertissement editorial sur la portee du resultat : exceedance "
-            "inter-annuelle uniquement, pas un P90 bancable complet. Pour les "
-            "villes co-localisees (dette D-29 Kindia/Mamou), mention "
-            "explicite de l'identite des P50/P90 avec la ville jumelle."
+            "inter-annuelle uniquement, pas un P90 bancable complet. Les localites "
+            "d'une meme maille NASA POWER ont les memes P50/P90, ce que le champ dit."
         ),
     )
 
@@ -445,7 +445,7 @@ class ReponseTauxSalissureProxy(BaseModel):
     """
 
     code_grandeur: Literal["taux_salissure_proxy"] = "taux_salissure_proxy"
-    code_serie_source: str = Field(..., description="Code D-32 de la serie PM2.5 source (EAC4).")
+    code_serie_source: str = Field(..., description="Code de la serie PM2.5 source (EAC4).")
     code_localite: str = Field(..., description="Code de la localite (derive de la serie source).")
     periode: str = Field(
         ...,
@@ -460,9 +460,9 @@ class ReponseTauxSalissureProxy(BaseModel):
     limite: str = Field(
         ...,
         description=(
-            "Avertissement editorial : proxy modele (pas une mesure, terrain D-67) ; "
-            "spin-up (premiers jours sous-estimes, L-SOIL-3) ; grille EAC4 grossiere "
-            "(L-SOIL-4)."
+            "Avertissement editorial : proxy modele, pas une mesure de salissure ; "
+            "demarrage sur des modules propres (premiers jours sous-estimes) ; grille "
+            "EAC4 grossiere (0,75 deg)."
         ),
     )
 
@@ -528,7 +528,7 @@ class ReponsePRRealiste(BaseModel):
     """Réponse de ``/v1/grandeurs/pr_realiste/{code_serie_source}`` (calculée à la volée)."""
 
     code_grandeur: Literal["pr_realiste"] = "pr_realiste"
-    code_serie_source: str = Field(..., description="Code D-32 de la serie GHI source.")
+    code_serie_source: str = Field(..., description="Code de la serie GHI source.")
     code_localite: str = Field(..., description="Code de la localite (derive de la serie GHI).")
     periode: str = Field(
         ..., description="Fenetre effective (intersection selon le mode), YYYY-MM-DD/YYYY-MM-DD."
@@ -540,7 +540,13 @@ class ReponsePRRealiste(BaseModel):
     mesures_mensuel: list[MesureMoisPR] = Field(
         ..., description="PR realiste moyen par mois (courbe saisonniere, creux Harmattan)."
     )
-    limite: str = Field(..., description="Caveats : doctrine PR-reference, L-PR/L-SOIL/L-TR-6.")
+    limite: str = Field(
+        ...,
+        description=(
+            "Avertissements : PR de reference suppose hors salissure et hors temperature, "
+            "proxy de salissure, biais de la moyenne journaliere."
+        ),
+    )
 
 
 # === Réponse complète =====================================================

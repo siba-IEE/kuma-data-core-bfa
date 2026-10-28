@@ -1,9 +1,8 @@
 """Client HTTP synchrone pour l'API NASA POWER.
 
 Fournit les fonctions ``fetch_daily`` et ``fetch_hourly`` retournant
-des objets pydantic typés ``NasaPowerResponse``. Conçu pour réutilisation
-directe par l'ingestion persistée Conakry GHI - pas de réécriture
-prévue.
+des objets pydantic typés ``NasaPowerResponse``, réutilisés par
+l'ingestion persistée et par le relais horaire.
 
 Endpoints utilisés (communauté Renewable Energy par défaut) :
 

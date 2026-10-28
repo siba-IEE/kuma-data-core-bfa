@@ -28,7 +28,7 @@ Architecture :
 
 Le niveau de confiance dérivé des lignes HEP insérées est calculé via
 ``kuma_data_core.editorial.niveaux_confiance.calculer_niveau_confiance_derive``
-(R1-R4) - cohérence pattern repo (migrations 018, 020, 022).
+(R1-R4), comme pour les autres grandeurs stockées.
 """
 
 from __future__ import annotations
@@ -173,12 +173,11 @@ def calculer_et_inserer_hep(
         session : session SQLAlchemy active. La fonction add+flush mais
             ne commit pas (responsabilité du caller).
         code_serie_hep : code naturel de la série HEP calculée dans
-            ``series_metadonnees`` (ex.
-            ``gin_conakry_hep_kuma_calculs_2021_2025``). Doit exister
-            avec ``methode_collecte='calcul_derive'`` et
-            ``grandeur_code='hep'``, sinon ``RuntimeError``.
+            ``series_metadonnees``. Doit exister avec
+            ``methode_collecte='calcul_derive'`` et ``grandeur_code='hep'``,
+            sinon ``RuntimeError``.
         code_serie_ghi_amont : code naturel de la série GHI amont
-            (ex. ``gin_conakry_ghi_nasa_power_2021_2025``). Doit exister
+            (ex. ``nasa_power_ghi_journalier_bfa_prov_kadiogo``). Doit exister
             et partager la même ``localite_id`` que la série HEP cible.
         version_formule : version de formule en cours d'application
             (défaut 1). Doit matcher

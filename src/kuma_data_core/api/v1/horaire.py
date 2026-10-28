@@ -11,8 +11,7 @@ Architecture :
 
 1. Validation Pydantic des paramètres (schéma
    :class:`api.v1.schemas.horaire.ParametresHoraire`).
-2. Résolution localité contre le référentiel (code complet nominal,
-   alias courts historiques des villes pilotes en compatibilité).
+2. Vérification de la localité contre le référentiel (code complet).
 3. Appel client externe via
    :func:`external.nasa_power.fetch_hourly` (retry transverse inclus).
 4. Conversion réponse amont -> format Kuma cohérent via
@@ -44,7 +43,7 @@ import io
 from datetime import UTC, date, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -59,6 +58,7 @@ from kuma_data_core.api.v1.schemas.horaire import (
     ReponseDisponibilite,
     ReponseHoraire,
     ResultatHoraire,
+    SourceHoraire,
 )
 from kuma_data_core.core.config import get_settings
 from kuma_data_core.db.session import obtenir_session
@@ -84,33 +84,24 @@ routeur = APIRouter(prefix="/horaire", tags=["horaire-passe-plat"])
 
 # === Resolution de la localite contre le referentiel ======================
 
-_PREFIXE_ALIAS_HISTORIQUE: str = "gin_"
-"""Prefixe applique aux codes courts HISTORIQUES des 6 villes pilotes
-(kankan, kindia...) pour retrouver le code complet. Compatibilite de
-contrat uniquement : le chemin nominal est le code complet de la
-table ``localites`` (genericite pays, residu 1 du brief de chantier)."""
-
 
 def _resoudre_localite(session: Session, localite: str) -> str:
-    """Resout le code de localite du path contre le referentiel.
+    """Vérifie le code de localité du chemin contre le référentiel.
 
-    Ordre : code complet tel quel dans la table ; sinon alias
-    historique (prefixe gin_). Localite inconnue : 404
-    ``RESSOURCE_LOCALITE_INCONNUE`` (honnete, au lieu du 422 de
-    l'ancienne enumeration fermee).
+    Code complet de la table ``localites`` (``bfa_com_ouagadougou`` par
+    exemple). Localité inconnue ou inactive : 404 ``RESSOURCE_LOCALITE_INCONNUE``.
     """
-    for candidat in (localite, f"{_PREFIXE_ALIAS_HISTORIQUE}{localite}"):
-        existe = session.execute(
-            text("SELECT 1 FROM localites WHERE code = :code AND actif = TRUE"),
-            {"code": candidat},
-        ).first()
-        if existe is not None:
-            return candidat
-    raise ExceptionKuma(
-        code=CodeErreur.RESSOURCE_LOCALITE_INCONNUE,
-        message=f"Localite '{localite}' introuvable dans le referentiel.",
-        statut_http=status.HTTP_404_NOT_FOUND,
-    )
+    existe = session.execute(
+        text("SELECT 1 FROM localites WHERE code = :code AND actif = TRUE"),
+        {"code": localite},
+    ).first()
+    if existe is None:
+        raise ExceptionKuma(
+            code=CodeErreur.RESSOURCE_LOCALITE_INCONNUE,
+            message=f"Localite '{localite}' introuvable dans le referentiel.",
+            statut_http=status.HTTP_404_NOT_FOUND,
+        )
+    return localite
 
 
 # === Mois de latence NRT (option B1 disponibilité) ========================
@@ -189,18 +180,12 @@ def _chercher_serie_horaire_stockee(
     Renvoie ``(serie_id, periode_debut, periode_fin, source)`` si une série horaire
     active **portant des mesures stockées** existe pour ce couple, ``None``
     sinon. La jointure sur ``localites.code`` résout le couple
-    indépendamment du naming de la série (exception ``gin_conakry`` vs
-    ``gin_conakry_kaloum``).
+    indépendamment du nommage de la série.
 
     La clause ``EXISTS`` écarte les séries « coquilles » (métadonnées
-    actives sans aucune ligne dans ``mesures_ressource_horaires``).
-    Régression observée en production (2026-07-20) : pour (kankan, ghi),
-    deux séries horaires actives coexistent - la série substrat
-    2001-2025 (métadonnées seules) et la série sol terrain 2021-2023
-    (17 520 mesures validées). Le ``LIMIT 1`` sans garde sélectionnait
-    la coquille, dont la période couvre toute fenêtre demandée, et
-    l'endpoint servait 200 avec zéro résultat au lieu de la mesure
-    terrain. Le ``ORDER BY sm.id`` rend la sélection déterministe si
+    actives sans aucune ligne dans ``mesures_ressource_horaires``) : retenue,
+    une coquille dont la période couvre la fenêtre demandée ferait servir 200
+    avec zéro résultat. Le ``ORDER BY`` rend la sélection déterministe si
     plusieurs séries portent des mesures.
     """
     row = session.execute(
@@ -430,22 +415,67 @@ def disponibilite_horaire(
     localite: str,
     grandeur: str,
     _cle: CleApiValidee,
+    session: Annotated[Session, Depends(obtenir_session)],
+    source: Annotated[
+        SourceHoraire | None,
+        Query(
+            description=(
+                "Source de la serie horaire (ADR-0023). Par defaut, la serie que sert "
+                "/v1/horaire sans source."
+            )
+        ),
+    ] = None,
 ) -> ReponseDisponibilite:
-    """Retourne la plage temporelle disponible pour (localite, grandeur).
+    """Retourne la plage temporelle disponible pour (localite, grandeur, source).
 
-    La borne ``debut`` est fixée à la borne historique
-    (``2001-01-01``). La borne ``fin`` est calculée dynamiquement par
-    formule statique B1 (``aujourd'hui - 5 mois - 1 jour``) reflétant
-    la latence NRT amont observée empiriquement (5 mois).
+    Même choix de série que ``/v1/horaire`` (ADR-0023). Pour la source du
+    relais et une grandeur qu'il sert, hors édition figée, la plage est celle
+    du relais : début à la borne historique (``2001-01-01``), fin calculée par
+    la formule statique B1 (``aujourd'hui - 5 mois - 1 jour``), latence de la
+    source amont ; le couple ``(localite, grandeur)`` n'est alors pas vérifié.
 
-    La validation des combinaisons ``(localite, grandeur)`` reste
-    permissive à cet endpoint (renvoie la plage standardisée même si
-    le couple est inhabituel) pour éviter une dépendance Pydantic
-    Literal sur ce simple méta-endpoint.
+    Sinon, la plage est celle de la série stockée : celle de la source
+    demandée, ou, sans source, celle de la source du relais si elle existe,
+    puis la plus ancienne (CAMS Radiation pour ``ghi_ciel_clair``). Elle est
+    recoupée avec la fenêtre du relais, que ``/v1/horaire`` impose à toute
+    requête. Sans série stockée, ou si le recoupement est vide : 404
+    ``RESSOURCE_SERIE_INCONNUE``.
     """
-    plage = _calculer_plage_disponible()
+    fenetre = _calculer_plage_disponible()
+    if source in (None, SOURCE_RELAIS) and relayable(grandeur) and not get_settings().edition_figee:
+        return ReponseDisponibilite(
+            localite=localite,
+            grandeur=grandeur,
+            source=SOURCE_RELAIS,
+            plage_disponible=fenetre,
+        )
+    serie = _chercher_serie_horaire_stockee(
+        session, _resoudre_localite(session, localite), grandeur, source
+    )
+    if serie is None:
+        raise ExceptionKuma(
+            code=CodeErreur.RESSOURCE_SERIE_INCONNUE,
+            message=(
+                "Aucune serie horaire stockee pour cette localite et cette grandeur."
+                if source is None
+                else "Aucune serie horaire stockee pour cette localite, grandeur et source."
+            ),
+            statut_http=status.HTTP_404_NOT_FOUND,
+        )
+    _, debut_serie, fin_serie, source_serie = serie
+    debut = max(debut_serie, fenetre.debut)
+    fin = min(fin_serie, fenetre.fin)
+    if fin < debut:
+        raise ExceptionKuma(
+            code=CodeErreur.RESSOURCE_SERIE_INCONNUE,
+            message="La serie horaire stockee ne recoupe pas la plage servie par /v1/horaire.",
+            statut_http=status.HTTP_404_NOT_FOUND,
+            details={"plage_serie": f"{debut_serie} / {fin_serie}"},
+        )
     return ReponseDisponibilite(
         localite=localite,
         grandeur=grandeur,
-        plage_disponible=plage,
+        source=source_serie,
+        plage_disponible=PlageTemporelle(debut=debut, fin=fin),
+        statut_editorial="valide_auto",
     )

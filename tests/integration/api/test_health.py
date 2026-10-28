@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from importlib import metadata
 from unittest.mock import MagicMock
 
 import pytest
@@ -33,8 +34,8 @@ def test_health_public_repond_200(client: TestClient) -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["statut"] == "operationnel"
-    # Le health public ne divulgue ni version ni environnement (F-05) :
-    # ces champs restent reserves au /v1/health/db authentifie.
+    # Le health public ne divulgue ni version ni environnement : ces
+    # champs restent reserves au /v1/health/db authentifie.
     assert "version" not in payload
     assert "environnement" not in payload
 
@@ -56,6 +57,7 @@ def test_health_db_avec_auth_et_base_up_repond_200(
     assert response.status_code == 200
     payload = response.json()
     assert payload["statut"] == "operationnel"
+    assert payload["version"] == metadata.version("kuma-data-core-bfa")
     composants = {c["nom"]: c["statut"] for c in payload["composants"]}
     assert composants.get("postgresql") == "operationnel"
 

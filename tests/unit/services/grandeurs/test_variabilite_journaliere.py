@@ -62,7 +62,7 @@ def test_t3_pas_de_mensuel_produit() -> None:
 
 
 def test_t4_sanity_cov_tropical_plage() -> None:
-    """T-4 : sanity CoV Conakry tropical simulé ∈ [0.1, 0.7].
+    """T-4 : sanity CoV tropical simulé ∈ [0.1, 0.7].
 
     Fixture GHI sinusoïdale (4.5 → 6.0 sur 30 jours, cycle répété 12
     fois sur l'année) → CoV ≈ 0.09 (variation faible mais > 0).
@@ -105,8 +105,8 @@ def test_t6_runtime_error_si_serie_ghi_amont_absente() -> None:
     with pytest.raises(RuntimeError, match=r"Serie GHI amont .* introuvable"):
         calculer_et_inserer_variabilite_journaliere(
             session=session,
-            code_serie_variabilite="gin_test_variabilite",
-            code_serie_ghi_amont="gin_test_ghi_inexistant",
+            code_serie_variabilite="bfa_test_variabilite",
+            code_serie_ghi_amont="bfa_test_ghi_inexistant",
         )
 
 
@@ -117,14 +117,14 @@ def test_t7_runtime_error_si_version_formule_desalignee() -> None:
     with pytest.raises(RuntimeError, match="Desalignement version_formule"):
         calculer_et_inserer_variabilite_journaliere(
             session=session,
-            code_serie_variabilite="gin_test_variabilite",
-            code_serie_ghi_amont="gin_test_ghi",
+            code_serie_variabilite="bfa_test_variabilite",
+            code_serie_ghi_amont="bfa_test_ghi",
             version_formule=2,
         )
 
 
 def test_t8_niveau_b_pour_calcul_derive_avec_fiabilite_haute() -> None:
-    """T-8 : régression Drift 6."""
+    """T-8 : régression sur le niveau de confiance d'une série calculée."""
     assert (
         calculer_niveau_confiance_derive(methode_collecte="calcul_derive", fiabilite_source="haute")
         == "B"

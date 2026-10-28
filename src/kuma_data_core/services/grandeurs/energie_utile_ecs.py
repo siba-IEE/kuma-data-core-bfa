@@ -35,8 +35,7 @@ Limitations documentées :
   consommateur.
 - coefficients eta0, a1, a2 supposés via fiche Solar Keymark ou
   équivalent (responsabilité appelant).
-- T_amb = T2M MERRA-2 avec biais altitude - sous-estimation possible
-  Labé / Mamou.
+- T_amb = T2M MERRA-2 de NASA POWER, sans correction d'altitude.
 
 Niveau de confiance dérivé uniforme ``'B'``.
 

@@ -36,19 +36,19 @@ def _invalider_cache_entre_tests() -> None:
     _charger_coordonnees.cache_clear()
 
 
-def test_coordonnees_localite_retourne_tuple_pour_6_villes() -> None:
-    """Les 6 codes Kuma (préfixés gin_) retournent un tuple (lat, lon).
+def test_coordonnees_localite_retourne_tuple_par_code() -> None:
+    """Six codes du référentiel retournent un tuple (lat, lon).
 
     Verifie le contrat de coordonnees_localite : recherche par code DB
     complet et retour du tuple float.
     """
     rows_simules = [
-        ("gin_conakry_kaloum", 9.5092, -13.7122),
-        ("gin_kankan", 10.3886, -9.3056),
-        ("gin_kindia", 10.04972222, -12.85416667),
-        ("gin_labe", 11.3179, -12.2833),
-        ("gin_mamou", 10.3753, -12.0911),
-        ("gin_nzerekore", 7.75222222, -8.82166667),
+        ("bfa_com_ouagadougou", 12.35, -1.51666667),
+        ("bfa_dep_dedougou", 12.4621, -3.4579),
+        ("bfa_dep_dori", 14.033, -0.033),
+        ("bfa_dep_kaya", 13.0856, -1.084),
+        ("bfa_dep_koupela", 12.2011, -0.354996),
+        ("bfa_prov_kadiogo", 12.33333333, -1.5),
     ]
     mock_session = _construire_mock_session(rows_simules)
     mock_factory = MagicMock(return_value=mock_session)
@@ -67,7 +67,7 @@ def test_coordonnees_localite_retourne_tuple_pour_6_villes() -> None:
 
 def test_charger_coordonnees_cache_lru() -> None:
     """Le second appel ne relit pas la DB (verification @lru_cache effective)."""
-    rows_simules = [("gin_conakry_kaloum", 9.5092, -13.7122)]
+    rows_simules = [("bfa_com_ouagadougou", 12.35, -1.51666667)]
     mock_session = _construire_mock_session(rows_simules)
     mock_factory = MagicMock(return_value=mock_session)
 
@@ -90,7 +90,7 @@ def test_coordonnees_localite_code_inconnu_leve_key_error() -> None:
     En pratique, la validation Pydantic ``Literal[...]`` sur l'API
     empeche ce cas. Le test verifie le contrat brut de la fonction.
     """
-    rows_simules = [("gin_conakry_kaloum", 9.5092, -13.7122)]
+    rows_simules = [("bfa_com_ouagadougou", 12.35, -1.51666667)]
     mock_session = _construire_mock_session(rows_simules)
     mock_factory = MagicMock(return_value=mock_session)
 
@@ -101,4 +101,4 @@ def test_coordonnees_localite_code_inconnu_leve_key_error() -> None:
         ),
         pytest.raises(KeyError),
     ):
-        coordonnees_localite("gin_inexistant")
+        coordonnees_localite("bfa_inexistant")

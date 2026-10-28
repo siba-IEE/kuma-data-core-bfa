@@ -34,8 +34,7 @@ class ReponseSantePublique(BaseModel):
     Ne divulgue ni la version logicielle ni l'environnement : sur un
     endpoint non authentifié, ces informations aident un attaquant à
     cibler des vulnérabilités connues sans bénéfice pour un client
-    légitime (finding F-05 pentest). Elles restent disponibles sur
-    ``/v1/health/db`` (authentifié).
+    légitime. Elles restent disponibles sur ``/v1/health/db`` (authentifié).
     """
 
     statut: Literal["operationnel"]

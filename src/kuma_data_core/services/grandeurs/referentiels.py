@@ -1,5 +1,9 @@
 """Calculs des 3 grandeurs F1 calculee_volee référentielles.
 
+Module hérité de l'instance d'origine, écrit pour ses six villes pilotes :
+il n'est appelé nulle part au Burkina Faso, où ces grandeurs n'ont aucune
+valeur (ADR-0012 et ADR-0016 pour les écarts entre sources).
+
 Module de calcul et d'insertion des 3 grandeurs métier externes
 multi-référence :
 

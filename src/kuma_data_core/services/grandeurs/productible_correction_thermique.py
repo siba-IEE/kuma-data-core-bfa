@@ -28,15 +28,14 @@ Limitations documentées :
 - NOCT simple ne prend pas en compte le vent (WS2M). Le modèle Faiman
   2008 [2] avec coefficients U0 / U1 corrige cette limitation mais
   relève du **régime terrain** : ses coefficients par défaut sont
-  calibrés en climat désertique et leur transposition au climat
-  guinéen tropical sans calibration locale produirait une fausse
-  confiance B. Code de calcul Faiman + tests archivés sur la branche
-  ``wip/faiman-terrain`` et le tag ``faiman-terrain-reserve``.
+  calibrés en climat désertique, et leur transposition aux climats
+  sahélien et soudanien sans calibration locale produirait une fausse
+  confiance B.
 - modèles Sandia SAPM (King et al. 2004 [3]) et PVsyst plus précis
   disponibles mais nécessitent plus de paramètres entrée ou
   calibrations site. Différés.
-- T_amb = T2M MERRA-2 NASA POWER avec biais d'altitude documenté -
-  sous-estimation possible Labé / Mamou.
+- T_amb = T2M MERRA-2 NASA POWER, sans correction d'altitude (ERA5-Land,
+  ramené à l'altitude de la maille, est plus chaud de 0,8 °C, ADR-0024).
 
 Niveau de confiance dérivé uniforme ``'B'``.
 

@@ -100,7 +100,8 @@ class SerieListee(BaseModel):
 
       - ``source_label`` ← ``sources.titre``
       - ``grandeur_label`` ← ``grandeurs_referentiel.libelle``
-      - ``grandeur_unit`` ← ``unites.symbole``
+      - ``grandeur_unit`` ← ``unites.symbole`` ; pour une série horaire,
+        l'unité des valeurs servies par ``/v1/horaire``
       - ``notes_fr`` ← ``series_metadonnees.note_publique`` (passeport public)
       - ``created_at`` ← ``series_metadonnees.cree_le``
       - ``updated_at`` ← ``series_metadonnees.modifie_le``

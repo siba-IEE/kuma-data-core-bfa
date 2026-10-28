@@ -1,6 +1,6 @@
 [project]
 name = "kuma-data-core-bfa"
-version = "0.19.0"
+version = "0.20.0"
 description = "Moteur de données à confiance tracée (niveaux A/B/C), versionnement temporel non destructif et audit applicatif. Base PostgreSQL et API FastAPI. Instance dédiée : ressource solaire au Burkina Faso."
 readme = "README.md"
 requires-python = ">=3.12"

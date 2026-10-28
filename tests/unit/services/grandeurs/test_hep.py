@@ -135,7 +135,7 @@ def test_t3_completude_mensuelle_stricte_skip_si_mois_incomplet() -> None:
 
 
 def test_t4_sanity_hep_annuel_plage_tropicale() -> None:
-    """T-4 : Année 2025 complète à 5.5 kWh/m²/j (moyenne Conakry simulée)
+    """T-4 : Année 2025 complète à 5.5 kWh/m²/j (moyenne simulée)
     → HEP_annuel = 365 * 5.5 ≈ 2007.5 h_eq, dans la plage tropicale
     attendue [1800, 2200] h_eq/an.
     """
@@ -201,8 +201,8 @@ def test_t6_runtime_error_si_serie_ghi_amont_absente() -> None:
     with pytest.raises(RuntimeError, match=r"Serie GHI amont .* introuvable"):
         calculer_et_inserer_hep(
             session=session,
-            code_serie_hep="gin_test_hep_kuma_calculs_2021_2025",
-            code_serie_ghi_amont="gin_test_ghi_inexistant",
+            code_serie_hep="bfa_test_hep_kuma_calculs_2021_2025",
+            code_serie_ghi_amont="bfa_test_ghi_inexistant",
         )
 
 
@@ -223,8 +223,8 @@ def test_t7_runtime_error_si_version_formule_desalignee() -> None:
     with pytest.raises(RuntimeError, match="Desalignement version_formule"):
         calculer_et_inserer_hep(
             session=session,
-            code_serie_hep="gin_test_hep_kuma_calculs_2021_2025",
-            code_serie_ghi_amont="gin_test_ghi_nasa_power_2021_2025",
+            code_serie_hep="bfa_test_hep_kuma_calculs_2021_2025",
+            code_serie_ghi_amont="bfa_test_ghi_nasa_power_2021_2025",
             version_formule=2,
         )
 
@@ -235,9 +235,9 @@ def test_t7_runtime_error_si_version_formule_desalignee() -> None:
 
 
 def test_t8_niveau_b_pour_calcul_derive_avec_fiabilite_haute() -> None:
-    """T-8 : Régression sur la cohérence Drift 6 arbitré en cadrage.
+    """T-8 : régression sur le niveau de confiance d'une série calculée.
 
-    Pour les 6 séries HEP :
+    Pour une série HEP :
     ``methode_collecte='calcul_derive'`` + source ``kuma_calculs``
     fiabilité ``'haute'`` → R1 / R2 / R3 ne matchent pas → R4 catch-all
     → ``'B'``. Ce test verrouille que toute future modification de

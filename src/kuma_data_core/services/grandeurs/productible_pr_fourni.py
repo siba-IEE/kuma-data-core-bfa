@@ -15,7 +15,7 @@ Modèles retenus v1 :
 
 Les variantes **PR_W (weather-corrected)** et **PR_C
 (climate-corrected)** documentées par Dierauf et al. 2013 ne sont pas
-exposées en v1 (différées, TMY Guinée non disponible publiquement).
+exposées (différées, faute d'année météorologique type).
 
 Endpoint paramétré par ``correction = 'aucune' | 'temperature'`` :
 
@@ -257,7 +257,7 @@ def calculer_productible_pr_fourni_mensuel(
     """
     assert parametres.correction == "aucune", (
         "calculer_productible_pr_fourni_mensuel : seul le mode "
-        "correction='aucune' est supporte en lot 2 (mode 'temperature' "
+        "correction='aucune' est supporte (mode 'temperature' "
         "non-lineaire incompatible avec moyenne climato mensuelle)."
     )
     resultats: list[ResultatMensuel] = []

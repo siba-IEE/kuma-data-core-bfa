@@ -72,7 +72,7 @@ class LocaliteListee(BaseModel):
     annee_population: int | None
 
     # === Métadonnées techniques ==========================================
-    fuseau_horaire: str | None  # IANA TZ (e.g. "Africa/Conakry")
+    fuseau_horaire: str | None  # IANA TZ (e.g. "Africa/Ouagadougou")
 
     # === Audit (renommé public) ==========================================
     created_at: datetime  # <- cree_le
@@ -85,10 +85,10 @@ class LocaliteListee(BaseModel):
 class LocaliteListeePaginee(BaseModel):
     """Envelope paginée du listing `GET /api/v1/localites` (ADR-0002).
 
-    Pattern identique à :class:`SerieListeePaginee` mergée en cycle
-    1-7d (ADR-0001). Le champ ``total`` permet aux consommateurs de
-    connaître le nombre total de localités matchant les filtres sans
-    avoir à boucler jusqu'à une page vide.
+    Pattern identique à :class:`SerieListeePaginee` (ADR-0001). Le champ
+    ``total`` permet aux consommateurs de connaître le nombre total de
+    localités matchant les filtres sans avoir à boucler jusqu'à une page
+    vide.
     """
 
     items: list[LocaliteListee]
@@ -119,9 +119,9 @@ class CelluleResolution(BaseModel):
     """Cellule de la grille de climatologie contenant le point.
 
     Grille de la source de climatologie mensuelle : 1 degre x 1 degre,
-    frontieres aux degres entiers (verification empirique 2026-07-20 :
-    serie de Kerouane vs releve au point de Tokounou, meme cellule,
-    ecart nul sur les 12 moyennes mensuelles 1991-2020).
+    frontieres aux degres entiers. Les localites d'une meme cellule ont une
+    serie mensuelle GHI NASA POWER identique (degenerescence de pixel,
+    migration 0014, ADR-0016).
     """
 
     lat_min: float
@@ -160,7 +160,6 @@ class ReponseResolution(BaseModel):
             "Code de la serie de climatologie mensuelle de la localite "
             "retenue : la serie qui represente la cellule du point. Le "
             "Core dit quelle serie consommer, les clients ne le "
-            "reconstruisent jamais par convention de nommage (genericite "
-            "pays, residu 2 du brief de chantier)."
+            "reconstruisent jamais par convention de nommage."
         )
     )

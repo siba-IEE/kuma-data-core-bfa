@@ -36,7 +36,7 @@ def test_t2_agreger_mensuel_vide_rejete() -> None:
 def test_t3_calcul_ecart_relatif_signe() -> None:
     """T-3 : ecart relatif signe (positif si kuma > sarah3, negatif sinon).
 
-    Cas typique : Kuma NASA POWER 5.5 kWh/m^2/j Conakry,
+    Cas typique : Kuma NASA POWER 5.5 kWh/m^2/j,
     SARAH-3 ICDR 5.3 kWh/m^2/j. Ecart positif petit +3.8%.
     """
     ecart = _calcul_ecart_relatif(valeur_kuma=5.5, valeur_sarah3=5.3)
@@ -94,12 +94,12 @@ def test_t7_calcul_rang_spatial_6_villes() -> None:
     Cas typique : 6 villes avec valeurs GHI mensuelles distinctes.
     """
     valeurs = {
-        56: 4.5,  # Conakry  -> rang 1 (le plus bas)
-        51: 5.8,  # Kankan   -> rang 6 (le plus haut)
-        52: 5.0,  # Kindia   -> rang 3
-        53: 4.7,  # Labe     -> rang 2
-        54: 5.2,  # Mamou    -> rang 4
-        55: 5.5,  # Nzerekore-> rang 5
+        56: 4.5,  # rang 1 (le plus bas)
+        51: 5.8,  # rang 6 (le plus haut)
+        52: 5.0,  # rang 3
+        53: 4.7,  # rang 2
+        54: 5.2,  # rang 4
+        55: 5.5,  # rang 5
     }
     rangs = _calcul_rang_spatial(valeurs)
     assert rangs[56] == 1

@@ -98,7 +98,7 @@ def calculer_et_inserer_productible_specifique_theorique(
         session : session SQLAlchemy active.
         code_serie_productible : code naturel de la série cible.
         code_serie_hep_amont : code naturel de la série HEP amont
-            (typiquement gin_<ville>_hep_kuma_calculs_2021_2025).
+            (série ``calcul_derive`` de grandeur ``hep``).
         pr_theorique : Performance Ratio théorique (défaut 0.8).
         version_formule : version de formule en cours (défaut 1).
 
@@ -211,7 +211,7 @@ def calculer_et_inserer_productible_specifique_theorique(
     if not rows_hep:
         raise RuntimeError(
             f"Aucune ligne HEP courante trouvee pour la serie {code_serie_hep_amont!r}. "
-            "Verifier que 1-5D-iii (migration 027) a bien ete applique."
+            "Verifier le calcul de la serie HEP amont."
         )
 
     # 7. Application PR théorique + construction des lignes à insérer

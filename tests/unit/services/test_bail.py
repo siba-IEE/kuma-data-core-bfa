@@ -42,7 +42,7 @@ def _charge(fin_licence: datetime | None = None) -> dict[str, object]:
     return construire_charge(
         prefixe_cle="kuma_AbCdEfGh",
         titulaire="Aïssatou Camara",
-        organisation="Bureau d'études de Kankan",
+        organisation="Bureau d'études de Bobo-Dioulasso",
         fin_licence=fin_licence,
         maintenant=MAINTENANT,
         duree=timedelta(days=30),

@@ -78,8 +78,7 @@ def calculer_niveau_confiance_derive(
             (série sans méthode renseignée).
         fiabilite_source : valeur de ``sources.fiabilite`` de la source
             primaire de la série. Valeurs typiques : 'haute', 'moyenne',
-            'faible' (cf. modèle ``Source`` migration 004 + 006). Peut
-            être None.
+            'faible' (cf. modèle ``Source``). Peut être None.
 
     Returns:
         'A', 'B' ou 'C' selon R1-R4.

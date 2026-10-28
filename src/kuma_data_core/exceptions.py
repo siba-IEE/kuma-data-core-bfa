@@ -1,8 +1,7 @@
 """Hiérarchie d'exceptions transverses de Kuma Data Core.
 
-Module créé en étape 1-2a (spike NASA POWER). Enrichi en étape 1-2b
-avec les exceptions éditoriales (mécaniques transverses phase 1 § 7.3) :
-``TransitionEditorialeRefusee``, ``NiveauConfianceInvalide``,
+Regroupe les exceptions des clients externes et les exceptions
+éditoriales : ``TransitionEditorialeRefusee``, ``NiveauConfianceInvalide``,
 ``JustificationRequise``.
 
 Convention : la hiérarchie expose une racine ``KumaError`` pour
@@ -45,8 +44,7 @@ class NasaPowerRateLimitError(NasaPowerHttpError):
     """HTTP 429 Too Many Requests reçu de NASA POWER.
 
     Sous-type de ``NasaPowerHttpError`` pour permettre aux callers
-    d'implémenter une stratégie de retry spécifique au rate limiting
-    (cf. critère C3 de la spec 1-2a).
+    d'implémenter une stratégie de retry spécifique au rate limiting.
     """
 
 
@@ -80,7 +78,7 @@ class NasaPowerTimeoutError(NasaPowerError):
 
 
 # ===========================================================================
-# Exceptions PVGIS (ajoutées en 1-8b ; cf. ingestion/sarah3_monthly.py)
+# Exceptions PVGIS (cf. ingestion/sarah3_monthly.py)
 # ===========================================================================
 
 
@@ -122,8 +120,7 @@ class PvgisTimeoutError(PvgisError):
     serveur (``httpx.RemoteProtocolError``) au-delà du nombre de
     retries configurés. Le disconnect serveur PVGIS intermittent
     depuis les runners GitHub Actions est le scénario CI exact ayant
-    motivé l'extension du retry transverse à ce module (cf. dette
-    D-48 inscrite et fermée par PR feature ``feature/1-8b``).
+    motivé l'extension du retry transverse à ce module.
     """
 
     def __init__(self, url: str, timeout_seconds: float) -> None:
@@ -133,7 +130,7 @@ class PvgisTimeoutError(PvgisError):
 
 
 # ===========================================================================
-# Exceptions éditoriales (ajoutées en 1-2b ; cf. mécaniques transverses § 7.3)
+# Exceptions éditoriales
 # ===========================================================================
 
 
@@ -153,7 +150,7 @@ class TransitionEditorialeRefusee(EditorialeError):  # noqa: N818
 
     Levée par ``kuma_data_core.editorial.statuts.transition_statut`` quand
     la paire ``(statut_courant, nouveau_statut)`` ne figure pas dans la
-    matrice autorisée (cf. mécaniques transverses § 4.5).
+    matrice autorisée.
 
     Attributs :
         statut_courant : statut actuel de la ligne avant transition.
@@ -166,7 +163,7 @@ class TransitionEditorialeRefusee(EditorialeError):  # noqa: N818
         super().__init__(
             f"Transition éditoriale refusée : "
             f"{statut_courant!r} -> {nouveau_statut!r} "
-            f"n'est pas dans la matrice autorisée § 4.5."
+            f"n'est pas une transition autorisée (kuma_data_core.editorial.statuts)."
         )
 
 
@@ -190,7 +187,7 @@ class JustificationRequise(EditorialeError):  # noqa: N818
 
     Levée typiquement par ``overrider_niveau_confiance`` quand le caller
     appose un override sur le niveau de confiance sans fournir de
-    justification dans ``commentaire_editorial`` (cf. mécaniques § 6.5).
+    justification dans ``commentaire_editorial``.
     """
 
     def __init__(self, operation: str) -> None:

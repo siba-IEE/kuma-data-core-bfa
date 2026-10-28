@@ -78,7 +78,7 @@ def obtenir_session() -> Iterator[Session]:
     Implémentation **synchrone** alignée sur l'engine sync du projet.
     FastAPI exécute les handlers ``def`` (non ``async def``) dans un
     threadpool, ce qui rend l'usage de psycopg3 sync sans risque pour
-    la boucle d'événements en phase 0.
+    la boucle d'événements.
     """
     factory = get_session_factory()
     with factory() as session:

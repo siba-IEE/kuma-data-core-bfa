@@ -41,10 +41,9 @@ from kuma_data_core.api.v1.schemas.grandeurs import MesureSoilingJour
 # === Constantes (defauts F1 "soiling de site", documentes) =================
 
 SURFACE_TILT_DEFAUT: float = 10.0
-"""Inclinaison fixe par défaut (degrés), proche de la latitude du sud du pays
-(choisie pour la Guinée, 9-10 deg N ; les provinces du Burkina Faso vont de 9,8 à
-14,5 deg N, ADR-0015). F1 soiling de site ; un parc à tilt différent salit
-différemment.
+"""Inclinaison fixe par défaut (degrés), proche de la latitude du sud du pays :
+les provinces du Burkina Faso vont de 9,8 à 14,5° N (ADR-0015). F1 soiling de
+site ; un parc à tilt différent salit différemment.
 Une version F2 paramétrable est une refonte ultérieure consciente."""
 
 CLEANING_THRESHOLD_DEFAUT_MM: float = 1.0
@@ -63,9 +62,8 @@ GRAMMES_PAR_MICROGRAMME: float = 1e-6
 
 CAVEAT_SPIN_UP: str = (
     "Modele HSU initialise propre (salissure nulle) : les premiers jours de la "
-    "fenetre sous-estiment la salissure reelle (spin-up, L-SOIL-3). Proxy modele, "
-    "pas une mesure de salissure (L-SOIL-1, terrain D-67) ; PM EAC4 grille grossiere "
-    "0,75 deg (L-SOIL-4)."
+    "fenetre sous-estiment la salissure reelle (spin-up). Proxy modele, pas une "
+    "mesure de salissure ; PM EAC4 sur une grille grossiere de 0,75 deg."
 )
 
 

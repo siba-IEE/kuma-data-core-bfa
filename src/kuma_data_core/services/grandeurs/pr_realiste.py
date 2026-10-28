@@ -70,17 +70,17 @@ _WATT_PAR_KILOWATT: float = 1000.0
 _CAVEAT_PR_REFERENCE: str = (
     "PR_fourni suppose hors salissure ET hors temperature (corrections "
     "multiplicatives separables ; un PR plaque tout-compris double-compterait, "
-    "doctrine PR-reference L-PR-2). Proxy API confiance B, pas un PR mesure sol "
-    "(D-67, L-PR-1). v1 : facteurs thermique et salissure independants (L-PR-3)."
+    "doctrine PR-reference). Proxy API confiance B, pas un PR mesure au sol. "
+    "Facteurs thermique et salissure independants."
 )
 _CAVEAT_SPIN_UP: str = (
     " Salissure : modele HSU initialise propre, premiers jours de la fenetre "
-    "sous-estimes (spin-up, L-SOIL-3) ; fenetre bornee a l'overlap PM EAC4 (L-PR-4)."
+    "sous-estimes (spin-up) ; fenetre bornee a la periode des PM EAC4."
 )
-_CAVEAT_L_TR_6: str = (
-    " Thermique : le facteur ratio_T herite du biais L-TR-6 (la moyenne 24 h "
-    "sous-estime le pic d'irradiance de midi, donc T_cell, donc surestime legerement "
-    "le PR : 'realiste' un poil optimiste cote chaleur)."
+_CAVEAT_MOYENNE_JOURNALIERE: str = (
+    " Thermique : le facteur ratio_T part de l'irradiance moyenne des 24 h ; chaque "
+    "jour ensoleille, elle sous-estime le pic de midi, donc T_cell, et le PR est "
+    "legerement surestime."
 )
 
 
@@ -135,7 +135,7 @@ def _limite(correction: ModeCorrectionPR) -> str:
     if correction in _BESOIN_SALISSURE:
         suite += _CAVEAT_SPIN_UP
     if correction in _BESOIN_THERMIQUE:
-        suite += _CAVEAT_L_TR_6
+        suite += _CAVEAT_MOYENNE_JOURNALIERE
     return _CAVEAT_PR_REFERENCE + suite
 
 

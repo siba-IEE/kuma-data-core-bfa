@@ -5,10 +5,9 @@ Contient l'authentification par clé API (``verifier_cle_api``), l'alias
 authentifiés, et ``parametres_requete``, qui construit un modèle de
 paramètres depuis la requête.
 
-Les clés valides sont lues depuis la configuration
-(``Settings.api_cle_solar_bridge``, ``Settings.api_cle_admin``). Une
-migration ultérieure est prévue vers une table ``cles_api`` avec
-révocation et rotation.
+Les clés valides sont celles de la configuration
+(``Settings.api_cle_solar_bridge``, ``Settings.api_cle_admin``) et les clés
+émises en libre-service, dont l'empreinte est dans la table ``cles_api``.
 """
 
 from __future__ import annotations

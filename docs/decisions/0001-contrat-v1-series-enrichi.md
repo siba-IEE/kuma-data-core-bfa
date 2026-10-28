@@ -55,7 +55,7 @@ class SerieListee(BaseModel):
     # Grandeur (dénormalisée)
     grandeur_code: str
     grandeur_label: str  # ← grandeurs_referentiel.libelle
-    grandeur_unit: str   # ← unites.symbole
+    grandeur_unit: str   # ← unites.symbole (horaire : unité de /v1/horaire)
 
     # Source (dénormalisée)
     source_id: int
@@ -118,7 +118,7 @@ Mapping :
 |---|---|---|
 | `source_label` | ← | `sources.titre` |
 | `grandeur_label` | ← | `grandeurs_referentiel.libelle` |
-| `grandeur_unit` | ← | `unites.symbole` |
+| `grandeur_unit` | ← | `unites.symbole` ; depuis la version 0.20.0, unité de `/v1/horaire` pour une série horaire |
 | `notes_fr` | ← | `series_metadonnees.note_publique` |
 | `created_at` | ← | `series_metadonnees.cree_le` |
 | `updated_at` | ← | `series_metadonnees.modifie_le` |

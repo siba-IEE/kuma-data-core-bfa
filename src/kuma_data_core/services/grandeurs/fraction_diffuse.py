@@ -25,7 +25,7 @@ Architecture (fonctions pures + orchestrateur I/O) :
   la lecture SQL des deux séries amont (DHI et GHI), l'appel à
   l'agrégation pure, et l'INSERT bulk dans `grandeurs_metier`.
 
-Pattern bulk INSERT SQL brut (cohérent migration 018 et module HEP).
+Pattern bulk INSERT SQL brut (comme le module HEP).
 """
 
 from __future__ import annotations
@@ -186,7 +186,7 @@ def calculer_et_inserer_fraction_diffuse(
         session : session SQLAlchemy active. La fonction add+flush mais
             ne commit pas.
         code_serie_fraction_diffuse : code naturel de la série cible
-            (ex. `gin_conakry_kaloum_fraction_diffuse_kuma_calculs_2021_2025`).
+            (ex. `fraction_diffuse_nasa_power_bfa_prov_kadiogo`).
             Doit exister avec methode_collecte='calcul_derive' et
             grandeur_code='fraction_diffuse'.
         code_serie_dhi_amont : code naturel de la série DHI amont.

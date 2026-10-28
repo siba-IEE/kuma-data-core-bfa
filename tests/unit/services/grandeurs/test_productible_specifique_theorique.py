@@ -44,7 +44,7 @@ def test_t3_pr_theorique_zero_donne_zero() -> None:
 def test_t4_sanity_plage_tropicale_avec_pr_default() -> None:
     """T-4 : sanity plage tropicale avec PR=0.8.
 
-    HEP Guinée pilote ∈ [1727, 2060] (observé) → productible
+    HEP tropicale ∈ [1727, 2060] → productible
     ∈ [1381, 1648] kWh/kWc/an.
     """
     for hep_observe in (1727.0, 1850.0, 2060.0):
@@ -82,8 +82,8 @@ def test_t6_runtime_error_si_serie_hep_amont_absente() -> None:
     with pytest.raises(RuntimeError, match=r"Serie HEP amont .* introuvable"):
         calculer_et_inserer_productible_specifique_theorique(
             session=session,
-            code_serie_productible="gin_test_productible",
-            code_serie_hep_amont="gin_test_hep_inexistant",
+            code_serie_productible="bfa_test_productible",
+            code_serie_hep_amont="bfa_test_hep_inexistant",
         )
 
 
@@ -94,14 +94,14 @@ def test_t7_runtime_error_si_version_formule_desalignee() -> None:
     with pytest.raises(RuntimeError, match="Desalignement version_formule"):
         calculer_et_inserer_productible_specifique_theorique(
             session=session,
-            code_serie_productible="gin_test_productible",
-            code_serie_hep_amont="gin_test_hep",
+            code_serie_productible="bfa_test_productible",
+            code_serie_hep_amont="bfa_test_hep",
             version_formule=2,
         )
 
 
 def test_t8_niveau_b_pour_calcul_derive_avec_fiabilite_haute() -> None:
-    """T-8 : régression Drift 6."""
+    """T-8 : régression sur le niveau de confiance d'une série calculée."""
     assert (
         calculer_niveau_confiance_derive(methode_collecte="calcul_derive", fiabilite_source="haute")
         == "B"

@@ -25,7 +25,7 @@ Helper SQLAlchemy :
 
 - ``@hybrid_property niveau_effectif`` : renvoie l'override si non NULL,
   sinon le dérive. Équivalent Python de la vue SQL
-  ``v_grandeurs_metier_courantes`` (à créer en migration 024).
+  ``v_grandeurs_metier_courantes``.
 """
 
 from __future__ import annotations
@@ -113,11 +113,11 @@ class GrandeurMetier(Base):
     )
 
     # === Valeur ===
-    # Nullable depuis migration 046 : permet de stocker NULL pour les écarts
-    # relatifs dont la valeur SARAH-3 mensuelle est en dessous du seuil
-    # SEUIL_SARAH3_MIN_DEFAUT (donnée amont dégradée, ratio non calculable
-    # sans amplification mathématique absurde). Voir migration 046 docstring
-    # et services/grandeurs/referentiels.py:_calcul_ecart_relatif_avec_seuil.
+    # Nullable : permet de stocker NULL pour les écarts relatifs dont la
+    # valeur SARAH-3 mensuelle est en dessous du seuil SEUIL_SARAH3_MIN_DEFAUT
+    # (donnée amont dégradée, ratio non calculable sans amplification
+    # mathématique absurde). Voir
+    # services/grandeurs/referentiels.py:_calcul_ecart_relatif_avec_seuil.
     # Si une grandeur veut imposer NOT NULL sur son sous-périmètre, c'est
     # une CHECK CONSTRAINT conditionnelle qui le porte, pas la nullabilité
     # de colonne.
@@ -205,9 +205,9 @@ class GrandeurMetier(Base):
     def niveau_effectif(self) -> str:
         """Renvoie ``niveau_confiance_override`` si non NULL, sinon ``niveau_confiance_derive``.
 
-        Équivalent Python de la vue SQL ``v_grandeurs_metier_courantes``
-        (à créer en migration 024). Permet aux callers d'obtenir le niveau
-        consommable sans logique conditionnelle dispersée.
+        Équivalent Python de la vue SQL ``v_grandeurs_metier_courantes``. Permet aux
+        callers d'obtenir le niveau consommable sans logique conditionnelle
+        dispersée.
         """
         return (
             self.niveau_confiance_override
@@ -252,7 +252,7 @@ class GrandeurMetier(Base):
             name="ck_grandeurs_metier_periode_validite_coherente",
         ),
         # Index partiel sur lignes courantes (usage dominant en lecture).
-        # Pattern symétrique à idx_mesures_ressource_courantes (migration 014).
+        # Pattern symétrique à idx_mesures_ressource_courantes.
         Index(
             "idx_grandeurs_metier_courantes",
             "grandeur_code",
@@ -264,8 +264,8 @@ class GrandeurMetier(Base):
             "version_formule",
             postgresql_where=text("valide_au IS NULL"),
         ),
-        # Commentaire de table porté sur l'ORM pour cohérence avec la
-        # migration 023 (alembic check).
+        # Commentaire de table porté sur l'ORM pour cohérence avec la base
+        # (migration 0024, alembic check).
         {
             "comment": (
                 "Grandeurs métier calculées par Kuma à partir des mesures brutes : agrégats "

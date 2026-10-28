@@ -39,6 +39,10 @@ DATE_DEBUT_DISPONIBILITE: date = date(2001, 1, 1)
 # === Schémas paramètres ===================================================
 
 
+SourceHoraire = Literal["nasa_power", "cams_radiation"]
+"""Sources des séries horaires (ADR-0023)."""
+
+
 class ParametresHoraire(BaseModel):
     """Paramètres communs aux endpoints du passe-plat horaire.
 
@@ -47,10 +51,8 @@ class ParametresHoraire(BaseModel):
     nécessaire pour éviter le shadow du built-in Python ``format``.
     """
 
-    # Toute localite du referentiel (code complet, ex. gin_kankan) ;
-    # les codes courts historiques des 6 villes pilotes restent des
-    # alias de compatibilite, resolus par le handler contre la table
-    # (genericite pays : plus de liste codee).
+    # Toute localité du référentiel, par son code complet
+    # (ex. bfa_com_ouagadougou), vérifiée par le handler contre la table.
     localite: str = Field(..., min_length=1, max_length=100, pattern=r"^[a-z0-9_]+$")
     grandeur: Literal[
         "ghi",
@@ -71,7 +73,7 @@ class ParametresHoraire(BaseModel):
         alias="format",
         description="Format de reponse : 'json' (defaut) ou 'csv'.",
     )
-    source: Literal["nasa_power", "cams_radiation"] | None = Field(
+    source: SourceHoraire | None = Field(
         default=None,
         description=(
             "Source de la serie horaire stockee. Par defaut, NASA POWER, source du relais. "
@@ -143,5 +145,8 @@ class ReponseDisponibilite(BaseModel):
 
     localite: str
     grandeur: str
+    source: str = Field(
+        description="Source dont la plage est donnee : relais (nasa_power) ou serie stockee."
+    )
     plage_disponible: PlageTemporelle
-    statut_editorial: Literal["passe_plat_non_valide"] = "passe_plat_non_valide"
+    statut_editorial: Literal["valide_auto", "passe_plat_non_valide"] = "passe_plat_non_valide"

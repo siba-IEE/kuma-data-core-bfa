@@ -6,35 +6,37 @@ Couvre 7 niveaux hiérarchiques : ``continent``, ``region_supranationale``,
 
 Validation hiérarchique en deux étages
 --------------------------------------
-* Migration 003 : CHECK simple - un ``continent`` ne peut pas avoir de
-  ``parent_id`` (c'est une racine de la hiérarchie).
-* Migration 084 (densification préfectorale) : trigger PL/pgSQL
-  ``valider_hierarchie_localites()`` (``BEFORE INSERT OR UPDATE``,
-  ``SECURITY DEFINER``) qui valide la matrice parent-enfant des 7 types.
-  **Clôture la dette du trigger 007** (resté « à venir » de la 003 à la 083).
-  Détection de boucles ``WITH RECURSIVE`` non incluse (différée : le seed
-  n'a pas de cycle). Exception Conakry : ``commune.parent`` peut être une
-  ``region_administrative`` (région spéciale sans préfecture).
+Les deux étages sont posés par la baseline (migration 0001) :
+
+* CHECK simple - un ``continent`` ne peut pas avoir de ``parent_id``
+  (c'est une racine de la hiérarchie).
+* Trigger PL/pgSQL ``valider_hierarchie_localites()`` (``BEFORE INSERT OR
+  UPDATE``, ``SECURITY DEFINER``) qui valide la matrice parent-enfant des
+  7 types. Détection de boucles ``WITH RECURSIVE`` non incluse (le seed
+  n'a pas de cycle). Une ``commune`` peut avoir pour parent une
+  ``region_administrative`` sans échelon intermédiaire ; au Burkina Faso,
+  toutes les communes ont une province (``prefecture``) pour parent
+  (ADR-0007).
 
 Convention pour le ``code``
 ---------------------------
 * ``continent`` / ``region_supranationale`` : slug ASCII
   (``afrique``, ``uemoa``).
 * ``pays`` : code ISO 3166-1 alpha-3 en minuscule
-  (``gin``, ``sen``, ``mar``).
-* ``region_administrative`` / ``commune`` / ``site`` :
-  ``<code_pays>_<slug>`` (``gin_conakry``, ``gin_souapiti``,
-  ``mar_noor_ouarzazate``).
+  (``bfa``, ``sen``, ``mar``).
+* ``region_administrative`` / ``prefecture`` / ``commune`` / ``site`` :
+  ``<code_pays>_<slug>`` ; au Burkina Faso (ADR-0007), ``bfa_bankui``
+  pour une région, ``bfa_prov_kadiogo``, ``bfa_dep_dori`` et
+  ``bfa_com_ouagadougou``.
 
-La cohérence stricte ``code='gin'`` ⇒ ``pays_iso3='GIN'`` n'est pas
+La cohérence stricte ``code='bfa'`` ⇒ ``pays_iso3='BFA'`` n'est pas
 contrainte en base (regex CHECK insuffisamment expressive). Validation
 applicative.
 
 Internationalisation différée
 ------------------------------
-Le champ ``nom_local`` du brief v1 a été supprimé : Kuma publie
-exclusivement en français. Si une i18n devient nécessaire, une table
-``localites_traductions`` sera créée.
+Pas de champ ``nom_local`` : Kuma publie exclusivement en français. Si une
+i18n devient nécessaire, une table ``localites_traductions`` sera créée.
 
 Précision géographique
 ----------------------
@@ -45,15 +47,9 @@ levés professionnels). Bornes vérifiées par CHECK
 
 Format ``fuseau_horaire``
 -------------------------
-IANA Time Zone Database (par exemple ``Africa/Conakry``,
+IANA Time Zone Database (par exemple ``Africa/Ouagadougou``,
 ``Africa/Casablanca``, ``Europe/Paris``). Pas de CHECK : la liste
 IANA évolue.
-
-FK ``localite_id`` sur ``contributeurs``
-----------------------------------------
-Reportée en migration 005 dédiée. Une migration = un changement
-logique : la 003 crée la table ``localites``, la 005 ajoutera la FK
-inverse.
 """
 
 from __future__ import annotations

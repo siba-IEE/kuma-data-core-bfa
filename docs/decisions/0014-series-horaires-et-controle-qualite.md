@@ -95,9 +95,9 @@ faut le satellite horaire aux mêmes points.
 - `/v1/horaire` sert la série stockée, statut `valide_auto`, quand elle
   couvre la plage demandée ; ailleurs et hors 2021-2025, il relaie toujours
   NASA POWER sans validation. Il exprime le rayonnement en Wh/m² sur
-  l'heure, égal à la moyenne en W/m² ; le catalogue `/v1/series` affiche
+  l'heure, égal à la moyenne en W/m² ; le catalogue `/v1/series` affichait
   l'unité de référence de la grandeur (kWh/m²/jour), qui ne vaut pas pour
-  ces séries.
+  ces séries, et donne Wh/m² depuis la version 0.20.0.
 - Une série horaire passée à une grandeur sans `methode=integration_horaire`
   donne une réponse vide, comme avant ce lot ; une période qui déborde
   2021-2025 est réduite aux jours servis.

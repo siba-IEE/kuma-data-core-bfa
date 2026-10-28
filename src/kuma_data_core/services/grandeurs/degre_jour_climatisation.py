@@ -23,13 +23,15 @@ source est journalière.
 Limitations documentées :
 
 - la moyenne journalière sous-estime le DJC en climat à fort cycle
-  diurne (-5 à -15% en tropical humide). Mitigation via intégration
+  diurne (à Ouagadougou en 2024, base 26 °C : 965 °C·j en moyenne
+  journalière, 1 282 en intégration horaire). Mitigation via intégration
   horaire.
-- pas de norme de base T_b consolidée pour la Guinée. Les valeurs
+- pas de base T_b normalisée retenue ici. Les valeurs
   typiques (18.3 °C ASHRAE, 24-26 °C CEDEAO, 24 °C RTAA DOM) sont des
   références régionales partiellement transposables.
-- T_amb = T2M MERRA-2 : sous-estimation altitude pour Labé / Mamou
-  (Fouta-Djalon).
+- T_amb = T2M MERRA-2 de NASA POWER, sans correction d'altitude
+  (ERA5-Land, ramené à l'altitude de la maille, est plus chaud de
+  0,8 °C, ADR-0024).
 - Balanced Point Method (ASHRAE) hors périmètre F2.
 
 Niveau de confiance dérivé uniforme ``'B'``.

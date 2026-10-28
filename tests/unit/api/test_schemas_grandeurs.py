@@ -37,7 +37,7 @@ def test_t_schemas_1_plage_temporelle_invalide() -> None:
     """periode_fin < periode_debut leve ValidationError."""
     with pytest.raises(ValidationError, match="periode_fin"):
         ParametresDegreJourClimatisation(
-            code_serie_source="gin_conakry_t2m_nasa_power_2021_2025",
+            code_serie_source="nasa_power_t2m_journalier_bfa_com_ouagadougou",
             periode_debut=date(2024, 12, 31),
             periode_fin=date(2024, 1, 1),
             base_temperature_degc=24,
@@ -48,7 +48,7 @@ def test_t_schemas_2_alias_format() -> None:
     """Le champ format_sortie accepte le nom URL 'format' via alias."""
     schema = ParametresDegreJourClimatisation.model_validate(
         {
-            "code_serie_source": "gin_conakry_t2m_nasa_power_2021_2025",
+            "code_serie_source": "nasa_power_t2m_journalier_bfa_com_ouagadougou",
             "periode_debut": date(2024, 1, 1),
             "periode_fin": date(2024, 12, 31),
             "base_temperature_degc": 24,
@@ -63,7 +63,7 @@ def test_t_schemas_2_alias_format() -> None:
 
 def test_t_poa_1_cas_standard() -> None:
     schema = ParametresPOA(
-        code_serie_source="gin_conakry_ghi_nasa_power_2021_2025",
+        code_serie_source="nasa_power_ghi_journalier_bfa_com_ouagadougou",
         periode_debut=date(2024, 1, 1),
         periode_fin=date(2024, 12, 31),
         inclinaison_deg=20,
@@ -122,7 +122,7 @@ def test_t_poa_4_albedo_bornes() -> None:
 
 def test_t_therm_1_cas_standard() -> None:
     schema = ParametresProductibleCorrectionThermique(
-        code_serie_source="gin_conakry_ghi_nasa_power_2021_2025",
+        code_serie_source="nasa_power_ghi_journalier_bfa_com_ouagadougou",
         periode_debut=date(2024, 1, 1),
         periode_fin=date(2024, 12, 31),
         noct_degc=45,
@@ -315,7 +315,7 @@ def test_t_schemas_6_reponse_grandeur_f2() -> None:
     """ReponseGrandeurF2 accepte une liste melangee journalier + mensuel."""
     reponse = ReponseGrandeurF2(
         code_grandeur="poa_parametrable",
-        code_serie_source="gin_conakry_ghi_nasa_power_2021_2025",
+        code_serie_source="nasa_power_ghi_journalier_bfa_com_ouagadougou",
         parametres_appliques={"inclinaison_deg": 20, "orientation_deg": 180},
         resultats=[
             ResultatJournalier(
