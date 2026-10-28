@@ -159,6 +159,36 @@ def test_coherence_entre_grandeurs(db_session: Session) -> None:
     assert (resultat.jours, resultat.temperatures, resultat.vents) == (83 * 7_670, 0, 0)
 
 
+def test_temperature_moyenne_aux_communes(db_session: Session) -> None:
+    """Aux communes, la température moyenne est entre le minimum et le maximum, rosée sous elle."""
+    resultat = db_session.execute(
+        text(
+            """
+            WITH annees AS (
+                SELECT s.localite_id, d.annee,
+                       max(d.valeurs_e4) FILTER (WHERE s.grandeur_code = 't2m_min') AS tmin,
+                       max(d.valeurs_e4) FILTER (WHERE s.grandeur_code = 't2m') AS tmoy,
+                       max(d.valeurs_e4) FILTER (WHERE s.grandeur_code = 't2m_max') AS tmax,
+                       max(d.valeurs_e4) FILTER (WHERE s.grandeur_code = 'point_rosee_2m') AS rosee
+                FROM series_metadonnees s
+                JOIN localites l ON l.id = s.localite_id AND l.type_localite = 'commune'
+                JOIN mesures_journalieres_denses d
+                     ON d.serie_id = COALESCE(s.serie_porteuse_id, s.id)
+                WHERE s.grandeur_code IN ('t2m_min', 't2m', 't2m_max', 'point_rosee_2m')
+                  AND s.source_id = 1 AND s.stockage = 'dense'
+                GROUP BY 1, 2
+            )
+            SELECT count(*) AS jours,
+                   count(*) FILTER (WHERE u.tmoy < u.tmin OR u.tmoy > u.tmax) AS hors_bornes,
+                   count(*) FILTER (WHERE u.rosee > u.tmoy) AS rosee_haute
+            FROM annees a
+            CROSS JOIN LATERAL unnest(a.tmin, a.tmoy, a.tmax, a.rosee) AS u(tmin, tmoy, tmax, rosee)
+            """
+        )
+    ).one()
+    assert (resultat.jours, resultat.hors_bornes, resultat.rosee_haute) == (351 * 7_670, 0, 0)
+
+
 def test_saisons(db_session: Session) -> None:
     """Harmattan de nord-est en janvier, mousson de sud-ouest en août ; air sec, ciel clair."""
     directions = {}
@@ -216,7 +246,7 @@ def test_notes_publiques(db_session: Session) -> None:
     for r in notes:
         assert "Lot des 398 localités" in r.note_publique, r.grandeur_code
         assert "stockage dense (ADR-0017)" in r.note_publique, r.grandeur_code
-        assert "heure solaire locale" in r.note_publique, r.grandeur_code
+        assert "Jour de 0 h à 24 h UTC" in r.note_publique, r.grandeur_code
         assert ("maille de 1°" if r.grandeur_code == "nebulosite" else "MERRA-2") in r.note_publique
 
 
@@ -227,4 +257,9 @@ def test_fiche_de_la_source(db_session: Session) -> None:
     ).one()
     assert fiche.consultation == "2026-10-27"
     assert "Au Burkina Faso" in fiche.notes and "ADR-0021" in fiche.notes
+    assert "DNI et DHI mensuels 2001-2025" in fiche.notes and "SRB" in fiche.notes
     assert "guinéen" not in fiche.notes
+    description = db_session.execute(
+        text("SELECT description FROM grandeurs_referentiel WHERE code = 'vent_10m'")
+    ).scalar_one()
+    assert "hors périmètre" not in description

@@ -14,9 +14,10 @@ réanalyse MERRA-2, méthode ``reanalyse`` ; nébulosité (``nebulosite``) de CE
 méthode ``modele_satellitaire``. Confiance B.
 
 Deux unités ajoutées (``radian`` et ``degre``, pour la direction du vent) et
-huit grandeurs au référentiel (``vent_10m`` y figurait), retirées au
-``downgrade``. La fiche de la source ``nasa_power``, restée celle du dépôt
-d'origine, passe au Burkina Faso ; le ``downgrade`` la lui rend.
+huit grandeurs au référentiel (``vent_10m`` y figurait, sa description est mise
+à jour), retirées au ``downgrade``. La fiche de la source ``nasa_power``, restée
+celle du dépôt d'origine, passe au Burkina Faso ; le ``downgrade`` rend la
+fiche et la description d'origine.
 3 582 séries (398 localités, 9 grandeurs) de 7 670 jours ; les localités d'une
 même maille partagent la série de leur porteuse.
 
@@ -91,11 +92,7 @@ UNITES: list[dict[str, Any]] = [
         "facteur_conversion_si": math.pi / 180,
         "decalage_conversion_si": 0,
         "code_unite_si": "radian",
-        "note_methodologique": (
-            "Unité d'angle plan en usage avec le SI : 1° = π/180 rad. Direction du vent "
-            "comptée depuis le nord, dans le sens horaire, vers d'où souffle le vent "
-            "(90° : vent d'est)."
-        ),
+        "note_methodologique": "Unité d'angle plan en usage avec le SI : 1° = π/180 rad.",
         "references_normatives": ["BIPM SI Brochure 9ème édition (2019), Tableau 8"],
     },
 ]
@@ -116,8 +113,8 @@ NOUVELLES_GRANDEURS: dict[str, tuple[str, str, str]] = {
     "point_rosee_2m": (
         "Point de rosée à 2 mètres",
         "degree_celsius",
-        "Température de rosée de l'air à 2 m, moyenne du jour, en °C : mesure de "
-        "l'humidité absolue de l'air.",
+        "Température de rosée de l'air à 2 m (de givre sous 0 °C selon la source), moyenne "
+        "du jour, en °C : mesure de la vapeur d'eau de l'air.",
     ),
     "vent_10m_max": (
         "Vent maximal à 10 mètres",
@@ -128,7 +125,7 @@ NOUVELLES_GRANDEURS: dict[str, tuple[str, str, str]] = {
         "Direction du vent à 10 mètres",
         "degre",
         "Direction d'où souffle le vent moyen du jour à 10 m (moyenne vectorielle des "
-        "vents horaires), en degrés depuis le nord dans le sens horaire.",
+        "vents horaires), en degrés depuis le nord dans le sens horaire (90° : vent d'est).",
     ),
     "vent_50m": (
         "Vent à 50 mètres",
@@ -138,14 +135,26 @@ NOUVELLES_GRANDEURS: dict[str, tuple[str, str, str]] = {
     "pression_surface": (
         "Pression de surface",
         "kilopascal",
-        "Pression atmosphérique au sol, moyenne du jour, en kPa.",
+        "Pression atmosphérique à la surface, moyenne du jour, en kPa.",
     ),
     "nebulosite": (
         "Nébulosité",
         "pourcent",
-        "Part du ciel couverte par les nuages, moyenne du jour, en %.",
+        "Part de la maille couverte de nuages vue par satellite, moyenne du jour, en %.",
     ),
 }
+# Description de ``vent_10m`` au référentiel : état de la 0002, rendu au
+# ``downgrade``, et état de la 0020.
+DESCRIPTION_VENT_0002: str = (
+    "Vitesse moyenne journalière du vent à 10 mètres au-dessus de la surface. Donnée brute "
+    "ingérée depuis NASA POWER paramètre WS10M (source MERRA-2 GMAO). Cohorte vent "
+    "complémentaire pour usages potentiels éoliens ; hors périmètre Phase 2 (solaire "
+    "uniquement)."
+)
+DESCRIPTION_VENT_0020: str = (
+    "Vitesse moyenne journalière du vent à 10 mètres au-dessus de la surface, en m/s : "
+    "moyenne des vitesses horaires du jour."
+)
 
 # Grandeur : (nom, valeur du jour, unité, produit et maille).
 GRANDEURS: dict[str, tuple[str, str, str, str]] = {
@@ -173,29 +182,45 @@ MISES_EN_GARDE: dict[str, str] = {
     "t2m_min": "",
     "t2m_max": "",
     "point_rosee_2m": (
-        " Sous 0 °C pour 41 % des jours-localités de décembre à février : air très sec de "
-        "l'harmattan."
+        " Sous 0 °C, NASA POWER sert le point de givre (saturation sur la glace), plus haut "
+        "que le point de rosée d'environ 0,7 °C à -5 °C et de 2 °C à -16,6 °C, valeur la "
+        "plus basse servie. Sous 0 °C pour 41 % des jours-localités de décembre à février : "
+        "air très sec de l'harmattan."
     ),
     "vent_10m": "",
     "vent_10m_max": (
-        " Plus forte des vitesses horaires du jour, non la rafale : les rafales des lignes "
-        "de grains, de quelques minutes, n'y figurent pas."
+        " Plus forte des moyennes horaires de la maille, non la rafale : ni les rafales, de "
+        "quelques secondes, ni les coups de vent des lignes de grains, de quelques minutes, "
+        "n'y figurent."
     ),
     "direction_vent_10m": (
-        " Par vents tournants, la direction du vent moyen peut s'écarter de la direction "
-        "dominante du jour. En moyenne vectorielle sur les 398 localités : de nord-est à "
-        "est-nord-est de novembre à mars (harmattan), de sud à sud-ouest d'avril à "
-        "septembre (mousson)."
+        " Moyenne vectorielle : par vents tournants, la direction du vent moyen peut "
+        "s'écarter de la direction la plus fréquente ; plusieurs jours se moyennent par "
+        "composantes, non par angles. Sur les 398 localités : nord-est (51 à 55°) de "
+        "décembre à février, harmattan ; sud à sud-ouest (194 à 221°) de mai à septembre, "
+        "mousson. La bascule de mars-avril remonte du sud au nord : en avril, le vent vient "
+        "du sud 93 % des jours au sud de 10,5 °N, 42 % au nord de 13,5 °N."
     ),
-    "vent_50m": "",
-    "pression_surface": "",
+    "vent_50m": (
+        " Vent du modèle à 50 m, non mesuré. Une puissance éolienne, qui suit le cube de la "
+        "vitesse, ne se calcule pas sur des moyennes du jour."
+    ),
+    "pression_surface": (
+        " Pression à l'altitude moyenne de la maille (de 199 à 409 m selon la maille), non à "
+        "celle de la localité : environ 1,1 kPa de moins par 100 m de plus."
+    ),
     "nebulosite": (
-        " Part du ciel couverte vue par satellite : 23 % en décembre et 77 % en août en "
-        "moyenne sur les 398 localités."
+        " Fraction nuageuse vue par satellite, nuages fins compris : 23 % en décembre et "
+        "77 % en août en moyenne sur les 398 localités. Elle ne mesure pas l'atténuation : "
+        "les jours couverts à 90 % ou plus, CAMS sert en moyenne 59 % du rayonnement par "
+        "ciel clair de juin à septembre, 69 % de novembre à mars."
     ),
 }
-# Le jour NASA POWER est compté en heure solaire locale.
-JOUR_SOLAIRE: str = " Jour compté en heure solaire locale."
+# Le jour de NASA POWER, compté en heure solaire locale arrondie à l'heure, est au
+# Burkina Faso le jour UTC (vérifié sur l'API horaire).
+JOUR_SOLAIRE: str = (
+    " Jour de 0 h à 24 h UTC : l'heure solaire locale de NASA POWER s'y confond au Burkina Faso."
+)
 
 # Fiche de la source : état d'origine, rendu au ``downgrade``, et état du
 # Burkina Faso. Seules les clés de métadonnées modifiées y figurent.
@@ -236,20 +261,22 @@ FICHE_0020: dict[str, Any] = {
     "notes": (
         "Projet POWER (Prediction Of Worldwide Energy Resources) du Langley Research Center "
         "de la NASA, financé par la NASA Earth Science Division. Rayonnement de CERES "
-        "SYN1deg (maille de 1°), météo de la réanalyse MERRA-2 du GMAO (maille de 0,5° × "
-        "0,625°), nébulosité de CERES ; communauté RE, jour compté en heure solaire locale. "
-        "Au Burkina Faso : GHI, DNI et DHI mensuels 1991-2025 aux 398 localités (POWER "
-        "Monthly and Annual API, ADR-0009) ; GHI journalier 1991-2025, DNI et DHI "
-        "2001-2025, température, humidité et pluie 1991-2025 aux 47 provinces (POWER Daily "
-        "API v2.10.0, ADR-0010 et ADR-0013), et les mêmes grandeurs sur 2005-2025 aux "
-        "351 communes (v2.10.1, ADR-0017) ; GHI, DNI, DHI et température horaires "
-        "2021-2025 aux cinq points pilotes (POWER Hourly API v2.10.2, ADR-0014) ; "
-        "températures minimale et maximale, point de rosée, vent à 10 et 50 m, direction "
-        "du vent, pression et nébulosité journaliers 2005-2025 aux 398 localités (v2.10.1, "
-        "ADR-0021). Consultée les 15 et 27 octobre 2026. Confiance B (modèle satellitaire "
-        "et réanalyse). Attribution : « The data was obtained from National Aeronautics and "
-        "Space Administration (NASA) Langley Research Center's Prediction Of Worldwide "
-        "Energy Resources (POWER) project funded through the NASA Earth Science Division. »"
+        "SYN1deg (maille de 1°), du produit SRB avant 2001 ; météo de la réanalyse MERRA-2 "
+        "du GMAO (maille de 0,5° × 0,625°) ; nébulosité de CERES SYN1deg ; communauté RE, "
+        "jour compté en heure solaire locale (le jour UTC au Burkina Faso), horaire en UTC. "
+        "Au Burkina Faso : GHI mensuel 1991-2025, DNI et DHI mensuels 2001-2025, aux "
+        "398 localités (POWER Monthly and Annual API, ADR-0009) ; GHI journalier "
+        "1991-2025, DNI et DHI 2001-2025, température, humidité et pluie 1991-2025 aux "
+        "47 provinces (POWER Daily API v2.10.0, ADR-0010 et ADR-0013), et les mêmes "
+        "grandeurs sur 2005-2025 aux 351 communes (v2.10.1, ADR-0017) ; GHI, DNI, DHI et "
+        "température horaires 2021-2025 aux cinq points pilotes (POWER Hourly API "
+        "v2.10.2, ADR-0014) ; températures minimale et maximale, point de rosée, vent à 10 "
+        "et 50 m, direction du vent, pression et nébulosité journaliers 2005-2025 aux "
+        "398 localités (v2.10.1, ADR-0021). Consultée les 15 et 27 octobre 2026. Confiance "
+        "B (modèle satellitaire et réanalyse). Attribution : « The data was obtained from "
+        "National Aeronautics and Space Administration (NASA) Langley Research Center's "
+        "Prediction Of Worldwide Energy Resources (POWER) project funded through the NASA "
+        "Earth Science Division. »"
     ),
     "metadonnees": {},
 }
@@ -270,6 +297,17 @@ def _fiche(bind: sa.Connection, fiche: dict[str, Any], depuis: dict[str, Any]) -
             "id": ID_SOURCE,
             "notes_depuis": depuis["notes"],
         },
+    ).rowcount
+
+
+def _description_vent(bind: sa.Connection, description: str, depuis: str) -> int:
+    """Remplace la description ``depuis`` de ``vent_10m`` ; une description modifiée reste."""
+    return bind.execute(
+        sa.text(
+            "UPDATE grandeurs_referentiel SET description = :d, modifie_le = now() "
+            "WHERE code = 'vent_10m' AND description = :depuis"
+        ),
+        {"d": description, "depuis": depuis},
     ).rowcount
 
 
@@ -387,12 +425,15 @@ def upgrade() -> None:
         )
     if _fiche(bind, FICHE_0020, FICHE_ORIGINE) != 1:
         raise RuntimeError("Migration 0020 : fiche de nasa_power modifiée depuis l'origine.")
+    if _description_vent(bind, DESCRIPTION_VENT_0020, DESCRIPTION_VENT_0002) != 1:
+        raise RuntimeError("Migration 0020 : description de vent_10m modifiée depuis la 0002.")
     op.execute("ANALYZE series_metadonnees")
     op.execute("ANALYZE mesures_journalieres_denses")
 
 
 def downgrade() -> None:
     bind = op.get_bind()
+    _description_vent(bind, DESCRIPTION_VENT_0002, DESCRIPTION_VENT_0020)
     _fiche(bind, FICHE_ORIGINE, FICHE_0020)
     ids = [
         row.id

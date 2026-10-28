@@ -1,20 +1,20 @@
-"""Lots de séries : points et contrats (ADR-0009 à ADR-0011, ADR-0013 à ADR-0015).
+"""Lots de séries : points et contrats (ADR-0009 à ADR-0011, ADR-0013 à ADR-0021).
 
 Un **lot** est un ensemble de localités du référentiel dont les séries sont
-demandées aux sources solaires sous le même contrat :
+demandées aux sources sous le même contrat :
 
 - ``provinces`` : les 47 provinces (niveau ``prefecture``, migration 0003) ;
 - ``communes`` : les 350 départements et la commune de Ouagadougou (niveau
-  ``commune``, migration 0004).
+  ``commune``, migration 0004) ;
+- ``localites`` : les 398 localités des deux lots (ADR-0017).
 
-Les séries mensuelles portent sur les deux lots, les séries journalières NASA
-POWER et CAMS EAC4 sur le seul lot ``provinces``, les séries horaires sur cinq
-points pilotes du lot ``communes`` (la commune de Ouagadougou et quatre
-départements). Chaque série couvre toute la période servie par sa source à
-la date de l'ingestion (octobre 2026). Ces contrats sont figés
-par les migrations 0006 (mensuel), 0007 et 0010 (journalier), 0008 (CAMS),
-0011 (horaire) et 0013 (particules fines) : une autre source ou une autre
-période passera par de nouveaux contrats et de nouveaux fichiers.
+Les séries mensuelles portent sur les provinces et les communes. Les séries
+journalières portent sur les provinces, sur les communes ou sur les
+398 localités, en stockage dense hors des provinces. Les séries horaires
+portent sur cinq points pilotes du lot ``communes`` (la commune de
+Ouagadougou et quatre départements). Chaque contrat fixe sa période ; les
+migrations qui chargent ses fichiers le figent : une autre source ou une
+autre période passera par de nouveaux contrats et de nouveaux fichiers.
 """
 
 from __future__ import annotations
@@ -310,15 +310,16 @@ CONTRATS_METEO_JOURNALIERS_COMMUNES: dict[str, ContratSerie] = {
 # Météo complémentaire NASA POWER (ADR-0021), journalière aux 398 localités,
 # 2005-2025, en stockage dense : paramètre, bornes basse et haute (°C, m/s,
 # degrés depuis le nord, kPa, %). La nébulosité vient de CERES (satellite),
-# le reste de la réanalyse MERRA-2.
+# le reste de la réanalyse MERRA-2. Les bornes du vent, de 1,6 à 1,8 fois les
+# maxima servis (9,21, 12,81 et 11,14 m/s), arrêtent une erreur d'unité.
 METEO_NASA_COMPLEMENTAIRE: dict[str, tuple[str, float, float]] = {
     "t2m_min": ("T2M_MIN", 0.0, 45.0),
     "t2m_max": ("T2M_MAX", 5.0, 55.0),
     "point_rosee_2m": ("T2MDEW", -30.0, 35.0),
-    "vent_10m": ("WS10M", 0.0, 30.0),
-    "vent_10m_max": ("WS10M_MAX", 0.0, 40.0),
+    "vent_10m": ("WS10M", 0.0, 15.0),
+    "vent_10m_max": ("WS10M_MAX", 0.0, 20.0),
     "direction_vent_10m": ("WD10M", 0.0, 360.0),
-    "vent_50m": ("WS50M", 0.0, 40.0),
+    "vent_50m": ("WS50M", 0.0, 20.0),
     "pression_surface": ("PS", 85.0, 105.0),
     "nebulosite": ("CLOUD_AMT", 0.0, 100.0),
 }

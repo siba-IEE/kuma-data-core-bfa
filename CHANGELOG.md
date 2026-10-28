@@ -13,6 +13,9 @@ le projet suit le versionnement sémantique.
   `scripts/ingest_nasa_power_journalier.py --famille meteo_complementaire
   --lot localites`.
 - Fiche de la source `nasa_power` mise au Burkina Faso.
+- Feuille de route : le jalon 5 porte le brut satellite et de réanalyse
+  (SARAH-3, ERA5-Land, météo NASA POWER, CAMS horaire) ; le terrain et la
+  confiance A passent au jalon 6.
 
 ## 0.14.0
 

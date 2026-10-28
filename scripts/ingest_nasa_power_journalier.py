@@ -16,16 +16,15 @@ Familles, en une requête par point :
   (``ALLSKY_SFC_SW_DIFF``) 2001-2025 aux provinces ;
 - ``meteo`` (ADR-0013), 1991-2025 aux provinces : ``t2m`` (``T2M``, moyenne du
   jour en °C), ``rh2m`` (``RH2M``, %) et ``precipitation`` (``PRECTOTCORR``,
-  mm/jour).
-
-Aux communes, les deux familles couvrent 2005-2025.
-
+  mm/jour) ;
 - ``meteo_complementaire`` (ADR-0021), 2005-2025 aux 398 localités (lot
   ``localites``) : températures minimale et maximale (``T2M_MIN``,
   ``T2M_MAX``), point de rosée (``T2MDEW``), en °C ; vent moyen et maximal à
   10 m (``WS10M``, ``WS10M_MAX``) et vent moyen à 50 m (``WS50M``), en m/s ;
   direction du vent à 10 m (``WD10M``, degrés depuis le nord) ; pression de
   surface (``PS``, kPa) ; nébulosité (``CLOUD_AMT``, %).
+
+Aux communes, les deux premières familles couvrent 2005-2025.
 
 Une valeur de remplissage dans la période d'un contrat fait échouer
 l'ingestion. Le script affiche le nom et la version de l'API, à reporter dans

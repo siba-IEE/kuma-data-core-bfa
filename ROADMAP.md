@@ -67,8 +67,8 @@ l'amorçage et la montée en charge de la donnée burkinabè.
 
 ## Jalon 6 : terrain (confiance A)
 
-Annoncé au jalon 4 par les ADR-0012, ADR-0014 et ADR-0016, avant que ce jalon ne passe à
-la granularité journalière, puis reporté après le brut du jalon 5.
+Les ADR-0012, ADR-0014 et ADR-0016 l'annonçaient au jalon 4. Il passe après la
+granularité journalière (jalon 4) et le brut satellite et de réanalyse (jalon 5).
 
 - [ ] Intégrer les stations sol ESMAP/WAPP du Burkina Faso (Dédougou, Dori, Kaya,
       Koupéla) comme première ancre de confiance A, et le calage terrain associé.
