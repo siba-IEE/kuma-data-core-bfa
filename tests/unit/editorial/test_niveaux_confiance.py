@@ -91,6 +91,14 @@ def test_r4_catchall_donne_b_modele_satellitaire() -> None:
     )
 
 
+@pytest.mark.parametrize("methode", ["reanalyse", "calcul_derive"])
+def test_r4_catchall_reanalyse_et_calcul_derive(methode: str) -> None:
+    """R4 catch-all : réanalyse ou grandeur calculée, source haute → B."""
+    assert (
+        calculer_niveau_confiance_derive(methode_collecte=methode, fiabilite_source="haute") == "B"
+    )
+
+
 def test_r4_catchall_source_moyenne() -> None:
     assert (
         calculer_niveau_confiance_derive(

@@ -1,14 +1,24 @@
-"""Endpoints `/api/v1/grandeurs/<code>` - 5 grandeurs F2 paramétrables.
+"""Endpoints ``/v1/grandeurs/<code>`` : 6 grandeurs F2 paramétrables et 5 routes F1.
 
-Cinq endpoints distincts :
+Grandeurs F2, calculées à la volée avec les paramètres de l'utilisateur :
 
 - ``GET /v1/grandeurs/poa_parametrable``
+- ``GET /v1/grandeurs/poa_bifacial``
 - ``GET /v1/grandeurs/productible_correction_thermique``
 - ``GET /v1/grandeurs/productible_pr_fourni``
 - ``GET /v1/grandeurs/energie_utile_ecs``
 - ``GET /v1/grandeurs/degre_jour_climatisation``
 
-Architecture commune :
+Routes F1, sans paramètre physique libre
+(``docs/architecture/06-api-reference-publique.md`` §3.7) :
+
+- ``GET /v1/grandeurs/ghi_exceedance/{code_localite}``
+- ``GET /v1/grandeurs/taux_salissure_proxy/{code_serie_source}``
+- ``GET /v1/grandeurs/pr_realiste/{code_serie_source}``
+- ``GET /v1/grandeurs/incertitude_inter_source/{code_localite}``
+- ``GET /v1/grandeurs/incertitude_inter_source``
+
+Architecture commune des routes F2 :
 
 1. Validation Pydantic des paramètres utilisateur (schémas
    ``api.v1.schemas.grandeurs``).

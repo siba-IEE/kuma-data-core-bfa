@@ -29,8 +29,8 @@ Méthode :
 Niveau de confiance : ``'B'`` (modèle satellitaire NASA POWER, cohérent
 avec les autres grandeurs F1/F2).
 
-Pattern fonctions pures + orchestrateur I/O : la fonction
-``calculer_ghi_exceedance`` est pure (``Sequence[float]`` en entrée,
+Séparation calcul et lecture (``docs/methodologie/conventions-transverses.md``
+§5) : la fonction ``calculer_ghi_exceedance`` est pure (``Sequence[float]`` en entrée,
 ``ResultatGhiExceedance`` en sortie), aucune dépendance SQL.
 L'orchestrateur de lecture (helper local dans ``api/v1/grandeurs.py``)
 charge la série mensuelle et calcule les totaux annuels avant l'appel.

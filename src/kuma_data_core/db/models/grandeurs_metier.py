@@ -113,14 +113,11 @@ class GrandeurMetier(Base):
     )
 
     # === Valeur ===
-    # Nullable : permet de stocker NULL pour les écarts relatifs dont la
-    # valeur SARAH-3 mensuelle est en dessous du seuil SEUIL_SARAH3_MIN_DEFAUT
-    # (donnée amont dégradée, ratio non calculable sans amplification
-    # mathématique absurde). Voir
-    # services/grandeurs/referentiels.py:_calcul_ecart_relatif_avec_seuil.
-    # Si une grandeur veut imposer NOT NULL sur son sous-périmètre, c'est
-    # une CHECK CONSTRAINT conditionnelle qui le porte, pas la nullabilité
-    # de colonne.
+    # Nullable : une grandeur dérivée peut rester NULL quand son calcul n'a
+    # pas de sens (ratio dont la valeur de référence est dégradée, par
+    # exemple). Si une grandeur veut imposer NOT NULL sur son sous-périmètre,
+    # c'est une CHECK CONSTRAINT conditionnelle qui le porte, pas la
+    # nullabilité de colonne.
     valeur: Mapped[float | None] = mapped_column(Float(precision=53), nullable=True)
 
     # === Versioning temporel ===

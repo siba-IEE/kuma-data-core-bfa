@@ -79,34 +79,15 @@ Une convention transverse peut suivre trois trajectoires possibles :
 
 ---
 
-## 5. Séparation fonction pure / orchestrateur I/O dans `services/grandeurs/`
+## 5. Séparation calcul et lecture dans `services/grandeurs/`
 
-**Sous-cas** : descriptive - pattern observé sur cinq grandeurs stockées par calcul dérivé, sans dérogation.
+**Sous-cas** : descriptive - pattern observé sur les neuf modules de calcul à la volée, sans dérogation.
 
-**Énoncé** : Tout module de calcul dans `src/kuma_data_core/services/grandeurs/<grandeur>.py` expose au minimum :
+**Énoncé** : Un module `src/kuma_data_core/services/grandeurs/<grandeur>.py` ne contient que des fonctions pures. Elles prennent des séquences de mesures (`TypedDict`), ou des séries pandas pour le calcul horaire, et les paramètres de la requête (modèles Pydantic), et rendent des modèles Pydantic ou des valeurs simples. Aucun argument `Session`, aucun accès à la base. La route de `/v1/grandeurs` lit la série source et ses compagnes, appelle le module et assemble la réponse. Les grandeurs dérivées gardées en base ne passent pas par ces modules : la migration 0009 calcule en SQL la fraction diffuse et les écarts entre sources, la migration 0014 la dégénérescence de pixel.
 
-1. **Une (ou plusieurs) fonction(s) pure(s)** préfixée(s) par underscore (`_agreger_*`, `_convertir_*`, `_appliquer_*`, `_calculer_*`) qui prennent en entrée des structures de données natives Python (`Sequence`, `dict`, `tuple`) et retournent un `TypedDict` ou `dataclass`. Aucun argument `Session` SQLAlchemy, aucun appel à `op.execute` Alembic, aucun accès DB direct.
+**Tests attendus** : tests unitaires des fonctions pures, sans base ni mock de session ; tests d'intégration des routes sur la base (`tests/integration/api/test_grandeurs_bfa.py`, `test_horaire_bfa.py`).
 
-2. **Une fonction d'orchestration publique** `calculer_et_inserer_<grandeur>(*, session: Session, code_serie_<grandeur>: str, code_serie_<amont>_amont: str [, ...], version_formule: int = 1)` qui : (a) vérifie l'alignement de `version_formule` avec `grandeurs_referentiel.version_formule_actuelle` ; (b) lit le contexte des séries cible et amont(s) via SQL brut ; (c) calcule `niveau_confiance_derive` via `kuma_data_core.editorial.niveaux_confiance.calculer_niveau_confiance_derive` ; (d) lit les mesures amont (depuis `mesures_ressource` ou `grandeurs_metier` selon la chaîne de calcul) ; (e) appelle la fonction pure ; (f) bulk INSERT dans `grandeurs_metier` via `session.execute(text("INSERT ..."), liste_dicts)`. Au Burkina Faso, aucune migration n'appelle ces orchestrateurs : la fraction diffuse de l'ADR-0012 est calculée en SQL par la migration 0009.
-
-**Tests attendus** :
-
-- Fonctions pures : tests unitaires sans mock DB, fixtures Python pures. Couvrent : mapping unitaire, politique de complétude annuelle et mensuelle, sanity plage tropicale, invariant non-additif spécifique (somme = annuel, ratio ∈ [0, 1], CoV ≥ 0, H ≥ T, etc.).
-- Orchestrateur : tests unitaires avec mock session SQLAlchemy minimal (`unittest.mock.MagicMock` + `side_effect`). Couvrent : RuntimeError sur série amont absente, RuntimeError sur `version_formule` désalignée, régression sur `niveau_confiance_derive` attendu (généralement `'B'` via R4 catch-all).
-
-**Cas testés** (énumération exhaustive, cinq modules confirmés) :
-
-- `services/grandeurs/hep.py` (premier cas du pattern, mesures GHI amont, annuel + mensuel)
-- `services/grandeurs/fraction_diffuse.py` (deux séries amont DHI + GHI, intersection des dates communes, garde-fou division par zéro)
-- `services/grandeurs/humidex.py` (deux séries amont T2M + RH2M, formule scalaire jour par jour Masterton & Richardson 1979 puis agrégat moyenne, compteur dérivé `nb_jours_inconfort_modere` retourné mais non stocké)
-- `services/grandeurs/productible_specifique_theorique.py` (première grandeur consommant `grandeurs_metier` amont - chaîne de calculs `hep -> productible`, pas d'agrégation à refaire)
-- `services/grandeurs/variabilite_journaliere.py` (annuel uniquement, CoV statistique, fonction pure `_calculer_coefficient_variation` séparée de `_agreger_variabilite_journaliere`)
-
-**Particularités émergentes** (extensions au pattern qui restent cohérentes) :
-
-- **Politique de complétude sur intersection** : pour les calculs à deux séries amont (`fraction_diffuse`, `humidex`), la condition « 100% jours civils » est évaluée sur l'intersection des dates communes aux deux séries.
-- **`TypedDict` de résultat nominatif** : `CalculHEPResultat`, `CalculFractionDiffuseResultat`, `CalculHumidexResultat`, `CalculProductibleResultat`, `CalculVariabiliteResultat`. Champs systématiques `nb_annuel_insere` et `nb_mensuel_insere` ; champs spécifiques selon grandeur (`nb_jours_inconfort_modere_par_annee` pour humidex, `pr_theorique_applique` pour productible).
-- **Source amont variable** : `mesures_ressource` pour quatre grandeurs sur cinq, `grandeurs_metier` pour `productible_specifique_theorique`. Le pattern accommode les deux sans modification.
+**Cas testés** (énumération exhaustive) : `poa_parametrable.py`, `poa_bifacial.py`, `productible_correction_thermique.py`, `productible_pr_fourni.py`, `energie_utile_ecs.py`, `degre_jour_climatisation.py`, `ghi_exceedance.py`, `soiling_hsu.py`, `pr_realiste.py`.
 
 ---
 

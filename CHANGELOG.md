@@ -3,6 +3,21 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.20.1
+
+- Retrait de dix modules de `services/grandeurs/` hérités du dépôt
+  d'origine, que n'appelait aucune route ni migration (`hep`, `humidex`,
+  `variabilite_journaliere`, `productible_specifique_theorique`,
+  `productible_specifique_pr_std_thermique`, `indicateur_qualite_donnees`,
+  `fraction_diffuse`, `ecart_dni_cams`, `degenerescence_pixel`,
+  `referentiels`) et de leurs tests. La fraction diffuse, les écarts entre
+  sources et la dégénérescence de pixel restent calculés en SQL par les
+  migrations 0009 et 0014 ; les grandeurs du référentiel ne changent pas.
+  Le cas « grandeur calculée ou réanalyse, source haute : confiance B » est
+  repris dans les tests des règles de confiance.
+- La docstring du module des routes `/v1/grandeurs` liste les 11 routes au
+  lieu de 5.
+
 ## 0.20.0
 
 - `/v1/horaire/{localite}/{grandeur}/disponibilite` prend le paramètre

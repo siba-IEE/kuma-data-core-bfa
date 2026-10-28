@@ -18,8 +18,8 @@ d'invalidation automatique). Pour forcer un rechargement (par exemple
 post-update DB), appeler ``_charger_coordonnees.cache_clear()`` puis
 ``coordonnees_localite(...)``.
 
-Le module est utilitaire (pas une grandeur F2 paramétrable) - le
-pattern fonctions pures + orchestrateur I/O ne s'applique pas.
+Le module est utilitaire (pas une grandeur F2 paramétrable) : la séparation
+calcul et lecture des modules de grandeurs ne s'applique pas.
 """
 
 from __future__ import annotations
