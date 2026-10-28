@@ -112,6 +112,11 @@ tables du calage, `referentiels_calage` et `calage_couverture`, données
 éditoriales qui portent un numéro de `version` et un drapeau `actif`
 (ADR-0004).
 
+Réviser une valeur versionnée ferme la ligne courante (`valide_au`) et insère
+la remplaçante (`valide_du`) dans la même transaction, avec un seul `now()`
+pour les deux bornes : les plages `[)` se touchent alors sans trou, et la
+contrainte `EXCLUDE` sur l'identité métier refuse tout chevauchement.
+
 ## Tests de migration
 
 L'intégration continue exécute

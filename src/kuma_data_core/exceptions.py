@@ -1,6 +1,6 @@
 """Hiérarchie d'exceptions transverses de Kuma Data Core.
 
-Regroupe les exceptions des clients externes et les exceptions
+Regroupe les exceptions du client NASA POWER et les exceptions
 éditoriales : ``TransitionEditorialeRefusee``, ``NiveauConfianceInvalide``,
 ``JustificationRequise``.
 
@@ -78,58 +78,6 @@ class NasaPowerTimeoutError(NasaPowerError):
 
 
 # ===========================================================================
-# Exceptions PVGIS (cf. ingestion/sarah3_monthly.py)
-# ===========================================================================
-
-
-class PvgisError(KumaError):
-    """Racine des erreurs du client PVGIS (SARAH-3 ICDR JRC).
-
-    Hiérarchie analogue à ``NasaPowerError`` : ``PvgisHttpError`` /
-    ``PvgisRateLimitError`` / ``PvgisTimeoutError``. Levées par
-    ``ingestion.sarah3_monthly._fetch_sarah3_monthly_raw`` qui traduit
-    les exceptions génériques ``HttpRetry*Error`` du helper partagé
-    ``external/_http_retry.py``.
-    """
-
-
-class PvgisHttpError(PvgisError):
-    """HTTP non-2xx terminal côté PVGIS.
-
-    Expose ``status_code``, ``url`` et ``body`` (tronqué à 2 000
-    caractères) pour le diagnostic. Levée à l'épuisement du retry
-    503 ou directement sur statuts >= 400 non retryables (400, 404,
-    etc.).
-    """
-
-    def __init__(self, status_code: int, url: str, body: str) -> None:
-        self.status_code: int = status_code
-        self.url: str = url
-        self.body: str = body[:2000]
-        super().__init__(f"PVGIS HTTP {status_code} (url={url!r}, extrait corps={self.body!r})")
-
-
-class PvgisRateLimitError(PvgisHttpError):
-    """Rate limit PVGIS (HTTP 429) persistant après épuisement du retry."""
-
-
-class PvgisTimeoutError(PvgisError):
-    """Échec persistant de communication réseau avec PVGIS après épuisement du retry.
-
-    Couvre les timeouts (``httpx.TimeoutException``) et les disconnects
-    serveur (``httpx.RemoteProtocolError``) au-delà du nombre de
-    retries configurés. Le disconnect serveur PVGIS intermittent
-    depuis les runners GitHub Actions est le scénario CI exact ayant
-    motivé l'extension du retry transverse à ce module.
-    """
-
-    def __init__(self, url: str, timeout_seconds: float) -> None:
-        self.url: str = url
-        self.timeout_seconds: float = timeout_seconds
-        super().__init__(f"Timeout PVGIS après {timeout_seconds}s pour {url}")
-
-
-# ===========================================================================
 # Exceptions éditoriales
 # ===========================================================================
 
@@ -138,10 +86,9 @@ class EditorialeError(KumaError):
     """Racine des erreurs des workflows éditoriaux Kuma.
 
     Les sous-types couvrent la machine d'état du statut éditorial
-    (cf. ``kuma_data_core.editorial.statuts``), la dérivation et l'override
-    des niveaux de confiance A/B/C
-    (cf. ``kuma_data_core.editorial.niveaux_confiance``), et la rotation
-    versionnée (cf. ``kuma_data_core.editorial.versioning``).
+    (cf. ``kuma_data_core.editorial.statuts``) ainsi que la validation et
+    l'override des niveaux de confiance A/B/C
+    (cf. ``kuma_data_core.editorial.niveaux_confiance``).
     """
 
 

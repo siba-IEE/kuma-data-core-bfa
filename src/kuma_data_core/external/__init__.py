@@ -1,15 +1,7 @@
-"""Clients d'API externes utilisés par Kuma Data Core.
+"""Accès HTTP aux API externes.
 
-Premier client : ``nasa_power``.
-
-Périmètre attendu :
-- ``nasa_power`` : client de l'API NASA POWER (substrat solaire + climat
-  de base)
-- ``ecmwf_era5`` (à venir) : client du Climate Data Store Copernicus
-  pour ERA5 (cross-check qualité sémantique)
-
-Distinction conceptuelle avec ``ingestion/`` : ``external/`` expose des
-clients HTTP typés retournant des objets pydantic ; ``ingestion/``
-consomme ces clients et persiste les résultats dans les tables métier
-(``mesures_ressource`` et suivantes).
+- ``nasa_power`` : client typé de l'API horaire NASA POWER, appelé par le
+  relais de ``/v1/horaire``.
+- ``_http_retry`` : GET avec retry transverse, partagé par ce client et par
+  les scripts d'ingestion NASA POWER et PVGIS.
 """

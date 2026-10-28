@@ -3,6 +3,22 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.20.2
+
+- Retrait du paquet `ingestion/` hérité du dépôt d'origine (`nasa_power_daily`,
+  `nasa_power_hourly`, `nasa_power_monthly`, `sarah3_monthly`) et de ses
+  tests : les données entrent par les scripts `scripts/ingest_*.py`, qui ne
+  l'utilisaient pas. Partent avec lui ce qui ne servait qu'à ce paquet
+  (`fetch_daily_raw`, `fetch_monthly_raw` et `parser_reponse_nasa` du client
+  NASA POWER, les exceptions `Pvgis*`) et les fonctions du client que seuls
+  des tests appelaient (`fetch_daily`, `fetch_monthly`,
+  `calculer_indice_ciel_clair`). Le client garde `fetch_hourly`, appelé par le
+  relais de `/v1/horaire`, dont les tests reprennent les cas d'erreur (429,
+  500, JSON invalide, payload hors schéma, timeout). Le retry sur coupure de
+  connexion par le serveur garde un test.
+- Retrait de `editorial/versioning.py` (`roter_ligne_versionnee`, sans appelant
+  ni test) et du paquet vide `validation/`.
+
 ## 0.20.1
 
 - Retrait de dix modules de `services/grandeurs/` hérités du dépôt

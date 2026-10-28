@@ -8,9 +8,8 @@ transitoires (HTTP 429, HTTP 503, ``httpx.TimeoutException``,
 
 Pattern « convert exceptions at boundaries » : le helper lève des
 exceptions génériques ``HttpRetryTimeoutError``, ``HttpRetryRateLimitError``,
-``HttpRetryHttpError`` que les modules consommateurs traduisent en
-exceptions domaine-spécifiques (``NasaPower*Error``, ``Pvgis*Error``,
-etc.) via try/except + raise from.
+``HttpRetryHttpError`` que le client NASA POWER traduit en exceptions
+``NasaPower*Error`` via try/except + raise from.
 
 Couvre un scénario CI observé avec PVGIS (SARAH-3) :
 disconnect serveur intermittent depuis les runners GitHub Actions
@@ -38,8 +37,8 @@ import httpx
 class HttpRetryError(Exception):
     """Base des erreurs levées à l'épuisement du retry transverse.
 
-    Les modules consommateurs catchent cette hiérarchie et la traduisent
-    en exceptions domaine-spécifiques via ``raise X from exc``.
+    Le client NASA POWER la traduit en exceptions ``NasaPower*Error`` via
+    ``raise X from exc`` ; les scripts d'ingestion la laissent remonter.
     """
 
 

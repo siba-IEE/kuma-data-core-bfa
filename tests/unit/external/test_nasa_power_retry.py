@@ -2,7 +2,8 @@
 
 Couvre la fonction privée ``_executer_get_avec_retry`` qui applique un
 retry exponentiel sur les exceptions transitoires (HTTP 429, HTTP 503,
-``httpx.TimeoutException``). 6 cas T-RETRY-1 a T-RETRY-6 :
+``httpx.TimeoutException``, ``httpx.RemoteProtocolError``). 7 cas
+T-RETRY-1 a T-RETRY-7 :
 
 - T-RETRY-1 : 200 OK direct -> pas de retry, retour immediat.
 - T-RETRY-2 : 429 puis 200 OK -> succes apres 1 retry.
@@ -10,6 +11,7 @@ retry exponentiel sur les exceptions transitoires (HTTP 429, HTTP 503,
 - T-RETRY-4 : 4x 503 (epuisement) -> raise NasaPowerHttpError.
 - T-RETRY-5 : 4x TimeoutException -> raise NasaPowerTimeoutError.
 - T-RETRY-6 : 404 -> pas de retry, retour immediat (caller gere 4xx).
+- T-RETRY-7 : 4x RemoteProtocolError -> raise NasaPowerTimeoutError.
 
 Backoffs forces a (0.0, 0.0, 0.0) en test pour eviter time.sleep reel.
 """
@@ -140,3 +142,26 @@ def test_t_retry_6_pas_de_retry_sur_autres_statuts() -> None:
         retry_backoff_seconds=_BACKOFF_TEST,
     )
     assert response.status_code == 404
+
+
+def test_t_retry_7_deconnexion_serveur_x4_raises_timeout_error() -> None:
+    """T-RETRY-7 : 4 x httpx.RemoteProtocolError -> raise NasaPowerTimeoutError.
+
+    Deconnexion serveur intermittente, retentee comme un timeout.
+    """
+    appels: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        appels.append(1)
+        raise httpx.RemoteProtocolError("deconnexion simulee", request=request)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    with pytest.raises(NasaPowerTimeoutError):
+        _executer_get_avec_retry(
+            client=client,
+            url="http://test/api",
+            query_params={},
+            timeout=30.0,
+            retry_backoff_seconds=_BACKOFF_TEST,
+        )
+    assert len(appels) == 4
