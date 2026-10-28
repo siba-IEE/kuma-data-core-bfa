@@ -46,6 +46,11 @@ Socle en place. La donnée nationale se construit par lots.
   B et en stockage dense : températures minimale et maximale, point de rosée,
   vent à 10 et 50 m, direction du vent, pression et nébulosité. Voir
   l'[ADR-0021](docs/decisions/0021-meteo-complementaire-nasa-power.md).
+- SARAH-3 journalier (PVGIS) aux 398 localités, 2005-2023, en confiance B et
+  en stockage dense : GHI, DNI et DHI ; les heures que SARAH-3 ne sert pas
+  sont complétées au prorata du ciel clair, sauf quand elles couvrent
+  d'affilée plus de la moitié du jour, qui reste alors sans valeur. Voir
+  l'[ADR-0022](docs/decisions/0022-sarah3-journalier.md).
 - CAMS Radiation : séries mensuelles GHI, DNI et DHI aux 47 provinces et aux
   351 communes, 2005-2025, en confiance B. Voir
   l'[ADR-0011](docs/decisions/0011-series-cams-radiation.md). Séries
@@ -88,8 +93,8 @@ d'ingestion.
 
 ### À faire
 
-- Brut satellite et réanalyse (jalon 5) : SARAH-3 journalier, ERA5-Land
-  journalier, CAMS Radiation horaire aux points pilotes.
+- Brut satellite et réanalyse (jalon 5) : ERA5-Land journalier, CAMS
+  Radiation horaire aux points pilotes.
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A
   (jalon 6).
 - Correction du POA en moyenne journalière, biaisé par la géométrie du midi
@@ -113,7 +118,8 @@ Les séries proviennent de :
   project funded through the NASA Earth Science Division. » NASA POWER tire sa
   météo de la réanalyse MERRA-2 du GMAO (NASA), et sa nébulosité de CERES.
 - **PVGIS** (Joint Research Centre de la Commission européenne), API v5_3
-  `MRcalc`, consultée le 15 octobre 2026 : « PVGIS © Union européenne,
+  `MRcalc`, consultée le 15 octobre 2026, et `seriescalc` (séries horaires
+  SARAH-3), consultée le 27 octobre 2026 : « PVGIS © Union européenne,
   2001-2026 ». Réutilisation autorisée sous réserve de citer la source
   (décision 2011/833/UE de la Commission). PVGIS sert ici deux bases :
   - **SARAH-3**, données du Satellite Application Facility on Climate

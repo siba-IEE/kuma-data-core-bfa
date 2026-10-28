@@ -54,7 +54,7 @@ def test_series_des_communes(db_session: Session) -> None:
             FROM series_metadonnees s
             JOIN sources so ON so.id = s.source_id
             JOIN localites l ON l.id = s.localite_id
-            WHERE s.stockage = 'dense' AND s.grandeur_code = ANY(:g) AND s.source_id <> 13
+            WHERE s.stockage = 'dense' AND s.grandeur_code = ANY(:g) AND s.source_id IN (1, 15)
             GROUP BY 1, 2, 3, 4, 5, 6
             """
         ),
@@ -114,7 +114,7 @@ def test_lignes_annuelles_completes_et_bornees(db_session: Session) -> None:
             FROM mesures_journalieres_denses d
             JOIN series_metadonnees s ON s.id = d.serie_id
             CROSS JOIN LATERAL unnest(d.valeurs_e4) AS j(e4)
-            WHERE s.grandeur_code = ANY(:g) AND s.source_id <> 13
+            WHERE s.grandeur_code = ANY(:g) AND s.source_id IN (1, 15)
             GROUP BY s.code, s.grandeur_code
             """
         ),

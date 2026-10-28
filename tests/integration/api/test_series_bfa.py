@@ -9,17 +9,18 @@ pytestmark = pytest.mark.integration
 
 
 def test_listing_des_series_d_une_commune(client: TestClient, headers_auth: dict[str, str]) -> None:
-    """Une commune porte 35 séries brutes (NASA POWER, SARAH-3, ERA5, CAMS) et 8 dérivées.
+    """Une commune porte 38 séries brutes (NASA POWER, SARAH-3, ERA5, CAMS) et 8 dérivées.
 
     NASA POWER : rayonnement mensuel et journalier, météo journalière (ADR-0017),
-    météo complémentaire (ADR-0021) ;
-    CAMS EAC4 : particules fines (ADR-0018) et aérosols (ADR-0019) journaliers ;
-    CAMS Radiation : rayonnement mensuel et journalier, ciel clair (ADR-0020).
+    météo complémentaire (ADR-0021) ; SARAH-3 : rayonnement mensuel (ADR-0009) et
+    journalier (ADR-0022) ; CAMS EAC4 : particules fines (ADR-0018) et aérosols
+    (ADR-0019) journaliers ; CAMS Radiation : rayonnement mensuel et journalier,
+    ciel clair (ADR-0020).
     """
     response = client.get("/v1/series?localite=bfa_dep_fo", headers=headers_auth)
     assert response.status_code == 200
     payload = response.json()
-    assert payload["total"] == 43
+    assert payload["total"] == 46
     familles = {(s["source_code"], s["grandeur_code"]) for s in payload["items"]}
     assert familles == {
         ("nasa_power", "ghi"),
@@ -39,6 +40,7 @@ def test_listing_des_series_d_une_commune(client: TestClient, headers_auth: dict
         ("nasa_power", "nebulosite"),
         ("sarah3_monthly", "ghi"),
         ("sarah3_monthly", "dni"),
+        ("sarah3_monthly", "dhi"),
         ("era5_pvgis", "ghi"),
         ("era5_pvgis", "dni"),
         ("cams_radiation", "ghi"),

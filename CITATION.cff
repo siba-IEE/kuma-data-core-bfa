@@ -14,8 +14,8 @@ authors:
 license: AGPL-3.0-or-later
 repository-code: "https://github.com/siba-IEE/kuma-data-core-bfa"
 url: "https://kumascience.com"
-version: "0.10.0"
-date-released: "2026-10-27"
+version: "0.16.0"
+date-released: "2026-10-28"
 keywords:
   - solar energy
   - Burkina Faso

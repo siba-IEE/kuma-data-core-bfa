@@ -369,9 +369,9 @@ def _nombre(valeur: float) -> str:
     return f"{valeur:g}".replace(".", ",")
 
 
-def _jours(jours: list[date]) -> str:
-    liste = ", ".join(date_en_clair(j) for j in jours[:5])
-    return liste + (f" et {len(jours) - 5} autres jours" if len(jours) > 5 else "")
+def _jours(jours: list[date], cites: int = 5) -> str:
+    liste = ", ".join(date_en_clair(j) for j in jours[:cites])
+    return liste + (f" et {len(jours) - cites} autres jours" if len(jours) > cites else "")
 
 
 def _lignes_annuelles(
@@ -405,16 +405,19 @@ def charger_series_denses(
     localites: dict[str, int],
     note: Callable[[str], str],
     unite: str,
+    absents: str = "Sans valeur servie par la source",
+    jours_cites: int = 5,
 ) -> tuple[int, int, int]:
     """Insère les séries d'un fichier dense et verse leurs valeurs ; renvoie (séries, lignes, valeurs).
 
     ``localites`` associe chaque code de localité attendu à son id ; le fichier
     doit couvrir exactement ces localités, aux coordonnées qu'elles ont en
     base. ``note`` donne la note publique d'une localité ; le chargement y
-    ajoute les valeurs écartées (``unite`` en suffixe) et les jours que la
-    source ne sert pas. Les séries des représentantes sont insérées d'abord et
-    portent les lignes, une par année, versées par ``COPY`` ; les autres
-    pointent vers elles par ``serie_porteuse_id``.
+    ajoute les valeurs écartées (``unite`` en suffixe) et les jours sans valeur,
+    introduits par ``absents``, en citant les ``jours_cites`` premiers. Les
+    séries des représentantes sont insérées d'abord et portent les lignes, une
+    par année, versées par ``COPY`` ; les autres pointent vers elles par
+    ``serie_porteuse_id``.
     """
     nom = nom_fichier_dense(contrat, lot)
     denses = lire_series_denses(contrat, lot)
@@ -441,7 +444,7 @@ def charger_series_denses(
             )
         sans_source = sorted(set(denses.jours_absents(code)) - {j for j, _ in ecartees})
         if sans_source:
-            texte += f" Sans valeur servie par la source : {_jours(sans_source)}."
+            texte += f" {absents} : {_jours(sans_source, jours_cites)}."
         return texte
 
     series = sa.table(

@@ -103,7 +103,7 @@ jobs:
   tests-integration:
     name: Tests d'intégration
     runs-on: ubuntu-latest
-    # Migrations 0006 à 0020 (mesures lues dans les CSV et les Parquet
+    # Migrations 0006 à 0021 (mesures lues dans les CSV et les Parquet
     # committés, 793 214 grandeurs dérivées calculées en SQL et contrôle
     # qualité horaire) : upgrade head en une dizaine de minutes ici.
     timeout-minutes: 20

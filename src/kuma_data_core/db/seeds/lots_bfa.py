@@ -165,6 +165,28 @@ CONTRATS_CAMS_JOURNALIERS: dict[str, ContratSerie] = {
     for grandeur, (_, borne_min, borne_max) in CAMS_JOURNALIER.items()
 }
 
+# SARAH-3 journalier (ADR-0022), aux 398 localités, 2005-2023 : total du jour
+# UTC des valeurs horaires de PVGIS (instantanées datées de hh:07, seriescalc,
+# base PVGIS-SARAH3), en kWh/m²/jour. Bornes journalières communes ; le DNI
+# d'un jour couvert peut être nul, le GHI et le DHI restent strictement
+# positifs (maxima servis : GHI 8,31, DNI 9,06, DHI 3,95).
+CONTRATS_SARAH3_JOURNALIERS: dict[str, ContratSerie] = {
+    grandeur: ContratSerie(
+        source_code="sarah3_monthly",
+        source_id=11,
+        source_libelle="SARAH-3 (PVGIS)",
+        prefixe_code=f"sarah3_{grandeur}_journalier",
+        grandeur_code=grandeur,
+        methode_collecte="modele_satellitaire",
+        annee_debut=2005,
+        annee_fin=2023,
+        borne_max=BORNES_JOURNALIERES[grandeur],
+        granularite="journalier",
+        borne_min=0.0 if grandeur == "dni" else None,
+    )
+    for grandeur in ("ghi", "dni", "dhi")
+}
+
 # NASA POWER journalier : mêmes périodes que le mensuel.
 CONTRATS_NASA_JOURNALIERS: dict[str, ContratSerie] = {
     "ghi": _nasa("ghi", 1991, "journalier"),

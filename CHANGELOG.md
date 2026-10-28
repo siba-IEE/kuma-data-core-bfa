@@ -3,6 +3,22 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.16.0
+
+- Rayonnement journalier SARAH-3 aux 398 localités, 2005-2023 (ADR-0022,
+  migration 0021) : GHI, DNI et DHI, totaux du jour UTC des valeurs horaires
+  de PVGIS, en stockage dense ; 1 194 séries et 8 178 425 valeurs. Les heures
+  que SARAH-3 ne sert pas, rendues nulles par PVGIS, sont complétées au
+  prorata du ciel clair, comme le fait le CM SAF ; un jour reste sans valeur
+  quand les heures manquantes d'affilée couvrent plus de la moitié de son
+  ciel clair (14 dates, les mêmes partout). Les notes signalent l'effet des
+  aérosols, que la climatologie de SARAH-3 ne suit pas.
+  `scripts/ingest_pvgis_sarah3_journalier.py`.
+- Le mensuel SARAH-3 compte comme nulles les heures non servies : les notes
+  des séries mensuelles et des écarts mensuels à NASA POWER donnent la liste
+  mesurée des huit mois sous-estimés, août 2009 et décembre 2014 compris.
+  Fiche de la source `sarah3_monthly` réécrite pour le Burkina Faso.
+
 ## 0.15.0
 
 - Météo complémentaire NASA POWER aux 398 localités, 2005-2025 (ADR-0021,

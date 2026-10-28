@@ -60,7 +60,8 @@ l'amorçage et la montée en charge de la donnée burkinabè.
 - [x] Météo complémentaire NASA POWER aux 398 localités, 2005-2025 :
       températures extrêmes, point de rosée, vent, pression, nébulosité
       (ADR-0021).
-- [ ] SARAH-3 journalier aux 398 localités, 2005-2023 : GHI, DNI, DHI.
+- [x] SARAH-3 journalier aux 398 localités, 2005-2023 : GHI, DNI, DHI
+      (ADR-0022).
 - [ ] ERA5-Land journalier aux 398 localités, 2005-2025 : température, point
       de rosée, pluie, vent, rayonnement, pression.
 - [ ] CAMS Radiation horaire aux cinq points pilotes, 2021-2025.

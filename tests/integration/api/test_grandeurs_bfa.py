@@ -392,3 +392,25 @@ def test_poa_sur_cams_journalier(client: TestClient, headers_auth: dict[str, str
         # L'écart sur plan horizontal ne dépend que des jours et des composantes servies.
         assert incline["limite"] == bifacial["limite"] == horizontal["limite"]
         assert "ADR-0020" in horizontal["limite"]
+
+
+def test_poa_sur_sarah3_journalier(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """SARAH-3 journalier (ADR-0022) : le POA trouve ses séries DNI et DHI SARAH-3.
+
+    Le DNI de SARAH-3 étant le plus fort des trois sources, le biais du midi solaire y est le
+    plus grand (+19,9 % avec CAMS la même année) ; la réponse le chiffre (ADR-0020).
+    """
+    response = client.get(
+        "/v1/grandeurs/poa_parametrable",
+        params={
+            "code_serie_source": "sarah3_ghi_journalier_bfa_dep_fo",
+            "inclinaison_deg": 0,
+            "orientation_deg": 180,
+            "periode_debut": "2023-01-01",
+            "periode_fin": "2023-12-31",
+        },
+        headers=headers_auth,
+    )
+    assert response.status_code == 200, response.text
+    assert len(response.json()["resultats"]) == 365
+    assert "s'écartent ici de +21,0 % du GHI" in response.json()["limite"]
