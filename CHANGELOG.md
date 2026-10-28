@@ -3,6 +3,22 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.17.0
+
+- Rayonnement horaire CAMS Radiation aux cinq points pilotes, 2021-2025
+  (ADR-0023, migration 0022) : GHI, DNI et DHI tous temps et GHI par ciel
+  clair, irradiation de l'heure UTC datée du début de l'heure ; 20 séries et
+  876 480 mesures, toutes `valide_auto` au contrôle qualité v1, avec
+  0,3 % des heures de jour hors tolérance de fermeture.
+  `scripts/ingest_cams_radiation_horaire.py`.
+- `/v1/horaire` : paramètre `source` (`nasa_power` ou `cams_radiation`),
+  champ `source` dans la réponse JSON et grandeur `ghi_ciel_clair`. Sans
+  source, la série de NASA POWER, source du relais, reste servie ; une série
+  CAMS ne se relaie pas hors de la plage stockée, et le refus donne la plage
+  de la série.
+- La capsule d'étude retient la série horaire de NASA POWER, source du
+  relais, quand CAMS couvre la même période.
+
 ## 0.16.0
 
 - Rayonnement journalier SARAH-3 aux 398 localités, 2005-2023 (ADR-0022,

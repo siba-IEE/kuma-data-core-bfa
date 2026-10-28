@@ -3,19 +3,20 @@
 Cinq schémas pour le passe-plat horaire :
 
 - :class:`ParametresHoraire` : paramètres communs (localité, grandeur,
-  plage temporelle, format de sortie).
+  plage temporelle, format de sortie, source de la série stockée).
 - :class:`ResultatHoraire` : un point horaire passe-plat (instant ISO,
   valeur ou null, unité, statut éditorial).
 - :class:`PlageTemporelle` : helper structurel pour les plages
   temporelles inclusives.
-- :class:`ReponseHoraire` : réponse complète d'un endpoint data.
+- :class:`ReponseHoraire` : réponse complète d'un endpoint data, avec la
+  source de la série servie.
 - :class:`ReponseDisponibilite` : réponse de l'endpoint
   ``/disponibilite``.
 
-Principe « Kuma assume » : aucun champ ne mentionne la source amont
-(NASA POWER, SARAH-3, etc.). Le statut éditorial uniforme
-``passe_plat_non_valide`` signale au consommateur que les données
-horaires ne sont pas validées éditorialement par Kuma.
+Une localité peut porter plusieurs séries horaires de la même grandeur :
+le paramètre ``source`` choisit la série, le champ ``source`` de la réponse
+nomme celle qui a servi (ADR-0023). Le statut éditorial
+``passe_plat_non_valide`` signale une donnée relayée, non validée par Kuma.
 """
 
 from __future__ import annotations
@@ -27,20 +28,6 @@ from pydantic import BaseModel, Field, model_validator
 
 # === Constantes module ====================================================
 
-
-GRANDEURS_AUTORISEES: tuple[str, ...] = (
-    "ghi",
-    "dni",
-    "dhi",
-    "t2m",
-    "rh2m",
-    "kt",
-    "vent_2m",
-    "vent_10m",
-    "precipitation",
-)
-"""9 grandeurs horaires ingérables (vents et précipitation ajoutés avec la
-densification horaire aux 28 communes)."""
 
 PLAGE_MAX_JOURS: int = 366
 """Plage temporelle maximale par requête (année bissextile incluse)."""
@@ -66,7 +53,16 @@ class ParametresHoraire(BaseModel):
     # (genericite pays : plus de liste codee).
     localite: str = Field(..., min_length=1, max_length=100, pattern=r"^[a-z0-9_]+$")
     grandeur: Literal[
-        "ghi", "dni", "dhi", "t2m", "rh2m", "kt", "vent_2m", "vent_10m", "precipitation"
+        "ghi",
+        "dni",
+        "dhi",
+        "ghi_ciel_clair",
+        "t2m",
+        "rh2m",
+        "kt",
+        "vent_2m",
+        "vent_10m",
+        "precipitation",
     ]
     periode_debut: date = Field(..., ge=DATE_DEBUT_DISPONIBILITE)
     periode_fin: date
@@ -74,6 +70,14 @@ class ParametresHoraire(BaseModel):
         default="json",
         alias="format",
         description="Format de reponse : 'json' (defaut) ou 'csv'.",
+    )
+    source: Literal["nasa_power", "cams_radiation"] | None = Field(
+        default=None,
+        description=(
+            "Source de la serie horaire stockee. Par defaut, NASA POWER, source du relais. "
+            "Avec 'cams_radiation', seule la serie stockee est servie, sans relais si elle ne "
+            "couvre pas la plage (ADR-0023)."
+        ),
     )
 
     @model_validator(mode="after")
@@ -127,6 +131,9 @@ class ReponseHoraire(BaseModel):
 
     localite: str
     grandeur: str
+    source: str = Field(
+        description="Source de la serie servie (stockee ou relayee), ex. 'nasa_power'."
+    )
     periode_demandee: PlageTemporelle
     resultats: list[ResultatHoraire]
 

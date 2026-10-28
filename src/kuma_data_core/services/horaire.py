@@ -37,6 +37,14 @@ source horaire (stations sol, jalon 6) se ramène à cette convention à
 l'ingestion.
 """
 
+SOURCE_RELAIS: str = "nasa_power"
+"""Source relayée à la volée hors du stocké (ADR-0014).
+
+Sans source demandée, ``/v1/horaire`` sert la série stockée de cette source,
+pour qu'une même requête reste homogène entre heures stockées et relayées ; la
+capsule d'étude la retient aussi (ADR-0023).
+"""
+
 # === Mapping grandeur Kuma -> (code amont, unité cible) ===================
 
 _MAPPING_GRANDEUR: dict[str, tuple[str, str]] = {
@@ -71,8 +79,20 @@ def code_parametre_amont(grandeur: str) -> str:
     return _MAPPING_GRANDEUR[grandeur][0]
 
 
+# Grandeurs horaires servies seulement depuis une série stockée (aucun relais
+# amont) : unité cible.
+_UNITES_STOCKEES: dict[str, str] = {"ghi_ciel_clair": "Wh/m²"}
+
+
+def relayable(grandeur: str) -> bool:
+    """Vrai si la grandeur peut être relayée depuis la source amont (passe-plat)."""
+    return grandeur in _MAPPING_GRANDEUR
+
+
 def unite_cible(grandeur: str) -> str:
     """Renvoie l'unité cible Kuma pour une grandeur horaire."""
+    if grandeur in _UNITES_STOCKEES:
+        return _UNITES_STOCKEES[grandeur]
     return _MAPPING_GRANDEUR[grandeur][1]
 
 

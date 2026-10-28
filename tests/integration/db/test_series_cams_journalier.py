@@ -174,10 +174,13 @@ def test_notes_publiques(db_session: Session) -> None:
 
 
 def test_fiche_de_la_source(db_session: Session) -> None:
-    """La fiche de ``cams_radiation`` décrit le Burkina Faso et non plus le dépôt d'origine."""
+    """La fiche de ``cams_radiation`` décrit le Burkina Faso et non plus le dépôt d'origine.
+
+    Sa date de consultation est celle du journalier, ou de l'horaire qui a suivi (ADR-0023).
+    """
     fiche = db_session.execute(
         text("SELECT date_consultation::text AS consultation, notes FROM sources WHERE id = 13")
     ).one()
-    assert fiche.consultation == "2026-10-27"
+    assert fiche.consultation >= "2026-10-27"
     assert "ADR-0020" in fiche.notes and "398 localités" in fiche.notes
     assert "Vague" not in fiche.notes and "2026 »" not in fiche.notes

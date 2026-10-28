@@ -25,6 +25,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from kuma_data_core.services.capsule.construire import EntreesRessource
+from kuma_data_core.services.horaire import SOURCE_RELAIS
 
 # Période de référence des climatologies mensuelles du référentiel.
 _CLIMATO_DEBUT = "1991-01-01"
@@ -272,7 +273,11 @@ class SourceCore:
     def _sequence_horaire(
         self, localite_id: int
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
-        """Séquence GHI horaire satellite de la localité : (séquence, période, provenance)."""
+        """Séquence GHI horaire satellite de la localité : (séquence, période, provenance).
+
+        À période égale, la série de la source du relais horaire l'emporte
+        (``SOURCE_RELAIS``, NASA POWER, avant CAMS Radiation, ADR-0023).
+        """
         meta = self.session.execute(
             text(
                 """
@@ -283,11 +288,11 @@ class SourceCore:
                 WHERE sm.localite_id = :loc AND sm.grandeur_code = 'ghi'
                   AND sm.granularite = 'horaire' AND sm.actif
                   AND sm.methode_collecte = 'modele_satellitaire'
-                ORDER BY sm.periode_fin DESC
+                ORDER BY sm.periode_fin DESC, (s.code = :relais) DESC, sm.id
                 LIMIT 1
                 """
             ),
-            {"loc": localite_id},
+            {"loc": localite_id, "relais": SOURCE_RELAIS},
         ).first()
         if meta is None:
             raise PointHorsReferentielError(

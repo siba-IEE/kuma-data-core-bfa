@@ -1,4 +1,4 @@
-"""Lots de séries : points et contrats (ADR-0009 à ADR-0011, ADR-0013 à ADR-0021).
+"""Lots de séries : points et contrats (ADR-0009 à ADR-0011, ADR-0013 à ADR-0023).
 
 Un **lot** est un ensemble de localités du référentiel dont les séries sont
 demandées aux sources sous le même contrat :
@@ -252,6 +252,33 @@ CONTRATS_HORAIRES: dict[str, ContratSerie] = {
         borne_min=borne_min,
     )
     for grandeur, (_, methode, borne_min, borne_max) in HORAIRE_NASA.items()
+}
+# Séries horaires CAMS Radiation (ADR-0023) aux mêmes points pilotes, 2021-2025 :
+# irradiation intégrée sur l'heure UTC qui commence à l'instant, en Wh/m², soit
+# la moyenne de l'heure en W/m². Colonne du CSV de l'ADS et bornes, celles du
+# rayonnement horaire NASA POWER.
+CAMS_HORAIRE: dict[str, tuple[str, float, float]] = {
+    "ghi": ("GHI", 0.0, 1400.0),
+    "dni": ("BNI", 0.0, 1400.0),
+    "dhi": ("DHI", 0.0, 900.0),
+    "ghi_ciel_clair": ("Clear sky GHI", 0.0, 1400.0),
+}
+COLONNES_CAMS_HORAIRES: dict[str, str] = {g: c for g, (c, _, _) in CAMS_HORAIRE.items()}
+CONTRATS_CAMS_HORAIRES: dict[str, ContratSerie] = {
+    grandeur: ContratSerie(
+        source_code="cams_radiation",
+        source_id=13,
+        source_libelle="CAMS Radiation",
+        prefixe_code=f"cams_{grandeur}_horaire",
+        grandeur_code=grandeur,
+        methode_collecte="modele_satellitaire",
+        annee_debut=2021,
+        annee_fin=2025,
+        borne_max=borne_max,
+        granularite="horaire",
+        borne_min=borne_min,
+    )
+    for grandeur, (_, borne_min, borne_max) in CAMS_HORAIRE.items()
 }
 
 

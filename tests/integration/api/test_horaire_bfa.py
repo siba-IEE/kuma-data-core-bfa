@@ -1,14 +1,16 @@
 """Tests d'intégration du service horaire aux points pilotes (ADR-0014).
 
 Ouagadougou, 2021-2025 : l'endpoint horaire sert la série stockée et validée
-par le QC (migrations 0011 et 0012), sans relais amont, et les grandeurs
-calculables en intégration horaire trouvent leurs compagnes horaires.
+par le QC (migrations 0011, 0012 et 0022), sans relais amont, et les grandeurs
+calculables en intégration horaire trouvent leurs compagnes horaires. Les
+séries CAMS (ADR-0023) se choisissent par le paramètre ``source``.
 """
 
 from __future__ import annotations
 
 import statistics
 from collections.abc import Iterator
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -22,6 +24,7 @@ from kuma_data_core.db.session import get_engine, obtenir_session
 pytestmark = pytest.mark.integration
 
 GHI = "nasa_power_ghi_horaire_bfa_com_ouagadougou"
+GHI_CAMS = "cams_ghi_horaire_bfa_com_ouagadougou"
 T2M = "nasa_power_t2m_horaire_bfa_com_ouagadougou"
 HORAIRE_2024 = {
     "periode_debut": "2024-01-01",
@@ -38,11 +41,13 @@ def _resultats(
     return [r["valeur"] for r in response.json()["resultats"]]
 
 
-def _ghi_par_jour(client: TestClient, headers: dict[str, str]) -> list[float]:
+def _ghi_par_jour(
+    client: TestClient, headers: dict[str, str], source: str = "nasa_power"
+) -> list[float]:
     """GHI 2024 de l'endpoint horaire, cumulé par jour UTC (kWh/m²/jour)."""
     response = client.get(
         "/v1/horaire/bfa_com_ouagadougou/ghi",
-        params={"periode_debut": "2024-01-01", "periode_fin": "2024-12-31"},
+        params={"periode_debut": "2024-01-01", "periode_fin": "2024-12-31", "source": source},
         headers=headers,
     )
     assert response.status_code == 200, response.text
@@ -68,6 +73,103 @@ def test_horaire_sert_la_serie_validee(client: TestClient, headers_auth: dict[st
     assert {r["unite"] for r in resultats} == {"Wh/m²"}  # énergie de l'heure
     assert max(r["valeur"] for r in resultats) > 500.0
     assert resultats[0]["valeur"] == 0.0  # minuit UTC, nuit à Ouagadougou
+
+
+def test_horaire_source_cams(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """``source`` choisit la série : sans lui, NASA POWER, source du relais (ADR-0023)."""
+    maxima: dict[str | None, float] = {}
+    attendue = {None: "nasa_power", "nasa_power": "nasa_power", "cams_radiation": "cams_radiation"}
+    for source in (None, "nasa_power", "cams_radiation"):
+        params = {"periode_debut": "2024-06-01", "periode_fin": "2024-06-02"}
+        if source is not None:
+            params["source"] = source
+        response = client.get("/v1/horaire/bfa_dep_dori/ghi", params=params, headers=headers_auth)
+        assert response.status_code == 200, response.text
+        assert response.json()["source"] == attendue[source]
+        resultats = response.json()["resultats"]
+        assert len(resultats) == 48
+        assert {r["statut_editorial"] for r in resultats} == {"valide_auto"}
+        maxima[source] = max(r["valeur"] for r in resultats)
+    assert maxima[None] == maxima["nasa_power"] != maxima["cams_radiation"]
+
+
+def test_ghi_ciel_clair_sans_relais(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """Le GHI par ciel clair et la série CAMS ne se servent que stockés, sans relais amont."""
+    response = client.get(
+        "/v1/horaire/bfa_dep_dori/ghi_ciel_clair",
+        params={"periode_debut": "2024-06-01", "periode_fin": "2024-06-01"},
+        headers=headers_auth,
+    )
+    assert response.status_code == 200, response.text
+    resultats = response.json()["resultats"]
+    assert len(resultats) == 24 and resultats[12]["valeur"] > 900.0
+    refus = [
+        ("bfa_dep_dori", "ghi_ciel_clair", "2020-06-01", None, "La plage demandee"),
+        ("bfa_dep_dori", "ghi", "2020-06-01", "cams_radiation", "La plage demandee"),
+        (
+            "bfa_dep_fo",
+            "ghi_ciel_clair",
+            "2024-06-01",
+            None,
+            "Aucune serie horaire stockee pour cette localite et cette grandeur.",
+        ),
+        (
+            "bfa_dep_fo",
+            "ghi",
+            "2024-06-01",
+            "cams_radiation",
+            "Aucune serie horaire stockee pour cette localite, grandeur et source.",
+        ),
+    ]
+    for localite, grandeur, jour, source, message in refus:
+        params = {"periode_debut": jour, "periode_fin": jour}
+        if source is not None:
+            params["source"] = source
+        response = client.get(
+            f"/v1/horaire/{localite}/{grandeur}", params=params, headers=headers_auth
+        )
+        assert response.status_code == 400, response.text
+        erreur = response.json()["erreur"]
+        assert erreur["code"] == "PLAGE_TEMPORELLE_NON_DISPONIBLE"
+        assert erreur["message"].startswith(message)
+        # La plage de la série stockée accompagne le refus quand la série existe.
+        plage = erreur["details"].get("plage_disponible")
+        assert plage == ("2021-01-01 / 2025-12-31" if localite == "bfa_dep_dori" else None)
+
+
+def test_relais_reserve_a_nasa_power(
+    client: TestClient, headers_auth: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Hors du stocké, seule NASA POWER se relaie ; CAMS et le ciel clair ne sortent jamais."""
+    appels: list[dict[str, Any]] = []
+
+    def relais(**kwargs: Any) -> SimpleNamespace:
+        appels.append(kwargs)
+        heures = {f"20190601{h:02d}": float(h) for h in range(24)}
+        return SimpleNamespace(
+            properties=SimpleNamespace(parameter={kwargs["parameters"][0]: heures})
+        )
+
+    monkeypatch.setattr("kuma_data_core.api.v1.horaire.fetch_hourly", relais)
+    plage = {"periode_debut": "2019-06-01", "periode_fin": "2019-06-01"}
+    for grandeur, source in (("ghi", "cams_radiation"), ("ghi_ciel_clair", None)):
+        params = dict(plage, **({"source": source} if source else {}))
+        response = client.get(
+            f"/v1/horaire/bfa_com_ouagadougou/{grandeur}", params=params, headers=headers_auth
+        )
+        assert response.status_code == 400, response.text
+    assert appels == []
+    response = client.get(
+        "/v1/horaire/bfa_com_ouagadougou/ghi",
+        params=dict(plage, source="nasa_power"),
+        headers=headers_auth,
+    )
+    assert response.status_code == 200, response.text
+    assert len(appels) == 1
+    assert response.json()["source"] == "nasa_power"
+    resultats = response.json()["resultats"]
+    assert len(resultats) == 24
+    assert {r["statut_editorial"] for r in resultats} == {"passe_plat_non_valide"}
 
 
 def test_horaire_csv(client: TestClient, headers_auth: dict[str, str]) -> None:
@@ -121,6 +223,32 @@ def test_poa_horaire_plan_incline(client: TestClient, headers_auth: dict[str, st
     )
     ghi = _ghi_par_jour(client, headers_auth)
     assert 1.02 < statistics.mean(poa) / statistics.mean(ghi) < 1.05
+
+
+def test_poa_horaire_sur_cams(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """Le POA horaire part aussi de la série CAMS, dont il trouve la compagne DHI (ADR-0023).
+
+    Plan horizontal : le GHI de l'année à 0,1 % près ; à 15° plein sud, le plan gagne
+    3,5 %, comme avec NASA POWER.
+    """
+    poa = {
+        inclinaison: _resultats(
+            client,
+            headers_auth,
+            "poa_parametrable",
+            code_serie_source=GHI_CAMS,
+            inclinaison_deg=inclinaison,
+            orientation_deg=180,
+            albedo_sol=0.2,
+            **HORAIRE_2024,
+        )
+        for inclinaison in (0, 15)
+    }
+    ghi = _ghi_par_jour(client, headers_auth, "cams_radiation")
+    assert len(poa[0]) == len(ghi) == 366
+    assert abs(sum(poa[0]) - sum(ghi)) < 1e-3 * sum(ghi)
+    assert max(abs(p - g) / g for p, g in zip(poa[0], ghi, strict=True)) < 0.01
+    assert 1.03 < statistics.mean(poa[15]) / statistics.mean(ghi) < 1.04
 
 
 def test_poa_bifacial_horaire(client: TestClient, headers_auth: dict[str, str]) -> None:

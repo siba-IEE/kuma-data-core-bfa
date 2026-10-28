@@ -183,7 +183,9 @@ def test_t_hschema_12_reponse_horaire_vide() -> None:
     r = ReponseHoraire(
         localite="kindia",
         grandeur="ghi",
+        source="nasa_power",
         periode_demandee=PlageTemporelle(debut=date(2024, 1, 1), fin=date(2024, 1, 5)),
         resultats=[],
     )
     assert r.resultats == []
+    assert r.source == "nasa_power"

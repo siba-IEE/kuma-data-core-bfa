@@ -64,7 +64,8 @@ l'amorçage et la montée en charge de la donnée burkinabè.
       (ADR-0022).
 - [ ] ERA5-Land journalier aux 398 localités, 2005-2025 : température, point
       de rosée, pluie, vent, rayonnement, pression.
-- [ ] CAMS Radiation horaire aux cinq points pilotes, 2021-2025.
+- [x] CAMS Radiation horaire aux cinq points pilotes, 2021-2025 : GHI, DNI,
+      DHI et GHI par ciel clair (ADR-0023).
 
 ## Jalon 6 : terrain (confiance A)
 

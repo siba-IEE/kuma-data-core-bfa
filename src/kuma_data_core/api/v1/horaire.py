@@ -24,8 +24,10 @@ Architecture :
 
 Authentification : Bearer existante via ``CleApiValidee``.
 
-Principe « Kuma assume » : aucune mention de la source amont dans les
-codes erreur, messages, exemples JSON exposés au consommateur.
+Les codes erreur et messages ne nomment pas la source amont. Une localité
+pouvant porter plusieurs séries horaires de la même grandeur, le paramètre
+et le champ de réponse ``source`` nomment la source de la série servie
+(ADR-0023).
 
 Mode calcul disponibilité v1 retenu : **B1 statique** (formule
 ``fin = mois_courant - 5 mois - 1 jour``). Choix justifié pour v1 par
@@ -68,9 +70,11 @@ from kuma_data_core.exceptions import (
 )
 from kuma_data_core.external.nasa_power import fetch_hourly
 from kuma_data_core.services.horaire import (
+    SOURCE_RELAIS,
     code_parametre_amont,
     convertir_valeurs_amont_en_resultats,
     filtrer_resultats_par_plage,
+    relayable,
     unite_cible,
 )
 from kuma_data_core.services.localites import coordonnees_localite
@@ -174,11 +178,15 @@ def _gerer_erreur_amont(exc: Exception) -> None:
 
 
 def _chercher_serie_horaire_stockee(
-    session: Session, localite_code_complet: str, grandeur: str
-) -> tuple[int, date, date] | None:
+    session: Session, localite_code_complet: str, grandeur: str, source: str | None = None
+) -> tuple[int, date, date, str] | None:
     """Cherche la série horaire stockée au catalogue pour (localité, grandeur).
 
-    Renvoie ``(serie_id, periode_debut, periode_fin)`` si une série horaire
+    ``source`` restreint la recherche aux séries de cette source (ADR-0023) ;
+    sans elle, la série de la source du relais l'emporte (``SOURCE_RELAIS``),
+    puis la plus ancienne.
+
+    Renvoie ``(serie_id, periode_debut, periode_fin, source)`` si une série horaire
     active **portant des mesures stockées** existe pour ce couple, ``None``
     sinon. La jointure sur ``localites.code`` résout le couple
     indépendamment du naming de la série (exception ``gin_conakry`` vs
@@ -198,26 +206,33 @@ def _chercher_serie_horaire_stockee(
     row = session.execute(
         text(
             """
-            SELECT sm.id, sm.periode_debut, sm.periode_fin
+            SELECT sm.id, sm.periode_debut, sm.periode_fin, s.code AS source
             FROM series_metadonnees sm
             JOIN localites l ON l.id = sm.localite_id
+            JOIN sources s ON s.id = sm.source_id
             WHERE l.code = :localite
               AND sm.grandeur_code = :grandeur
               AND sm.granularite = 'horaire'
               AND sm.actif = TRUE
+              AND (CAST(:source AS text) IS NULL OR s.code = :source)
               AND EXISTS (
                   SELECT 1 FROM mesures_ressource_horaires m
                   WHERE m.serie_id = sm.id
               )
-            ORDER BY sm.id
+            ORDER BY (s.code = :relais) DESC, sm.id
             LIMIT 1
             """
         ),
-        {"localite": localite_code_complet, "grandeur": grandeur},
+        {
+            "localite": localite_code_complet,
+            "grandeur": grandeur,
+            "source": source,
+            "relais": SOURCE_RELAIS,
+        },
     ).first()
     if row is None or row.periode_fin is None:
         return None
-    return int(row.id), row.periode_debut, row.periode_fin
+    return int(row.id), row.periode_debut, row.periode_fin, str(row.source)
 
 
 def _lire_horaire_validee(
@@ -259,13 +274,16 @@ def _lire_horaire_validee(
     ]
 
 
-def _repondre_horaire(params: ParametresHoraire, resultats: list[ResultatHoraire]) -> Response:
+def _repondre_horaire(
+    params: ParametresHoraire, resultats: list[ResultatHoraire], source: str
+) -> Response:
     """Sérialise une liste de ResultatHoraire en JSON (défaut) ou CSV."""
     if params.format_sortie == "csv":
         return Response(content=_serialiser_csv(resultats), media_type="text/csv")
     reponse = ReponseHoraire(
         localite=params.localite,
         grandeur=params.grandeur,
+        source=source,
         periode_demandee=PlageTemporelle(debut=params.periode_debut, fin=params.periode_fin),
         resultats=resultats,
     )
@@ -325,14 +343,34 @@ def grandeur_horaire(
     # Lever passe_plat : si une série horaire stockée couvre la plage
     # demandée, servir la donnée validée (statut valide_auto) au lieu de
     # relayer la source amont non validée.
-    serie_stockee = _chercher_serie_horaire_stockee(session, localite_complet, params.grandeur)
+    serie_stockee = _chercher_serie_horaire_stockee(
+        session, localite_complet, params.grandeur, params.source
+    )
     if serie_stockee is not None:
-        serie_id, periode_debut_serie, periode_fin_serie = serie_stockee
+        serie_id, periode_debut_serie, periode_fin_serie, source_serie = serie_stockee
         if periode_debut_serie <= params.periode_debut and params.periode_fin <= periode_fin_serie:
             resultats_stockes = _lire_horaire_validee(
                 session, serie_id, params.grandeur, params.periode_debut, params.periode_fin
             )
-            return _repondre_horaire(params, resultats_stockes)
+            return _repondre_horaire(params, resultats_stockes, source_serie)
+
+    # Une source autre que le relais, ou une grandeur sans relais, ne se sert
+    # que depuis le stocké (ADR-0023).
+    if params.source not in (None, SOURCE_RELAIS) or not relayable(params.grandeur):
+        details = {"plage_demandee": f"{params.periode_debut} / {params.periode_fin}"}
+        if serie_stockee is not None:
+            details["plage_disponible"] = f"{serie_stockee[1]} / {serie_stockee[2]}"
+            message = "La plage demandee n'est pas couverte par la serie horaire stockee."
+        elif params.source is None:
+            message = "Aucune serie horaire stockee pour cette localite et cette grandeur."
+        else:
+            message = "Aucune serie horaire stockee pour cette localite, grandeur et source."
+        raise ExceptionKuma(
+            code=CodeErreur.PLAGE_TEMPORELLE_NON_DISPONIBLE,
+            message=message,
+            statut_http=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
 
     # Profil édition figée (ADR-0003, D6) : jamais de relais amont. Une
     # plage non couverte par le stocké est indisponible, point - zéro
@@ -376,7 +414,7 @@ def grandeur_horaire(
         periode_debut=params.periode_debut,
         periode_fin=params.periode_fin,
     )
-    return _repondre_horaire(params, resultats)
+    return _repondre_horaire(params, resultats, SOURCE_RELAIS)
 
 
 # === Endpoint disponibilité ===============================================

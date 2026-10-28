@@ -20,6 +20,7 @@ from kuma_data_core.services.horaire import (
     convertir_valeurs_amont_en_resultats,
     filtrer_resultats_par_plage,
     parser_cle_horaire,
+    relayable,
     unite_cible,
 )
 
@@ -94,6 +95,13 @@ def test_t_conv_6_unites_cibles() -> None:
     assert unite_cible("t2m") == "°C"
     assert unite_cible("rh2m") == "%"
     assert unite_cible("kt") == "sans dimension"
+    assert unite_cible("ghi_ciel_clair") == "Wh/m²"
+
+
+def test_t_conv_6b_grandeurs_relayables() -> None:
+    """T-CONV-6b : le GHI par ciel clair ne se sert que depuis une série stockée."""
+    assert relayable("ghi") and relayable("t2m")
+    assert not relayable("ghi_ciel_clair")
 
 
 def test_t_conv_7_filtrage_par_plage() -> None:

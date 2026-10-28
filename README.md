@@ -56,7 +56,11 @@ Socle en place. La donnée nationale se construit par lots.
   l'[ADR-0011](docs/decisions/0011-series-cams-radiation.md). Séries
   journalières aux 398 localités, avec le GHI et le DNI par ciel clair, en
   stockage dense : voir
-  l'[ADR-0020](docs/decisions/0020-cams-radiation-journalier.md).
+  l'[ADR-0020](docs/decisions/0020-cams-radiation-journalier.md). Séries
+  horaires 2021-2025 aux cinq points pilotes, avec le GHI par ciel clair,
+  contrôlées par la doctrine QC v1 et servies par `/v1/horaire` avec
+  `source=cams_radiation` : voir
+  l'[ADR-0023](docs/decisions/0023-cams-radiation-horaire.md).
 - Grandeurs dérivées stockées aux 398 localités, calculées en base depuis les
   séries mensuelles : écarts relatifs mensuels à NASA POWER (GHI et DNI de
   SARAH-3, ERA5 et CAMS ; DHI de CAMS) et fraction diffuse NASA POWER,
@@ -93,8 +97,7 @@ d'ingestion.
 
 ### À faire
 
-- Brut satellite et réanalyse (jalon 5) : ERA5-Land journalier, CAMS
-  Radiation horaire aux points pilotes.
+- Brut satellite et réanalyse (jalon 5) : ERA5-Land journalier.
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A
   (jalon 6).
 - Correction du POA en moyenne journalière, biaisé par la géométrie du midi
@@ -129,9 +132,10 @@ Les séries proviennent de :
     2005-2023 ».
 - **CAMS Radiation**, Copernicus Atmosphere Monitoring Service (CC BY 4.0),
   service v4.6 (Vaisala, MINES ParisTech et DLR) diffusé par l'ADS
-  Copernicus, consulté le 15 octobre 2026 (séries mensuelles) et le 27 octobre
-  2026 (séries journalières) : « Contains modified Copernicus
-  Atmosphere Monitoring Service information 2005-2025 ».
+  Copernicus, consulté le 15 octobre 2026 (séries mensuelles), le 27 octobre
+  2026 (séries journalières) et les 27 et 28 octobre 2026 (séries horaires) :
+  « Contains modified Copernicus Atmosphere Monitoring Service information
+  2005-2025 ».
 - **CAMS EAC4**, réanalyse globale de composition atmosphérique du Copernicus
   Atmosphere Monitoring Service (CEPMMT, CC BY 4.0), jeu
   `cams-global-reanalysis-eac4` (DOI 10.24381/d58bbf47) diffusé par l'ADS

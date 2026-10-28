@@ -533,9 +533,7 @@ densification.
 ### 3.8 `GET /v1/horaire/{localite}/{grandeur}`
 
 Localités : toute localité du référentiel par son **code complet**
-(ex. `gin_kankan`) ; les codes courts historiques des 6 villes
-pilotes (`kankan`, `kindia`...) restent acceptés en alias de
-compatibilité. Un code inconnu répond 404
+(ex. `bfa_com_ouagadougou`). Un code inconnu répond 404
 `RESSOURCE_LOCALITE_INCONNUE` (et non plus 422 : l'énumération fermée
 a disparu avec la généricité pays).
 
@@ -553,6 +551,16 @@ Comportement :
    convertit la réponse au format Kuma et l'étiquète
    `passe_plat_non_valide`.
 
+Une localité peut porter plusieurs séries horaires de la même grandeur
+(NASA POWER et CAMS Radiation aux points pilotes, ADR-0023). Le
+paramètre `source` choisit la série ; sans lui, la série de NASA POWER,
+source du relais, est servie. Le champ `source` de la réponse JSON nomme
+la série servie. Avec `source=cams_radiation`, ou pour `ghi_ciel_clair`,
+que seul CAMS Radiation sert, il n'y a pas de relais : une plage non
+couverte répond 400 `PLAGE_TEMPORELLE_NON_DISPONIBLE`, avec dans les
+détails la plage de la série stockée (`plage_disponible`) quand elle
+existe.
+
 Le champ `statut_editorial` de chaque point vaut donc `valide_auto`
 (stocké validé) ou `passe_plat_non_valide` (relais non validé).
 
@@ -561,8 +569,8 @@ Le champ `statut_editorial` de chaque point vaut donc `valide_auto`
 
 | Paramètre | Valeurs autorisées |
 |---|---|
-| `{localite}` | `conakry_kaloum`, `kankan`, `kindia`, `labe`, `mamou`, `nzerekore` |
-| `{grandeur}` | `ghi`, `dni`, `dhi`, `t2m`, `rh2m`, `kt` |
+| `{localite}` | code complet d'une localité du référentiel (ex. `bfa_dep_dori`) |
+| `{grandeur}` | `ghi`, `dni`, `dhi`, `ghi_ciel_clair`, `t2m`, `rh2m`, `kt`, `vent_2m`, `vent_10m`, `precipitation` |
 
 - Paramètres query :
 
@@ -571,26 +579,28 @@ Le champ `statut_editorial` de chaque point vaut donc `valide_auto`
 | `periode_debut` | `YYYY-MM-DD` | `>= 2001-01-01` | oui |
 | `periode_fin` | `YYYY-MM-DD` | `>= periode_debut`, plage `<= 366` jours | oui |
 | `format` | `json` / `csv` | | non (`json` défaut) |
+| `source` | `nasa_power` / `cams_radiation` | | non (`nasa_power`, source du relais) |
 
 - Réponse 200 JSON :
 
 ```json
 {
-  "localite": "kankan",
+  "localite": "bfa_dep_dori",
   "grandeur": "ghi",
+  "source": "cams_radiation",
   "periode_demandee": {
-    "debut": "2018-06-01",
-    "fin": "2018-06-02"
+    "debut": "2024-06-01",
+    "fin": "2024-06-02"
   },
   "resultats": [
     {
-      "instant": "2018-06-01T00:00:00",
-      "valeur": null,
+      "instant": "2024-06-01T00:00:00",
+      "valeur": 0.0,
       "unite": "Wh/m²",
       "statut_editorial": "valide_auto"
     },
     {
-      "instant": "2018-06-01T12:00:00",
+      "instant": "2024-06-01T12:00:00",
       "valeur": 893.4,
       "unite": "Wh/m²",
       "statut_editorial": "valide_auto"
@@ -602,18 +612,21 @@ Le champ `statut_editorial` de chaque point vaut donc `valide_auto`
 - 24 points par jour, instant en UTC.
 - `valeur: null` pour les heures où l'indice n'est pas physiquement
   défini (cas `kt` la nuit) ou une donnée manquante amont en mode repli.
-- Format CSV : header `instant, valeur, unite, statut_editorial`.
+- Format CSV : header `instant, valeur, unite, statut_editorial` (sans le
+  champ `source`).
 
 ### 3.9 `GET /v1/horaire/{localite}/{grandeur}/disponibilite`
 
-Retourne la plage temporelle utilisable pour cette grandeur.
+Retourne la plage temporelle utilisable par le relais (NASA POWER). Elle
+ne vaut ni pour `ghi_ciel_clair` ni pour `source=cams_radiation`, servis
+seulement depuis le stocké : leur couverture se lit dans `/v1/series`.
 
 - Auth : Bearer requise
 - Réponse 200 :
 
 ```json
 {
-  "localite": "kindia",
+  "localite": "bfa_dep_dori",
   "grandeur": "ghi",
   "plage_disponible": {
     "debut": "2001-01-01",
@@ -869,7 +882,7 @@ Le bilan et l'export (sans les clés) se font sur le serveur, par
 | `RESSOURCE_LOCALITE_INCONNUE` | 404 | localité introuvable |
 | `GRANDEUR_F2_INCONNUE` | 404 | grandeur F2 hors catalogue |
 | `INCOMPATIBILITE_SOURCE_GRANDEUR` | 400 | série incompatible ou compagne manquante |
-| `PLAGE_TEMPORELLE_NON_DISPONIBLE` | 400 | requête horaire hors plage utilisable (ou hors stocké en profil édition figée) |
+| `PLAGE_TEMPORELLE_NON_DISPONIBLE` | 400 | requête horaire hors plage utilisable ; hors stocké en profil édition figée, pour `source=cams_radiation` ou pour `ghi_ciel_clair` (sans relais) |
 | `PASSE_PLAT_INDISPONIBLE` | 503 | service amont temporairement indisponible |
 | `CLES_EMISSION_NON_ACTIVEE` | 404 | self-service de clés non disponible sur ce déploiement |
 | `CLES_LIMITE_EMISSION_ATTEINTE` | 429 | limite d'émission de clés par IP atteinte |
@@ -963,8 +976,12 @@ Voir 3.7 pour les routes, modèles physiques et paramètres.
 Une partie du substrat solaire existe en granularité horaire (GHI, DNI,
 DHI, T2M et compagnes selon la localité), stockée dans
 `mesures_ressource_horaires` avec passage par contrôle qualité (statut
-`valide_auto`, confiance B). Ces séries alimentent l'endpoint horaire
-(3.8) et le mode `integration_horaire` des routes F2. La couverture
+`valide_auto`, confiance B). Aux cinq points pilotes, NASA POWER et CAMS
+Radiation servent chacun le GHI, le DNI et le DHI horaires de 2021 à
+2025 ; CAMS y ajoute le GHI par ciel clair (ADR-0023). Ces séries
+alimentent l'endpoint horaire (3.8) et le mode `integration_horaire` des
+routes F2. CAMS ne sert pas de température : les grandeurs qui demandent
+la température horaire partent de la série NASA POWER. La couverture
 horaire par localité se découvre via `/v1/series` (filtre sur la
 granularité).
 

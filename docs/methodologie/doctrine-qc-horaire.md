@@ -175,6 +175,10 @@ Attribution **par point horaire** (chaque ligne porte son verdict) :
 - **Tranché pour le Burkina Faso (ADR-0014)** : une ligne rejetée reste
   `brut`, conservée avec son motif ; une ligne seulement signalée reste
   `valide_auto` en niveau `B`.
+- **GHI par ciel clair (ADR-0023)** : faute de composantes associées, il ne
+  passe que la plausibilité du GHI (§ 4.1), sans fermeture ni ratio diffus.
+  Son commentaire `[QC v1] valide_auto` est le même que celui d'une ligne
+  passée par tous les tests : la note publique de la série le précise.
 
 ## 6. Versionnement et traçabilité
 

@@ -42,6 +42,7 @@ def test_series_horaires(db_session: Session) -> None:
             JOIN sources so ON so.id = s.source_id
             JOIN localites l ON l.id = s.localite_id
             WHERE s.granularite = 'horaire'
+              AND s.source_id = (SELECT id FROM sources WHERE code = 'nasa_power')
             """
         )
     ).all()
@@ -70,6 +71,7 @@ def test_mesures_completes_et_bornees(db_session: Session) -> None:
             FROM series_metadonnees s
             JOIN mesures_ressource_horaires m ON m.serie_id = s.id
             WHERE s.granularite = 'horaire'
+              AND s.source_id = (SELECT id FROM sources WHERE code = 'nasa_power')
             GROUP BY 1, 2
             """
         )
@@ -100,6 +102,7 @@ def test_convention_debut_d_heure(db_session: Session) -> None:
             JOIN series_metadonnees s ON s.id = m.serie_id
             JOIN localites l ON l.id = s.localite_id
             WHERE s.grandeur_code = 'ghi' AND s.granularite = 'horaire'
+              AND s.source_id = (SELECT id FROM sources WHERE code = 'nasa_power')
             GROUP BY l.code, l.longitude
             """
         )
@@ -128,6 +131,7 @@ def test_sommes_horaires_egales_au_mensuel(db_session: Session) -> None:
                 FROM mesures_ressource_horaires m
                 JOIN series_metadonnees s ON s.id = m.serie_id
                 WHERE s.grandeur_code = 'ghi' AND s.granularite = 'horaire'
+                  AND s.source_id = (SELECT id FROM sources WHERE code = 'nasa_power')
                 GROUP BY 1, 2, 3
             )
             SELECT l.code, count(*) AS mois, max(abs(h.moyenne - mm.valeur)) AS ecart
@@ -170,6 +174,7 @@ def test_controle_qualite(db_session: Session) -> None:
             JOIN series_metadonnees s ON s.id = m.serie_id
             JOIN localites l ON l.id = s.localite_id
             WHERE s.granularite = 'horaire'
+              AND s.source_id = (SELECT id FROM sources WHERE code = 'nasa_power')
             GROUP BY 1, 2
             """
         )
