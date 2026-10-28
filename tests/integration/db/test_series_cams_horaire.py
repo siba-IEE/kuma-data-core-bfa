@@ -121,14 +121,24 @@ def test_sommes_horaires_et_journalier(db_session: Session) -> None:
                 JOIN series_metadonnees s ON s.id = m.serie_id
                 WHERE s.granularite = 'horaire' AND {_CAMS}
                 GROUP BY 1, 2, 3
+            ),
+            -- Séries journalières denses des seuls points pilotes, lues sans la vue.
+            journalier AS (
+                SELECT s.localite_id, s.grandeur_code,
+                       make_date(d.annee, 1, 1) + (u.rang - 1)::int AS jour,
+                       u.e4 / 10000.0 AS valeur
+                FROM series_metadonnees s
+                JOIN mesures_journalieres_denses d
+                     ON d.serie_id = COALESCE(s.serie_porteuse_id, s.id)
+                CROSS JOIN LATERAL unnest(d.valeurs_e4) WITH ORDINALITY AS u(e4, rang)
+                WHERE s.granularite = 'journalier' AND {_CAMS}
+                  AND s.localite_id IN (SELECT localite_id FROM jours)
+                  AND d.annee BETWEEN 2021 AND 2025 AND u.e4 IS NOT NULL
             )
             SELECT j.grandeur_code, count(*) AS jours, avg(abs(j.total - v.valeur)) AS moyen,
                    max(abs(j.total - v.valeur)) AS maximal
             FROM jours j
-            JOIN series_metadonnees s
-              ON s.localite_id = j.localite_id AND s.grandeur_code = j.grandeur_code
-             AND s.granularite = 'journalier' AND {_CAMS}
-            JOIN v_mesures_journalieres v ON v.serie_id = s.id AND v.instant_mesure = j.jour
+            JOIN journalier v USING (localite_id, grandeur_code, jour)
             GROUP BY 1
             """
         )
@@ -143,23 +153,26 @@ def test_sommes_horaires_et_journalier(db_session: Session) -> None:
 
 def test_ciel_clair_au_dessus_du_tous_temps(db_session: Session) -> None:
     """À chaque heure, le GHI tous temps reste sous le GHI par ciel clair."""
-    depassements = db_session.execute(
+    resultat = db_session.execute(
         text(
             f"""
-            SELECT count(*)
-            FROM mesures_ressource_horaires m
-            JOIN series_metadonnees s ON s.id = m.serie_id
-            JOIN series_metadonnees c
-              ON c.localite_id = s.localite_id AND c.grandeur_code = 'ghi_ciel_clair'
-             AND c.source_id = s.source_id AND c.granularite = 'horaire'
-            JOIN mesures_ressource_horaires mc
-              ON mc.serie_id = c.id AND mc.instant_mesure = m.instant_mesure
-            WHERE s.grandeur_code = 'ghi' AND s.granularite = 'horaire' AND {_CAMS}
-              AND m.valeur > mc.valeur + 1e-6
+            SELECT count(*) AS heures,
+                   count(*) FILTER (WHERE h.ghi > h.ciel_clair + 1e-6) AS depassements
+            FROM (
+                SELECT s.localite_id, m.instant_mesure,
+                       max(m.valeur) FILTER (WHERE s.grandeur_code = 'ghi') AS ghi,
+                       max(m.valeur) FILTER (WHERE s.grandeur_code = 'ghi_ciel_clair')
+                           AS ciel_clair
+                FROM mesures_ressource_horaires m
+                JOIN series_metadonnees s ON s.id = m.serie_id
+                WHERE s.grandeur_code IN ('ghi', 'ghi_ciel_clair')
+                  AND s.granularite = 'horaire' AND {_CAMS}
+                GROUP BY 1, 2
+            ) h
             """
         )
-    ).scalar_one()
-    assert depassements == 0
+    ).one()
+    assert (resultat.heures, resultat.depassements) == (5 * _HEURES, 0)
 
 
 def test_controle_qualite(db_session: Session) -> None:
