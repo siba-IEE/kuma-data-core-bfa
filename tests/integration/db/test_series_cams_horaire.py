@@ -131,7 +131,7 @@ def test_sommes_horaires_et_journalier(db_session: Session) -> None:
                 JOIN mesures_journalieres_denses d
                      ON d.serie_id = COALESCE(s.serie_porteuse_id, s.id)
                 CROSS JOIN LATERAL unnest(d.valeurs_e4) WITH ORDINALITY AS u(e4, rang)
-                WHERE s.granularite = 'journalier' AND {_CAMS}
+                WHERE s.granularite = 'journalier' AND s.stockage = 'dense' AND {_CAMS}
                   AND s.localite_id IN (SELECT localite_id FROM jours)
                   AND d.annee BETWEEN 2021 AND 2025 AND u.e4 IS NOT NULL
             )
@@ -156,7 +156,7 @@ def test_ciel_clair_au_dessus_du_tous_temps(db_session: Session) -> None:
     resultat = db_session.execute(
         text(
             f"""
-            SELECT count(*) AS heures,
+            SELECT count(h.ghi) AS ghi, count(h.ciel_clair) AS ciel_clair,
                    count(*) FILTER (WHERE h.ghi > h.ciel_clair + 1e-6) AS depassements
             FROM (
                 SELECT s.localite_id, m.instant_mesure,
@@ -172,7 +172,11 @@ def test_ciel_clair_au_dessus_du_tous_temps(db_session: Session) -> None:
             """
         )
     ).one()
-    assert (resultat.heures, resultat.depassements) == (5 * _HEURES, 0)
+    assert (resultat.ghi, resultat.ciel_clair, resultat.depassements) == (
+        5 * _HEURES,
+        5 * _HEURES,
+        0,
+    )
 
 
 def test_controle_qualite(db_session: Session) -> None:
