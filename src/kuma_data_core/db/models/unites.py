@@ -143,10 +143,9 @@ class Unite(Base):
         # élément du tuple __table_args__ selon la convention SQLAlchemy.
         {
             "comment": (
-                "Référentiel des unités de mesure de Kuma Data Core. "
-                "153 unités sur 30 grandeurs, validées contre 20+ organismes "
-                "normatifs internationaux (BIPM, AIE, ONU, NIST, IUPAC, IEC, "
-                "DIN, ISO, IPCC, IRENA, UNECE, etc.)."
+                "Référentiel des unités de mesure de Kuma Data Core : 162 unités sur 38 grandeurs,"
+                " validées contre plus de 20 organismes normatifs internationaux (BIPM, AIE, ONU, "
+                "NIST, IUPAC, IEC, DIN, ISO, IPCC, IRENA, UNECE, etc.)."
             ),
         },
     )

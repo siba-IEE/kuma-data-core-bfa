@@ -56,8 +56,8 @@ class GrandeurReferentiel(Base):
         nullable=False,
         unique=True,
         comment=(
-            "Cle naturelle metier (ASCII pur, snake_case, citee par les FK aval). "
-            "Cf. 01-naming.md section Codes metier des referentiels."
+            "Clé naturelle métier (ASCII pur, snake_case, citée par les FK aval). Voir "
+            "docs/conventions/01-naming.md."
         ),
     )
 
@@ -159,10 +159,9 @@ class GrandeurReferentiel(Base):
         # élément du tuple __table_args__ selon la convention SQLAlchemy.
         {
             "comment": (
-                "Referentiel des grandeurs Kuma. 15 grandeurs traduites (1-1C) + "
-                "5 grandeurs brutes ingerees (1-2b) = 20 entrees post-1-2b. "
-                "Le lieu de stockage physique d'une F1 stockee est determine par "
-                "series_metadonnees.methode_collecte (cadrage Q7 v1.3)."
+                "Référentiel des grandeurs Kuma : brutes, stockées par Kuma ou calculées à la "
+                "volée. La table qui porte les mesures d'une série suit sa source (kuma_calculs : "
+                "grandeurs_metier) puis sa granularité et son stockage (series_metadonnees)."
             ),
         },
     )

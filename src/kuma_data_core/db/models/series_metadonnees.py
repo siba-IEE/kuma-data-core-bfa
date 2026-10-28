@@ -50,9 +50,9 @@ class SerieMetadonnees(Base):
         nullable=False,
         unique=True,
         comment=(
-            "Cle naturelle metier (ASCII pur, snake_case). "
-            "Convention : <localite>_<grandeur>_<source>[_<periode>] "
-            "ex. gin_conakry_hep_nasa_power_2010_2024."
+            "Clé naturelle métier (ASCII pur, snake_case), ex. "
+            "nasa_power_ghi_journalier_bfa_com_ouagadougou. Convention : "
+            "docs/conventions/01-naming.md."
         ),
     )
     libelle: Mapped[str] = mapped_column(Text, nullable=False)
@@ -106,11 +106,10 @@ class SerieMetadonnees(Base):
         String(16),
         nullable=True,
         comment=(
-            "Discriminant de granularite temporelle pour le routage "
-            "table-cible (journalier/mensuel/horaire). NULL pour les series "
-            "kuma_calculs (routees par source vers grandeurs_metier ; "
-            "temporalite portee par grandeurs_metier.periode_type). "
-            "Resout D-36 (Vague 3 lot 1)."
+            "Discriminant de granularité temporelle pour le routage vers la table cible "
+            "(journalier, mensuel, horaire). NULL pour les séries kuma_calculs, routées par source"
+            " vers grandeurs_metier, dont la temporalité est portée par "
+            "grandeurs_metier.periode_type."
         ),
     )
 
@@ -144,9 +143,10 @@ class SerieMetadonnees(Base):
         String(40),
         nullable=True,
         comment=(
-            "Methode dominante de collecte de la serie. "
-            "Liste indicative des 6 valeurs en spec mecaniques-transverses sec. 6.4. "
-            "CHECK formel pose en 1-2b."
+            "Méthode dominante de collecte de la série : mesure_directe, modele_satellitaire, "
+            "reanalyse, interpolation_geographique, extrapolation_temporelle, calcul_derive ou "
+            "expertise_humaine (CHECK). Elle entre dans le niveau de confiance dérivé "
+            "(docs/contribution/confiance-et-statuts.md)."
         ),
     )
     methode_collecte_doc: Mapped[str | None] = mapped_column(Text, nullable=True)

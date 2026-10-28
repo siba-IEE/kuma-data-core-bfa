@@ -97,8 +97,8 @@ class Localite(Base):
         nullable=False,
         comment=(
             "7 valeurs : continent, region_supranationale, pays, region_administrative, "
-            "prefecture, commune, site. prefecture ajoutee en densification prefectorale "
-            "Etape 1 (niveau pays > region > prefecture > commune)."
+            "prefecture, commune, site. Au Burkina Faso, prefecture porte les provinces, commune "
+            "les départements et la commune de Ouagadougou (ADR-0007)."
         ),
     )
     parent_id: Mapped[int | None] = mapped_column(
@@ -106,14 +106,14 @@ class Localite(Base):
         ForeignKey("localites.id", name="fk_localites_parent_id__localites"),
         nullable=True,
     )
-    # Code administratif officiel externe (decret guineen 2025, 3 lettres, ex. CKY).
+    # Code administratif officiel externe (au Burkina Faso, ISO 3166-2:BF des provinces).
     code_administratif_national: Mapped[str | None] = mapped_column(
         String(8),
         nullable=True,
         comment=(
-            "Code administratif officiel externe (decret guineen de codification 2025, "
-            "3 lettres majuscules, ex. CKY). Nullable. Convention identifiant externe "
-            "comme sources.doi / sources.isbn. Candidat cle de jointure INS / gouvernemental."
+            "Code administratif officiel externe. Au Burkina Faso : sous-code ISO 3166-2:BF à "
+            "trois lettres des provinces (ex. KAD pour le Kadiogo, ADR-0007). Nullable. Convention"
+            " d'identifiant externe, comme sources.doi et sources.isbn."
         ),
     )
 

@@ -80,5 +80,9 @@ agrégation des provinces.
   les communes, pour une variabilité interannuelle de 1,1 % et 2,0 %), plus
   que SARAH-3 (+0,6 %, +0,9 %). Changement probable du produit PVGIS-ERA5,
   non établi. Valeurs non corrigées, signalées dans la note publique.
+  L'ADR-0024 a depuis tranché pour le GHI : celui d'ERA5-Land, qui est celui
+  d'ERA5, monte autant (+1,7 % aux communes) ; la hausse du GHI vient donc
+  d'ERA5 lui-même. ERA5-Land ne sert pas de DNI, dont la hausse reste non
+  vérifiée. La migration 0024 corrige les notes.
 - Un nouveau lot (autre source, autre période) suit le même contrat : un
   ingesteur, des CSV, une migration.

@@ -3,6 +3,24 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.19.0
+
+- Textes publics du référentiel ramenés au Burkina Faso (migration 0024) :
+  neuf fiches de sources, treize descriptions de grandeurs, sept notes
+  d'unités et vingt et un commentaires du schéma (modèles compris) venus
+  du dépôt d'origine perdent le contexte guinéen (stations de Kankan et de
+  Tarambaly, barrages et bassins de Guinée, villes pilotes, franc guinéen
+  comme devise de référence) et le vocabulaire de ses chantiers. La fiche
+  `esmap_wapp` décrit le jeu burkinabè de la campagne, daté de 2024, et
+  ses quatre stations, non intégrées ; celle d'`ecmwf_era5` donne la
+  licence CC BY 4.0. Textes de la révision 0023 figés dans
+  `seeds/donnees/textes_0023.json`, rendus au `downgrade`.
+- Les notes des séries ERA5 de PVGIS et des écarts ERA5 à NASA POWER
+  n'attribuent plus la hausse de 2021-2023 au produit PVGIS : le GHI
+  d'ERA5-Land, celui d'ERA5, monte autant (ADR-0024). Les notes du DNI
+  disent que sa hausse n'est pas vérifiée, ERA5-Land ne servant pas de
+  DNI.
+
 ## 0.18.1
 
 - Documentation adaptée au Burkina Faso. Les notes héritées du dépôt
