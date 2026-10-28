@@ -106,7 +106,6 @@ d'ingestion.
   (jalon 6).
 - Correction du POA en moyenne journalière, biaisé par la géométrie du midi
   solaire (ADR-0020).
-- Adaptation de la documentation `docs/` au contexte burkinabè.
 
 ## Attribution des données amont
 

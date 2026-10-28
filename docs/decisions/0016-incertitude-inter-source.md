@@ -7,11 +7,11 @@ Date : 2026-10-27. Statut : accepté.
 L'endpoint `/v1/grandeurs/incertitude_inter_source`, hérité du dépôt
 d'origine, assemble pour une localité deux indications distinctes : l'écart
 entre sources et la dégénérescence de pixel, c'est-à-dire le nombre d'autres
-localités qui lisent la même maille NASA POWER. Il lisait deux grandeurs
-guinéennes (`ecart_relatif_referentiel`, `ecart_relatif_dni_cams`) sur
-2021-2023 et une dégénérescence jamais calculée au Burkina Faso : il répondait
-404 partout. Les sept écarts mensuels à NASA POWER de l'ADR-0012 étaient
-gravés mais ignorés.
+localités qui lisent la même maille NASA POWER. Il lisait deux grandeurs que
+seul le dépôt d'origine calculait (`ecart_relatif_referentiel`,
+`ecart_relatif_dni_cams`) sur 2021-2023 et une dégénérescence jamais
+calculée au Burkina Faso : il répondait 404 partout. Les sept écarts
+mensuels à NASA POWER de l'ADR-0012 étaient gravés mais ignorés.
 
 ## Décision
 

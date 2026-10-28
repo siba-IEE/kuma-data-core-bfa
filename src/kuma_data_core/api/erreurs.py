@@ -118,7 +118,7 @@ async def handler_validation_requete(request: Request, exc: Exception) -> JSONRe
         )
     )
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content=erreur.model_dump(exclude_none=True),
     )
 

@@ -28,7 +28,9 @@ Six principes non négociables guident les décisions techniques :
    (`brut`, `valide_auto`, `valide_humain`, `publie`, `deprecie`).
 2. **Versioning temporel** - aucune mise à jour destructive ; toute
    évolution d'une donnée crée une nouvelle ligne dotée d'une période de
-   validité (`valide_du`, `valide_au`).
+   validité (`valide_du`, `valide_au`). Les séries journalières brutes en
+   stockage dense font exception : une correction les réédite en bloc
+   depuis un fichier versionné (ADR-0017).
 3. **Table `sources` centrale** - toute donnée pointe vers une source
    documentée. La table `sources` est l'ossature de la crédibilité du
    système.
@@ -46,31 +48,35 @@ Six principes non négociables guident les décisions techniques :
 Chaque mesure porte un niveau de confiance A / B / C :
 
 - **A** - haute confiance, réservée aux mesures terrain directes.
-- **B** - confiance moyenne (modèle satellitaire / réanalyse, source de
-  haute fiabilité).
-- **C** - confiance basse (calcul dérivé, ou source moyenne / faible).
+- **B** - confiance moyenne (modèle satellitaire, réanalyse ou calcul
+  dérivé).
+- **C** - confiance basse (estimation d'expert sans validation
+  instrumentale, ou source de fiabilité faible).
 
 Ce niveau est dérivé automatiquement à partir de la méthode de collecte
 et de la fiabilité de la source, avec possibilité d'un override éditorial
 justifié.
 
-## Pilote : solaire Guinée
+## Instance : Burkina Faso
 
-La première application est le substrat physique solaire de la Guinée.
-La couverture initiale porte sur six villes pilotes - Conakry, Kindia,
-Mamou, Labé, Kankan, Nzérékoré - avec des données d'irradiation
-(GHI, DNI, DHI), de température, d'humidité et d'indice de clarté, issues
-principalement de NASA POWER, complétées par un cross-check SARAH-3 et
-une couche de grandeurs dérivées Kuma (HEP, productible, degrés-jours,
-etc.). Le modèle reste générique : d'autres substrats (vent, hydrologie,
-biomasse, infrastructure, usages) et d'autres pays s'ajoutent selon le
-même schéma.
+Ce dépôt porte le substrat physique solaire du Burkina Faso, aux
+398 localités du découpage de 2025 : 47 provinces, 350 départements et
+la commune de Ouagadougou (ADR-0007). Il sert le rayonnement (GHI, DNI,
+DHI, ciel clair) et la météo aux pas mensuel, journalier et horaire,
+issus de NASA POWER, de SARAH-3 et ERA5 via PVGIS, d'ERA5-Land et de CAMS
+Radiation, et les aérosols de CAMS EAC4 (particules fines, épaisseur
+optique), en confiance B ; des grandeurs dérivées stockées (écarts entre
+sources, fraction diffuse) ; et des grandeurs calculées par l'API (POA, productibles, énergie utile ECS, degrés-jours,
+PR réaliste). La confiance A attend les stations sol (feuille de route,
+jalon 6). Le modèle reste générique : d'autres substrats (vent,
+hydrologie, biomasse, infrastructure, usages) et d'autres pays
+s'ajoutent selon le même schéma.
 
 ## Données publiques
 
-Les données du pilote solaire Guinée sont publiées dans le dépôt public
-`rds-guinee`, organisées par source (grille par source, terrain par
-station).
+Les valeurs ingérées sont versionnées dans ce dépôt, en CSV et Parquet
+produits par les scripts d'ingestion (`src/kuma_data_core/db/seeds/donnees/`),
+et servies par l'API.
 
 ## Opération
 

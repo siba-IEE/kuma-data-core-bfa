@@ -13,8 +13,8 @@ contrôle qualité horaire (`docs/methodologie/doctrine-qc-horaire.md`, v1,
 socle BSRN) n'avait jamais été appliquée.
 
 Le jalon 4 calera le satellite sur les stations sol ESMAP/WAPP de Dédougou,
-Dori, Kaya et Koupéla, qui mesurent au pas de 10 minutes : il lui faut le
-satellite horaire aux mêmes points.
+Dori, Kaya et Koupéla, qui mesurent à un pas plus fin que l'heure : il lui
+faut le satellite horaire aux mêmes points.
 
 ## Décision
 

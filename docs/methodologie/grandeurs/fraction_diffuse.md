@@ -1,104 +1,92 @@
-# Fiche méthodologique - `fraction_diffuse` (Fraction diffuse de l'irradiation)
+# Fiche de la grandeur `fraction_diffuse`
 
-> Conventions communes (versioning, politique de complétude, identité
-> métier `grandeurs_metier`) : voir fiche HEP `hep.md`.
+Fraction diffuse de l'irradiation, calculée par la migration 0009 aux
+398 localités. La décision et ses contrôles sont dans l'ADR-0012.
 
 ## 1. Identification
 
 | Champ | Valeur |
 |---|---|
-| Nom | Fraction diffuse de l'irradiation |
-| Code métier | `fraction_diffuse` |
+| Code | `fraction_diffuse` |
 | Unité | sans dimension |
-| Famille | F1 - fait stocké |
-| Stratégie de calcul | `stockee` (persistée dans `grandeurs_metier`) |
-| Version courante | 1 |
-| Périodicités exposées | annuel + mensuel |
+| Famille | F1, stockée dans `grandeurs_metier` |
+| Version de formule | 1 |
+| Pas | mensuel et annuel |
+| Période | 2001-2025 |
+| Localités | 47 provinces et 351 communes |
+| Confiance | B |
 
-## 2. Définition formelle
+## 2. Définition
 
-Rapport entre l'irradiation diffuse horizontale (DHI) et l'irradiation
-globale horizontale (GHI) sur une période :
+La fraction diffuse d'une période est le rapport de l'irradiation diffuse
+horizontale (DHI) à l'irradiation globale horizontale (GHI), cumulées sur
+les jours de la période :
 
 ```
-fraction_diffuse(annee)       := sum DHI(t) / sum GHI(t) sur t ∈ jours(annee)
-fraction_diffuse(annee, mois) := sum DHI(t) / sum GHI(t) sur t ∈ jours(annee, mois)
+fraction_diffuse = Σ DHI / Σ GHI
 ```
 
-## 3. Source amont
+NASA POWER sert pour chaque mois la moyenne journalière du mois, en
+kWh/m²/jour. Le rapport des moyennes d'un mois est donc celui de ses
+cumuls, et l'année pondère chaque mois par son nombre de jours `n_m` :
 
-`dhi` et `ghi` journaliers NASA POWER (paramètres `ALLSKY_SFC_SW_DIFF`
-et `ALLSKY_SFC_SW_DWN`). DHI source CERES SYN1deg + FLASHFlux.
-Méthodologie NASA POWER : `https://power.larc.nasa.gov/docs/methodology/`.
+```
+fraction_diffuse(année, mois) = DHI_m / GHI_m
+fraction_diffuse(année)       = Σ DHI_m·n_m / Σ GHI_m·n_m
+```
 
-## 4. Politique de complétude
+La valeur annuelle n'est calculée que pour une année complète. Les sommes
+sont faites en `numeric`, pour un résultat indépendant de l'ordre
+d'agrégation.
 
-Stricte 100% jours civils v1 sur l'**intersection** des dates présentes
-dans DHI et GHI. Mêmes principes que `hep` (cf. fiche `hep.md` § 4).
+## 3. Source et calcul
 
-Garde-fou supplémentaire : si `sum(GHI)` ≤ 0 sur la période (cas
-pathologique non observable), la période est skipped (division par
-zéro évitée).
+- Entrées : DHI et GHI mensuels NASA POWER (`ALLSKY_SFC_SW_DIFF` et
+  `ALLSKY_SFC_SW_DWN`, ADR-0009), produit CERES SYN1deg. Le DHI n'est
+  ingéré que depuis 2001, la série de NASA POWER étant en rupture avant.
+- Calcul en SQL dans la migration 0009, depuis les séries mensuelles
+  gravées, sans seed ni réseau. Une série par localité,
+  `fraction_diffuse_nasa_power_<localité>` (source `kuma_calculs`, méthode
+  `calcul_derive`, granularité nulle).
+- Contrôles : chaque valeur reste dans [0, 1] ; aux 47 provinces, le
+  rapport des moyennes mensuelles redonne celui des cumuls journaliers
+  NASA POWER (ADR-0010) à 4,8·10⁻⁵ près sur 14 100 mois.
+- Aucun mois ne manque sur 2001-2025 : 300 valeurs mensuelles et 25
+  valeurs annuelles par localité, soit 119 400 et 9 950 lignes.
+- Lecture : `/v1/series?source=kuma_calculs` et `/v1/series/{code}`.
 
-## 5. Hypothèses physiques
+## 4. Limites
 
-Aucune hypothèse PV (ressource solaire pure). Pas de paramètre
-utilisateur. Cohérence physique DHI ≤ GHI mathématiquement garantie par
-construction NASA POWER → fraction_diffuse ∈ [0, 1].
+- NASA POWER sert le rayonnement sur une maille de 1° : les 351 communes
+  tiennent dans 33 mailles, les 47 provinces dans 24. Les localités d'une
+  même maille ont la même fraction diffuse ; la note publique de la série
+  le dit, et la fiche d'incertitude donne le nombre de ces jumeaux
+  (ADR-0016).
+- La fraction diffuse dépend directement du DHI de NASA POWER. Ses
+  composantes ne se referment pas toujours : en horaire, aux cinq points
+  pilotes, `DHI + DNI·cos z` reste de 5,9 à 6,9 % sous le GHI (ADR-0014).
+  L'écart mensuel du DHI de CAMS à celui de NASA POWER vaut en moyenne
+  -3,0 % aux communes, de -10,8 % en décembre-février à +4,0 % en
+  juin-août (ADR-0012).
+- Aucune mesure au sol ne la vérifie : la confiance reste B.
 
-## 6. Limites et portée
+## 5. Valeurs observées, 2001-2025
 
-### 6.1 Granularité spatiale CERES SYN1deg
+- Moyenne de 0,44 sur les 398 localités ; de 0,25 à 0,64 au pas mensuel,
+  de 0,40 à 0,52 au pas annuel.
+- Aux communes, la moyenne mensuelle tombe à 0,37 en novembre et 0,36 en
+  décembre, et reste au-dessus de 0,47 de mars à août (0,49 en juin).
+- Moyenne par commune : de 0,428 pour 15 communes de la même maille,
+  dont Dédougou et Nouna (provinces du Mouhoun, du Koosin, du Nayala, du
+  Sourou et du Banwa, de 12,07 à 12,98 °N), à 0,492 à Batié et Kpuéré
+  (province du Noumbiel, sous 10 °N). Elle vaut 0,462 au sud de 10,5 °N
+  et 0,435 au nord de 13,5 °N ; la corrélation entre latitude et moyenne
+  de chaque commune vaut -0,62.
+- Moyenne annuelle des communes : de 0,408 en 2003 à 0,473 en 2016.
+- À Ouagadougou : 0,440 en moyenne, de 0,396 (2003) à 0,476 (2007).
 
-Co-localisation Kindia / Mamou dans le même pixel CERES SYN1deg
-(1° × 1° 110 km à 10° N). Conséquence : valeurs fraction_diffuse
-identiques pour ces deux localités. Cf. fiche HEP § 6.2.
+## 6. Références
 
-### 6.2 Skip 2024 par sentinelle DHI
-
-Une sentinelle `-999.0` observée sur DHI au cours de 2024 (panne CERES
-ponctuelle) provoque le skip de l'année 2024 + du mois affecté pour les
-6 villes. Décompte effectif : 378 lignes (vs 390 théorique sans
-sentinelle).
-
-## 7. Validation locale
-
-Non bloquante à ce stade. Cf. fiche `hep.md` § 7.
-
-## 8. Plage de valeurs typiques
-
-### 8.1 Plage théorique attendue
-
-Régime tropical africain : fraction_diffuse ∈ [0.3, 0.6] selon couverture
-nuageuse.
-
-### 8.2 Plage observée 2021-2025 sur les 6 villes pilotes
-
-| Ville | Min | Max | Moyenne | Note |
-|---|---:|---:|---:|---|
-| Conakry-Kaloum | 0.432 | 0.456 | 0.443 | côtier |
-| Kankan | 0.439 | 0.458 | 0.448 | soudanien |
-| Kindia | 0.443 | 0.457 | 0.452 | pixel partagé Mamou |
-| Labé | 0.439 | 0.458 | 0.449 | Fouta-Djalon |
-| Mamou | 0.443 | 0.457 | 0.452 | pixel partagé Kindia |
-| Nzérékoré | 0.492 | 0.529 | 0.507 | sud forestier (max) |
-
-Plage globale [0.432, 0.529]. Nzérékoré présente la plus haute fraction
-diffuse (climat équatorial humide, nuages fréquents). Conakry et Kankan
-présentent les plus basses (climats plus secs).
-
-## 9. Versioning et historique
-
-| Version | Date | Modifications |
-|---|---|---|
-| v1 | 2026-05 | Définition initiale, ratio cumulatif DHI/GHI annuel + mensuel sur intersection des dates communes. |
-
-## 10. Auteurs
-
-- v1 - 2026-05 : Siba Kalivogui (Kuma Science).
-
-## 11. Références bibliographiques
-
-- NASA POWER methodology - `https://power.larc.nasa.gov/docs/methodology/`
-- CERES SYN1deg - `https://ceres.larc.nasa.gov/data/`
-- Fiche HEP référence pour conventions communes - `docs/methodologie/grandeurs/hep.md`
+- NASA POWER, documentation des méthodes :
+  `https://power.larc.nasa.gov/docs/methodology/`
+- CERES SYN1deg : `https://ceres.larc.nasa.gov/data/`

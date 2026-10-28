@@ -1,6 +1,6 @@
 # Audit et traçabilité des modifications
 
-L'infrastructure d'audit, posée par la migration 005, trace les
+L'infrastructure d'audit, posée par la baseline (migration 0001), trace les
 modifications des tables métier via des triggers PostgreSQL vers une
 table `audit_log` unique. Elle sert à qui modifie le schéma, écrit du
 code applicatif ou exploite l'historique des données.
@@ -18,17 +18,16 @@ Trois propriétés découlent de ce choix :
    peut omettre la trace. L'audit a lieu dans la même transaction que
    la modification - soit les deux passent, soit ni l'une ni l'autre.
 2. **Universel** : tout client SQL (psql, pgAdmin, scripts ad hoc,
-   futur ORM) déclenche automatiquement l'audit, sans configuration
+   SQLAlchemy) déclenche automatiquement l'audit, sans configuration
    supplémentaire.
-3. **Indépendant de l'API** : la traçabilité ne dépend pas de la
-   couche FastAPI à venir, ni de SQLAlchemy.
+3. **Indépendant de l'API** : la traçabilité ne dépend ni de la
+   couche FastAPI, ni de SQLAlchemy.
 
 ## Architecture
 
 ```
 +-----------------------------------------------------+
-|  Tables auditées : sources, localites, unites,      |
-|                    contributeurs                    |
+|  Tables auditées (liste plus bas)                   |
 +-----------------------+-----------------------------+
                         | INSERT / UPDATE / DELETE
                         v
@@ -129,16 +128,24 @@ Pistes de conventions :
 
 ## Tables actuellement auditées
 
-Au sortir de la migration 005 :
+Douze tables, toutes posées par la baseline (migration 0001) :
 
+- `calage_couverture`
 - `contributeurs`
+- `grandeurs_metier`
+- `grandeurs_referentiel`
 - `localites`
+- `mesures_ressource`
+- `mesures_ressource_horaires`
+- `mesures_ressource_mensuelles`
+- `referentiels_calage`
+- `series_metadonnees`
 - `sources`
 - `unites`
 
-Toute nouvelle table structurante (typiquement la future table
-`mesures`) devra être ajoutée à ce périmètre via une migration dédiée
-qui crée le trigger `trg_audit_<table>`.
+`mesures_journalieres_denses` n'est pas auditée (voir plus bas). Toute
+nouvelle table structurante devra être ajoutée à ce périmètre via une
+migration dédiée qui crée le trigger `trg_audit_<table>`.
 
 ## Migrations de masse : suspension ciblée du trigger
 
@@ -153,14 +160,15 @@ migrations de contrôle qualité algorithmique qui requalifient ces
 mêmes lignes en masse, et pour les grandeurs dérivées calculées en SQL
 depuis ces lignes (calcul déterministe, rejouable au bit près).
 
-Motif : l'audit trace l'édition, pas le déversement. Le rejeu du
-backfill journalier (4 147 830 insertions, migration 107, antérieure à
-cette décision) a montré le coût du trigger par ligne : 19 minutes
+Motif : l'audit trace l'édition, pas le déversement. Sur l'instance
+d'origine du moteur, le rejeu d'un backfill journalier de
+4 147 830 insertions a montré le coût du trigger par ligne : 19 minutes
 d'insertion en local, 24 minutes de job CI, et autant de lignes
-d'`audit_log` écrites **à chaque rejeu complet** (CI, nightly en
-double via le roundtrip, rebuild local) sans aucune valeur de
-traçabilité : la donnée est déjà tracée par le seed committé et la
-migration elle-même.
+d'`audit_log` écrites **à chaque rejeu complet** (CI, base locale
+reconstruite) sans aucune valeur de traçabilité : la donnée est déjà
+tracée par le fichier versionné et la migration elle-même. Au Burkina
+Faso, les migrations de séries 0006 à 0013 et 0022 suspendent ainsi le
+trigger de leur table.
 
 Bornes strictes : la suspension est **par table et par migration**,
 jamais globale (`session_replication_role` interdit) ; elle ne
@@ -204,8 +212,8 @@ plutôt que d'introduire des exceptions silencieuses.
 
 `to_jsonb(NEW)` et `to_jsonb(OLD)` sérialisent **toutes** les colonnes
 de la ligne, y compris d'éventuelles colonnes sensibles (mots de passe
-hachés, tokens, secrets). Au moment de la migration 005, **aucune
-colonne sensible n'existe** sur les 4 tables auditées (vérifié).
+hachés, tokens, secrets). Aucune table auditée ne porte de colonne de
+ce type (vérifié à la migration 0023).
 
 Avant d'ajouter une colonne sensible à une table auditée, prévoir une
 stratégie d'exclusion : soit refonder `kuma_log_audit()` pour

@@ -414,3 +414,26 @@ def test_poa_sur_sarah3_journalier(client: TestClient, headers_auth: dict[str, s
     assert response.status_code == 200, response.text
     assert len(response.json()["resultats"]) == 365
     assert "s'écartent ici de +21,0 % du GHI" in response.json()["limite"]
+
+
+@pytest.mark.parametrize(
+    ("chemin", "params"),
+    [
+        (
+            "poa_parametrable",
+            {"inclinaison_deg": 15, "orientation_deg": 180, "periode_fin": "2023-12-31"},
+        ),
+        (
+            "productible_pr_fourni",
+            {"pr_fourni": 0.8, "correction": "temperature", "puissance_stc_wc": 1000},
+        ),
+    ],
+)
+def test_parametres_incoherents_en_422(
+    client: TestClient, headers_auth: dict[str, str], chemin: str, params: dict[str, Any]
+) -> None:
+    """Période inversée, ou correction thermique sans NOCT : 422 dans l'enveloppe Kuma."""
+    requete = {"code_serie_source": GHI, **ANNEE_2024, **params}
+    response = client.get(f"/v1/grandeurs/{chemin}", params=requete, headers=headers_auth)
+    assert response.status_code == 422, response.text
+    assert response.json()["erreur"]["code"] == "VALIDATION_VALEUR_INVALIDE"

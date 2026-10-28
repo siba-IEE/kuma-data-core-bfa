@@ -4,10 +4,14 @@ Chaque valeur du Core porte sa confiance et son statut éditorial comme des
 propriétés de première classe. Ce document décrit les deux, à l'intention d'un
 contributeur qui propose une donnée ou une méthode.
 
-Périmètre : la confiance et le statut s'appliquent à `mesures_ressource` et
-`grandeurs_metier`. Les référentiels (`sources`, `localites`, `unites`,
-`grandeurs_referentiel`, `series_metadonnees`, `contributeurs`) n'ont pas de
-statut ; leur retrait passe par un soft delete (`actif`, `desactive_le`).
+Périmètre : la confiance et le statut s'appliquent aux mesures
+(`mesures_ressource`, `mesures_ressource_mensuelles`,
+`mesures_ressource_horaires`) et à `grandeurs_metier`. Les séries
+journalières denses (`mesures_journalieres_denses`, ADR-0017) portent la
+confiance, pas de statut : elles restent `brut` par construction. Les
+référentiels (`sources`, `localites`, `unites`, `grandeurs_referentiel`,
+`series_metadonnees`, `contributeurs`) n'ont pas de statut éditorial ;
+leur retrait passe par un soft delete (`actif`, `desactive_le`).
 
 ## Confiance A/B/C
 
@@ -63,4 +67,6 @@ sa place.
 Aucune mise à jour destructive. Une valeur corrigée ou ré-ingérée ne remplace
 pas l'ancienne en place : une nouvelle ligne est créée, l'ancienne est bornée
 par `valide_au`, et les lectures ne renvoient que la version courante. L'histoire
-reste vérifiable.
+reste vérifiable. Une série dense fait exception : une correction la réédite en
+bloc depuis un nouveau fichier, et l'édition précédente ne survit que dans
+l'historique du dépôt (ADR-0017).

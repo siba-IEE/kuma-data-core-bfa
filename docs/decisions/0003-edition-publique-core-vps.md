@@ -1,7 +1,7 @@
 # ADR-0003 · Édition publique du Core sur VPS
 
 > **Statut** · Accepté · 2026-07-02
-> **Repo concerné** · `siba-IEE/kuma-data-core` (producteur API)
+> **Repo concerné** · `siba-IEE/kuma-data-core-bfa` (producteur API)
 
 ## Contexte
 
@@ -34,7 +34,7 @@ séquencé.
 
 La base locale reste la **référence** unique. Chaque poussée vers le VPS est une
 édition : « état publié du Core au JJ-MM-AAAA ». Le rythme est éditorial (après
-une vague d'ingestion mergée, ou mensuel), pas un mécanisme automatique.
+un lot d'ingestion fusionné, ou mensuel), pas un mécanisme automatique.
 
 Mécanisme, vu la taille de la base (centaines de Mo au plus) :
 
@@ -213,7 +213,7 @@ courante :
 
 Les métadonnées d'édition sont produites au moment de la publication (date,
 révision git) et injectées dans l'édition, pas devinées côté serveur.
-`revision_source` désigne le hash du **dépôt public** `siba-IEE/kuma-data-core` -
+`revision_source` désigne le hash du **dépôt public** `siba-IEE/kuma-data-core-bfa` -
 c'est lui que les utilisateurs peuvent consulter.
 
 ## Plan de construction séquencé
@@ -236,7 +236,7 @@ Ordre dicté par ce qui bloque le reste. Chaque lot est un changement cohérent 
 
 ## Questions ouvertes
 
-- **QO-2** - Cadence de publication : après chaque vague mergée, ou mensuelle fixe ?
+- **QO-2** - Cadence de publication : après chaque lot fusionné, ou mensuelle fixe ?
   Décision éditoriale, sans impact bloquant sur le mécanisme.
 (QO-1, statuts publiés, est tranchée dans D6. QO-3, `api_environnement`, est
 tranchée en WP4 dans le sens de la doc de référence : le `Literal` de

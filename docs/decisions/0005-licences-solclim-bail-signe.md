@@ -4,9 +4,9 @@ Date : 2026-10-01. Statut : accepté.
 
 ## Contexte
 
-SolClim-3 (Solar Bridge) travaille en grande partie hors ligne : les
-340 sous-préfectures de la base intégrée, les moteurs et les rapports
-n'appellent pas le serveur. Jusqu'ici, rien ne bornait son usage :
+SolClim-3 (Solar Bridge) travaille en grande partie hors ligne : sa base
+intégrée de localités, les moteurs et les rapports n'appellent pas le
+serveur. Jusqu'ici, rien ne bornait son usage :
 
 - une clé d'API publique, obtenue en libre-service par `POST /v1/cles`,
   ouvrait aussi les fonctions en ligne du logiciel ;

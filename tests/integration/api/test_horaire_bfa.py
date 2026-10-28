@@ -405,3 +405,14 @@ def test_jour_incomplet_ecarte(
     assert len(jours_avant) == 31
     assert set(jours_avant) - set(jours_apres) == {"2024-03-10"}
     assert all(jours_apres[j] == jours_avant[j] for j in jours_apres)
+
+
+def test_plage_horaire_trop_longue_en_422(client: TestClient, headers_auth: dict[str, str]) -> None:
+    """Plus de 366 jours par requête : 422 dans l'enveloppe Kuma."""
+    response = client.get(
+        "/v1/horaire/bfa_com_ouagadougou/ghi",
+        params={"periode_debut": "2022-01-01", "periode_fin": "2024-12-31"},
+        headers=headers_auth,
+    )
+    assert response.status_code == 422, response.text
+    assert response.json()["erreur"]["code"] == "VALIDATION_VALEUR_INVALIDE"

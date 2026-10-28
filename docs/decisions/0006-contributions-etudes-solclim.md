@@ -5,10 +5,10 @@ Date : 2026-10-02. Statut : accepté.
 ## Contexte
 
 Les études faites dans SolClim-3 portent ce que les bases publiques
-n'ont pas : les appareils qu'un ménage déclare, les prix que les
-installateurs pratiquent en Guinée, le matériel retenu et ce que le
-calcul en tire. Recueillies, elles nourrissent les profils de
-consommation, l'observatoire des prix et le calage du moteur.
+n'ont pas : les appareils qu'un ménage déclare, les prix que pratiquent
+les installateurs, le matériel retenu et ce que le calcul en tire.
+Recueillies, elles nourrissent les profils de consommation,
+l'observatoire des prix et le calage du moteur.
 
 Une étude appartient pourtant à son auteur, et souvent à son client :
 on ne la recueille ni à son insu, ni avec ce qui identifie une personne
@@ -24,9 +24,12 @@ ou un lieu précis.
    l'étude, ni celui de la localité, ni le chemin du fichier, ni les
    séries horaires**.
 2. **Le lieu situe sans identifier** : la sous-préfecture choisie dans
-   la base (son code), ou, pour un point saisi à la main, ses
-   coordonnées **arrondies à 0,1°** (environ 11 km). Le serveur
-   arrondit de nouveau, quoi que le client envoie.
+   la base intégrée du logiciel (son pcode), ou, pour un point saisi à
+   la main, ses coordonnées **arrondies à 0,1°** (environ 11 km). Le
+   serveur arrondit de nouveau, quoi que le client envoie. Cette base est
+   celle de la Guinée : le contrat n'accepte que des pcodes guinéens
+   (`GN` suivi de huit chiffres), et une étude faite au Burkina Faso se
+   situe par son point.
 3. **Le contrat est fermé** : la fiche est validée strictement, un champ
    que le contrat ne nomme pas est refusé (422). Une version du logiciel
    qui enverrait plus que convenu échoue au lieu de fuir. Le nom d'un

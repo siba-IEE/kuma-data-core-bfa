@@ -51,7 +51,7 @@ Une convention transverse peut suivre trois trajectoires possibles :
 **Cas testés** (énumération exhaustive) :
 - Tutelle internationale (organisation intergouvernementale) : WMO sur `wmo_8_2024`, `wmo_grdc`, `wmo_168_2008` ; IEC sur `iec_61724_1_2021`, `iec_60041_1991` ; ECMWF sur `ecmwf_era5` (organisation intergouvernementale européenne, 32 États membres et coopérants)
 - ONG internationale (sans mandat intergouvernemental) : WWF sur `wwf_hydrosheds` (n'est pas une organisation intergouvernementale au sens strict)
-- Producteur national : NASA sur `nasa_power` (agence fédérale US) ; ANM sur `anm_guinee_stations` (agence nationale guinéenne)
+- Producteur national : NASA sur `nasa_power` (agence fédérale américaine)
 - Opérateur technique masqué au profit de la tutelle : BfG sur `wmo_grdc` (opérateur technique sous mandat WMO, non retenu dans le code au profit de la tutelle WMO)
 
 ### Observation factuelle sur les DOI WMO post-2018
@@ -87,7 +87,7 @@ Une convention transverse peut suivre trois trajectoires possibles :
 
 1. **Une (ou plusieurs) fonction(s) pure(s)** préfixée(s) par underscore (`_agreger_*`, `_convertir_*`, `_appliquer_*`, `_calculer_*`) qui prennent en entrée des structures de données natives Python (`Sequence`, `dict`, `tuple`) et retournent un `TypedDict` ou `dataclass`. Aucun argument `Session` SQLAlchemy, aucun appel à `op.execute` Alembic, aucun accès DB direct.
 
-2. **Une fonction d'orchestration publique** `calculer_et_inserer_<grandeur>(*, session: Session, code_serie_<grandeur>: str, code_serie_<amont>_amont: str [, ...], version_formule: int = 1)` qui : (a) vérifie l'alignement de `version_formule` avec `grandeurs_referentiel.version_formule_actuelle` ; (b) lit le contexte des séries cible et amont(s) via SQL brut ; (c) calcule `niveau_confiance_derive` via `kuma_data_core.editorial.niveaux_confiance.calculer_niveau_confiance_derive` ; (d) lit les mesures amont (depuis `mesures_ressource` ou `grandeurs_metier` selon la chaîne de calcul) ; (e) appelle la fonction pure ; (f) bulk INSERT dans `grandeurs_metier` via `session.execute(text("INSERT ..."), liste_dicts)` - pattern cohérent avec les migrations 018, 020, 022.
+2. **Une fonction d'orchestration publique** `calculer_et_inserer_<grandeur>(*, session: Session, code_serie_<grandeur>: str, code_serie_<amont>_amont: str [, ...], version_formule: int = 1)` qui : (a) vérifie l'alignement de `version_formule` avec `grandeurs_referentiel.version_formule_actuelle` ; (b) lit le contexte des séries cible et amont(s) via SQL brut ; (c) calcule `niveau_confiance_derive` via `kuma_data_core.editorial.niveaux_confiance.calculer_niveau_confiance_derive` ; (d) lit les mesures amont (depuis `mesures_ressource` ou `grandeurs_metier` selon la chaîne de calcul) ; (e) appelle la fonction pure ; (f) bulk INSERT dans `grandeurs_metier` via `session.execute(text("INSERT ..."), liste_dicts)`. Au Burkina Faso, aucune migration n'appelle ces orchestrateurs : la fraction diffuse de l'ADR-0012 est calculée en SQL par la migration 0009.
 
 **Tests attendus** :
 
@@ -116,17 +116,20 @@ Une convention transverse peut suivre trois trajectoires possibles :
 
 **Énoncé** : Tout endpoint FastAPI introduit dans le code source expose un `response_model` Pydantic typé. Les schémas de réponse sont déclaratifs, versionnés et exposés via le snapshot OpenAPI consommé par les clients.
 
-Sept endpoints sont actuellement en `response_model=None` (catalogue détail `/v1/series/{code_serie}` ; passe-plat horaire `/v1/horaire/{localite}/{grandeur}` ; cinq endpoints paramétrables sous `/v1/grandeurs/*` : `poa_parametrable`, `productible_correction_thermique`, `productible_pr_fourni`, `energie_utile_ecs`, `degre_jour_climatisation`) et constituent une dette technique formalisée. Le listing `/v1/series` a été typé `SerieListeePaginee` lors de l'enrichissement du contrat, entamant partiellement la résorption ; la convention s'applique strictement à tout nouvel endpoint.
+Dix endpoints n'exposent pas de schéma de réponse et constituent une dette technique formalisée : huit en `response_model=None` (catalogue détail `/v1/series/{code_serie}` ; horaire `/v1/horaire/{localite}/{grandeur}` ; six endpoints paramétrables sous `/v1/grandeurs/*` : `poa_parametrable`, `poa_bifacial`, `productible_correction_thermique`, `productible_pr_fourni`, `energie_utile_ecs`, `degre_jour_climatisation`) et deux qui renvoient une `Response` sans schéma (retrait d'une contribution `POST /v1/contributions/{etude_uid}/retrait` ; capsule d'étude `/v1/etudes/capsule`). Le listing `/v1/series` a été typé `SerieListeePaginee` lors de l'enrichissement du contrat, entamant partiellement la résorption ; la convention s'applique strictement à tout nouvel endpoint.
 
-**Cas testés** (énumération exhaustive, sept endpoints en `response_model=None` à date) :
+**Cas testés** (énumération exhaustive, dix endpoints sans schéma de réponse à date) :
 
 - `/v1/series/{code_serie}` - dualité format `json|csv` via `JSONResponse` directe.
 - `/v1/grandeurs/poa_parametrable` - idem.
+- `/v1/grandeurs/poa_bifacial` - idem.
 - `/v1/grandeurs/productible_correction_thermique` - idem.
 - `/v1/grandeurs/productible_pr_fourni` - idem.
 - `/v1/grandeurs/energie_utile_ecs` - idem.
 - `/v1/grandeurs/degre_jour_climatisation` - idem.
 - `/v1/horaire/{localite}/{grandeur}` - idem.
+- `POST /v1/contributions/{etude_uid}/retrait` - réponse 204 sans corps.
+- `/v1/etudes/capsule` - texte brut (`Response`, `text/plain`).
 
 **Origine** : un client consommateur avait reconstitué manuellement les schémas runtime pour les endpoints `response_model=None`, créant un couplage permanent non détectable par le snapshot OpenAPI. Le retour empirique acte la nécessité d'une convention explicite d'exposition typée des schémas de réponse, indépendante de la mécanique FastAPI sous-jacente.
 

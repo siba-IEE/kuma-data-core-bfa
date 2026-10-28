@@ -44,7 +44,7 @@ Deux endpoints exposés sous le préfixe `/v1/localites` :
 
 | Paramètre | Type | Défaut | Description |
 |---|---|---|---|
-| `pays_iso3` | `str \| None` | `None` | Filtre ISO 3166-1 alpha-3 (ex. `GIN`) |
+| `pays_iso3` | `str \| None` | `None` | Filtre ISO 3166-1 alpha-3 (ex. `BFA`) |
 | `type_localite` | `str \| None` | `None` | Filtre type (`continent`, `pays`, `commune`, `site`, …) |
 | `parent_code` | `str \| None` | `None` | Filtre code de la localité parente |
 | `actif` | `bool \| None` | `True` | Filtre soft-delete |
@@ -67,7 +67,7 @@ Deux endpoints exposés sous le préfixe `/v1/localites` :
 
 ### Périmètre non couvert
 
-- Pas de hiérarchie récursive complète exposée (juste `parent_id` + `parent_code` direct). Pour afficher "Guinée > Conakry > Kaloum", le consommateur fait 2-3 appels en cascade. Stratégie `WITH RECURSIVE` reportée si le besoin est exprimé
+- Pas de hiérarchie récursive complète exposée (juste `parent_id` + `parent_code` direct). Pour afficher "Burkina Faso > Kadiogo > Kadiogo > Ouagadougou" (pays, région, province, commune), le consommateur fait 2-3 appels en cascade. Stratégie `WITH RECURSIVE` reportée si le besoin est exprimé
 - Pas d'expansion des séries associées dans le détail localité (le consommateur fait `GET /v1/series?localite={code}` séparément - pattern série/mesures déjà éprouvé)
 - Pas d'endpoint `/v1/series/by-localite/{code}` raccourci. Si pattern d'usage récurrent, à arbitrer ultérieurement
 - Pas de versioning du contrat (toujours implicitement v1 sous le path)
@@ -79,7 +79,7 @@ Deux endpoints exposés sous le préfixe `/v1/localites` :
 - **Pages localités consommateur** : elles peuvent être construites sans appel cascade complexe - un seul appel `/v1/localites/{code}` retourne les 16 champs métadonnées
 - **Pattern de "ressource métadonnées" établi** : peut être étendu à d'autres tables référentiel (`sources`, `grandeurs_referentiel`, `unites`) pour en faire des pages catalogue dédiées
 - **Aucun impact sur `/v1/series` existant** : cet ajout est un endpoint complémentaire, ne modifie aucun contrat existant. Pas de risque de régression
-- **Aucune migration Alembic** : tous les champs existent déjà (migration 003 `localites` + migration 005 FK contributeurs)
+- **Aucune migration Alembic** : tous les champs existent déjà (table `localites` et FK vers `contributeurs`, posées par la baseline, migration 0001)
 
 ### Acceptées comme dette
 
@@ -101,7 +101,7 @@ Deux endpoints exposés sous le préfixe `/v1/localites` :
 | `src/kuma_data_core/api/v1/localites.py` | créé | 270 |
 | `src/kuma_data_core/api/v1/routeur.py` | +1 ligne `include_router(localites.routeur)` |
 | `src/kuma_data_core/api/codes_erreur.py` | +1 ligne `RESSOURCE_LOCALITE_INCONNUE` |
-| `tests/integration/api/test_localites.py` | créé (9 tests) | 210 |
+| `tests/integration/api/test_localites_bfa.py` | 3 tests sur le référentiel burkinabè | 48 |
 | `docs/decisions/0002-endpoint-localites-v1.md` | créé | ce document |
 
 ### Stratégie SQL `parent_code` dénormalisé
@@ -122,7 +122,7 @@ ORDER BY L.code
 LIMIT :limit OFFSET :offset
 ```
 
-Performance : self-JOIN sur 10-20 localités = trivial. À monitorer si la table dépasse plusieurs milliers d'entrées (cas non anticipé). Pas d'index supplémentaire nécessaire - l'index existant `idx_localites_parent_id` couvre le `LEFT JOIN`.
+Performance : self-JOIN sur les 417 localités de la base, trivial. À monitorer si la table dépasse plusieurs milliers d'entrées (cas non anticipé). Pas d'index supplémentaire nécessaire - l'index existant `idx_localites_parent_id` couvre le `LEFT JOIN`.
 
 ### Stratégie conversion `Decimal` → `float`
 
@@ -134,11 +134,11 @@ Helper `_to_float_optional()` converti vers `float | None` avant l'instanciation
 
 ## Validation
 
-- **Tests d'intégration** (9 tests) :
-  - 401 sans auth, 200 listing avec envelope + 16 champs, filtres `pays_iso3`/`type_localite`/`parent_code`/`actif`, pagination cohérente, détail Kaloum avec coordonnées plausibles, 404 typé sur code inconnu
+- **Tests d'intégration** (`test_localites_bfa.py`, 3 tests) :
+  - listing par pays (416 localités `BFA`), provinces d'une région par `type_localite` et `parent_code` (Soum), détail d'une province créée en 2025 (Dyamongou)
 - **`ruff check`** sur nouveaux fichiers : 0 violation
 - **`mypy --strict`** sur nouveaux fichiers : 0 erreur
-- **Pas d'impact** sur les suites `test_series.py`, `test_grandeurs.py`, `test_horaire.py`, `test_health.py`
+- **Pas d'impact** sur les suites `test_series_bfa.py`, `test_grandeurs_bfa.py`, `test_horaire_bfa.py`, `test_health.py`
 
 ## Cross-references
 

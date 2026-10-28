@@ -20,20 +20,22 @@ suite ordonnée des migrations.
 Le format des noms de fichiers de migration est :
 
 ```
-YYYY_MM_DD_HHMM_description_courte.py
+YYYY_MM_DD_NNNN_description_courte.py
 ```
 
-- `YYYY_MM_DD_HHMM` : horodatage de création de la migration, en heure
-  locale de l'auteur, sans fuseau (l'ordre relatif des migrations est
-  géré par Alembic via le chaînage `down_revision`).
+- `YYYY_MM_DD` : date de création de la migration.
+- `NNNN` : numéro de la révision sur quatre chiffres, qui est aussi son
+  identifiant Alembic (`revision = "0023"`) ; `down_revision` désigne la
+  précédente.
 - `description_courte` : en snake_case français, succincte et
   descriptive. Exemples :
-  - `2026_06_12_1430_creer_table_sources.py`
-  - `2026_07_03_0915_ajouter_index_localites_nom.py`
-  - `2026_07_18_1100_renommer_colonne_niveau_confiance.py`
+  - `2026_10_15_0009_grandeurs_derivees.py`
+  - `2026_10_27_0015_mesures_journalieres_denses.py`
+  - `2026_10_28_0023_era5_land_journalier.py`
 
-Le `revision_id` interne d'Alembic reste en hexadécimal généré
-automatiquement et n'apparaît pas dans le nom du fichier.
+Le `file_template` d'`alembic.ini` met l'heure à la place du numéro :
+un fichier créé par `alembic revision --rev-id NNNN` se renomme donc à
+la main.
 
 ## Règle « une migration = un changement logique »
 
@@ -104,7 +106,11 @@ mises à jour ne remplacent jamais une ligne existante. Toute migration
 qui introduit une table contenant des données métier doit prévoir, dès
 sa création, les colonnes `valide_du` et `valide_au`, et ne pas
 permettre l'`UPDATE` direct sur les colonnes versionnées hors
-`valide_au`.
+`valide_au`. Trois exceptions : `mesures_journalieres_denses`, sans
+versionnement, qu'une correction réédite en bloc (ADR-0017), et les deux
+tables du calage, `referentiels_calage` et `calage_couverture`, données
+éditoriales qui portent un numéro de `version` et un drapeau `actif`
+(ADR-0004).
 
 ## Tests de migration
 

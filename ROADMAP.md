@@ -77,4 +77,4 @@ granularité journalière (jalon 4) et le brut satellite et de réanalyse (jalon
 
 ## Documentation
 
-- [ ] Adapter `docs/` au contexte burkinabè.
+- [x] Adapter `docs/` au contexte burkinabè.

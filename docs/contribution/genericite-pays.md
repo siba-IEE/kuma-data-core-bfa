@@ -1,8 +1,8 @@
 # Généricité pays
 
 Note d'architecture à l'intention des contributeurs : **le Core ingère la
-donnée solaire brute de n'importe quel pays.** La Guinée est le pays pilote,
-mais rien dans le schéma n'est spécifique à la Guinée.
+donnée solaire brute de n'importe quel pays.** Cette instance sert le Burkina
+Faso ; rien dans le schéma n'est propre à ce pays.
 
 ## Le pays est un axe de classification
 
@@ -13,9 +13,14 @@ hiérarchie à sept niveaux :
 `prefecture`, `commune`, `site`.
 
 Le pays est un niveau de cette hiérarchie. Chaque localité porte un code
-`pays_iso3` (ISO 3166-1 alpha-3) et un code métier de la forme
-`<code_pays>_<slug>` (par exemple `gin_conakry`). La cohérence parent-enfant est
+`pays_iso3` (ISO 3166-1 alpha-3) et un code métier préfixé du code pays
+(`bfa_kadiogo` pour une région, `bfa_prov_kadiogo` pour une province,
+`bfa_dep_dori` pour un département, ADR-0007). La cohérence parent-enfant est
 validée côté base.
+
+Les noms de niveaux viennent du premier pays servi par le moteur : au Burkina
+Faso, le niveau `prefecture` porte les provinces. Le palier d'une localité se
+lit dans son nom et ses notes, pas dans `type_localite` (ADR-0007).
 
 ## Ce qu'un nouveau pays branche
 
@@ -28,15 +33,11 @@ versionnement, audit. Ajouter un pays revient à :
 
 Aucune migration de schéma n'est nécessaire pour un nouveau pays.
 
-## Un produit-données par pays
+## Une instance par pays
 
-Les données nationales sont publiées dans un dépôt RDS par pays
-([rds-guinee](https://github.com/siba-IEE/rds-guinee), puis d'autres). Le Core
-est le moteur commun ; chaque RDS est un produit éditorial. Le pont qui verse un
-RDS national dans le Core est en construction (voir la [feuille de
-route](../../ROADMAP.md)).
+Chaque pays a son dépôt d'instance, qui repart du moteur commun
+([Kuma Data Core](https://github.com/siba-IEE/kuma-data-core)) sur un socle
+sans donnée d'une autre instance. Ce dépôt est celui du Burkina Faso.
 
-Pour contribuer les données ou une station de votre pays, voir
-[amener son pays ou sa station](pays-et-terrain.md). La généricité est vérifiée
-par un test de bout en bout sur un pays fictif
-([issue #6](https://github.com/siba-IEE/kuma-data-core/issues/6)).
+Pour contribuer des données ou une station, voir
+[amener son pays ou sa station](pays-et-terrain.md).

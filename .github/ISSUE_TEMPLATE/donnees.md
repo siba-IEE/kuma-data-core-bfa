@@ -1,7 +1,7 @@
 ---
 name: Proposer des données ou une station
 about: Contribuer des données nationales ou une validation terrain
-labels: pont-rds, "pour:institution"
+labels: ["données", "pour:institution"]
 ---
 
 ## Pays et zone

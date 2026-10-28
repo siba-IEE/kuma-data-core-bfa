@@ -11,7 +11,7 @@ sont la tranche actionnable, classées par profil de contributeur :
 - `pour:dev` : le moteur (API, schéma, ingestion, connecteurs).
 - `pour:chercheur` : la méthode (contrôle qualité, incertitude, grille de
   confiance, calage terrain).
-- `pour:institution` : la donnée et le terrain (RDS national, validation au sol).
+- `pour:institution` : les données nationales et la validation au sol.
 
 Pour comprendre le modèle avant de contribuer, voir les guides dans
 [docs/contribution/](docs/contribution/) : le [modèle de

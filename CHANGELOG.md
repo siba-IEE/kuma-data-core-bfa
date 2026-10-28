@@ -3,6 +3,30 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.18.1
+
+- Documentation adaptée au Burkina Faso. Les notes héritées du dépôt
+  guinéen sans objet ici sont retirées : inventaire des données de Guinée,
+  export de l'explorateur, études de la station de Kankan, bilan des six
+  villes guinéennes, fiches des grandeurs que le Burkina Faso ne sert pas
+  (HEP, humidex, indicateur de qualité, productible spécifique théorique,
+  variabilité journalière), note des référentiels comparatifs et note de
+  conception de l'incertitude, que les ADR-0012 et ADR-0016 remplacent.
+- La référence de l'API et le démarrage rapide décrivent les routes, les
+  sources et la couverture de cette instance, avec des exemples tirés de
+  ses données. `grandeurs-parametrables.md` remplace l'ancienne note des
+  grandeurs F2. La fiche de la fraction diffuse, la doctrine QC horaire,
+  les conventions, les guides de contribution, le runbook et les ADR 0001
+  à 0006 suivent le Burkina Faso ; la note de calage terrain décrit les
+  quatre stations ESMAP/WAPP, non intégrées, et les évaluations publiées
+  des produits satellite en Afrique de l'Ouest.
+- Les requêtes incohérentes répondaient 500 : période inversée sur les
+  routes de grandeurs et sur l'horaire, productible à PR fourni corrigé de
+  la température sans NOCT ou sans coefficient de température, plage
+  horaire de plus de 366 jours. Elles répondent 422
+  `VALIDATION_VALEUR_INVALIDE`, comme le décrit la référence de l'API
+  (`parametres_requete`).
+
 ## 0.18.0
 
 - Météo et rayonnement journaliers ERA5-Land aux 398 localités, 2005-2025

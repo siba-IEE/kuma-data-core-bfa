@@ -22,7 +22,7 @@ et de la documentation. Elles ont valeur normative.
 - Au pluriel, en minuscules, en snake_case français.
 - Pas de préfixe de schéma dans le nom logique de la table.
 - Exemples : `sources`, `localites`, `unites`, `contributeurs`,
-  `audit_log`, `mesures_irradiation`.
+  `audit_log`, `mesures_ressource`.
 
 ## Colonnes
 
@@ -55,15 +55,15 @@ et de la documentation. Elles ont valeur normative.
 - Préfixe systématique selon la nature :
   - `pk_` pour la clé primaire (généralement implicite, mais nommée
     explicitement si Alembic le permet)
-  - `fk_<table>_<colonne>` pour une clé étrangère
+  - `fk_<table>_<colonne>__<table_cible>` pour une clé étrangère
   - `uq_<table>_<colonne(s)>` pour une contrainte d'unicité
   - `ck_<table>_<règle>` pour une contrainte de vérification
   - `ex_<table>_<concept>` pour une contrainte EXCLUDE (PostgreSQL,
     typiquement utilisée pour le versioning temporel avec l'extension
     `btree_gist` + `tstzrange`). `<concept>` décrit la propriété
     d'exclusivité (par exemple `identite_periode`).
-- Exemples : `fk_mesures_irradiation_source_id`,
-  `uq_localites_nom_pays`, `ck_niveau_confiance_valide`,
+- Exemples : `fk_mesures_ressource_serie_id__series_metadonnees`,
+  `uq_localites_code`, `ck_mesures_ressource_niveau_confiance_derive_valide`,
   `ex_mesures_ressource_identite_periode`.
 - **Cas particulier des listes fermées (catégoriels)** : le nom de la
   contrainte CHECK est de la forme `ck_<table>_<champ>_valide`, avec le
@@ -83,8 +83,8 @@ et de la documentation. Elles ont valeur normative.
 ## Index
 
 - Préfixe `idx_` suivi du nom de table et des colonnes indexées.
-- Exemples : `idx_mesures_irradiation_localite_id_date_collecte`,
-  `idx_sources_url_unique`.
+- Exemples : `idx_localites_parent_id`,
+  `idx_series_metadonnees_localite_id`.
 - Les index uniques utilisent à la place le préfixe `uq_` (cohérent avec
   les contraintes d'unicité).
 
@@ -157,82 +157,59 @@ colonne suivent les règles ci-dessous.
 ## Séries (`series_metadonnees`)
 
 La table `series_metadonnees` expose une colonne `code` qui sert
-de clé naturelle métier (`UNIQUE NOT NULL`). Les valeurs de cette
-colonne suivent un pattern composite formalisé ci-dessous.
+de clé naturelle métier (`UNIQUE NOT NULL`). Le code suit deux
+patrons.
 
-### Pattern général
+### Séries brutes
 
 ```
-<localite_alias>_<grandeur>_<source>_<plage>
+<prefixe_source>_<grandeur>_<granularite>_<localite>
 ```
 
 avec :
 
-- `<localite_alias>` : alias court de la localité (cf. *Mapping
-  `localite_alias`* ci-dessous).
+- `<prefixe_source>` : préfixe court de la source (`nasa_power`,
+  `sarah3`, `era5`, `era5_land`, `cams`, `cams_eac4`) ;
 - `<grandeur>` : `code` de la table `grandeurs_referentiel` (ex.
-  `ghi`, `dni`, `dhi`, `t2m`, `rh2m`, `kt`, `hep`, `fraction_diffuse`,
-  `humidex`, `productible_specifique_theorique`,
-  `variabilite_journaliere`).
-- `<source>` : `code` de la table `sources` (ex. `nasa_power`,
-  `kuma_calculs`).
-- `<plage>` : plage temporelle couverte au format `YYYY_YYYY` (année
-  de début et année de fin incluses, ex. `2021_2025`).
+  `ghi`, `t2m_min`, `precipitation`, `pm2_5`, `aod550`) ;
+- `<granularite>` : `mensuel`, `journalier` ou `horaire` ;
+- `<localite>` : `localites.code`, tel quel (ADR-0007).
+
+Le préfixe du code est porté par le contrat de la série
+(`ContratSerie.prefixe_code`, `db/seeds/lots_bfa.py`).
+
+### Grandeurs dérivées stockées
+
+Sans granularité dans le code (ADR-0012,
+`db/seeds/grandeurs_derivees_bfa.py`) :
+
+- `fraction_diffuse_nasa_power_<localite>` ;
+- `ecart_<grandeur>_<source>_nasa_<localite>` pour l'écart d'une
+  source à NASA POWER.
 
 ### Exemples
 
-- `gin_conakry_ghi_nasa_power_2021_2025` (Conakry-Kaloum, GHI
-  NASA POWER, 2021-2025)
-- `gin_kindia_hep_kuma_calculs_2021_2025` (Kindia, HEP calculée
-  par Kuma, 2021-2025)
-- `gin_labe_humidex_kuma_calculs_2021_2025` (Labé, Humidex
-  calculé par Kuma, 2021-2025)
-
-### Mapping `localite_alias`
-
-`<localite_alias>` est généralement identique à la valeur de
-`localites.code`. Une exception est actée :
-
-| `localites.code` | `<localite_alias>` |
-|---|---|
-| `gin_conakry_kaloum` | `gin_conakry` (sans suffixe `_kaloum`) |
-| `gin_kankan` | `gin_kankan` |
-| `gin_kindia` | `gin_kindia` |
-| `gin_labe` | `gin_labe` |
-| `gin_mamou` | `gin_mamou` |
-| `gin_nzerekore` | `gin_nzerekore` |
-
-**Exception Conakry-Kaloum** : la localité pilote de Conakry est
-ingérée sous `localites.code = 'gin_conakry_kaloum'` (sous-préfecture
-côtière représentative de la commune urbaine), mais les codes de
-série utilisent le préfixe `gin_conakry` sans le suffixe `_kaloum`.
-Pattern introduit en migration 016, formalisé par
-le helper `_prefixe_ville_pour_serie(localite_code)` introduit en
-migration 028. Le helper centralise la
-résolution et est consommé par les migrations 028 à 034.
+- `nasa_power_ghi_mensuel_bfa_prov_kadiogo` (GHI mensuel NASA POWER,
+  province du Kadiogo)
+- `cams_ghi_horaire_bfa_dep_dori` (GHI horaire CAMS Radiation,
+  département de Dori)
+- `era5_land_precipitation_journalier_bfa_com_ouagadougou` (pluie
+  journalière ERA5-Land, commune de Ouagadougou)
+- `ecart_ghi_sarah3_nasa_bfa_com_ouagadougou` (écart mensuel du GHI
+  SARAH-3 à NASA POWER, commune de Ouagadougou)
 
 ### Décompte factuel
 
-66 séries présentes (vérification par requête
-SQL `SELECT COUNT(*) FROM series_metadonnees`) :
+21 930 séries à la migration 0023 (`SELECT count(*) FROM
+series_metadonnees`) :
 
-- 36 séries brutes : 5 grandeurs (`ghi`, `dni`, `dhi`, `t2m`, `rh2m`)
-  × 6 villes pilotes en migrations 016, 018, 020, 022 + 6 séries `kt`
-  (1 par ville) en migration 028.
-- 30 séries calculées : 6 séries `hep` (migration 026) +
-  24 séries de 4 grandeurs calculées par Kuma (`fraction_diffuse`,
-  `humidex`, `productible_specifique_theorique`,
-  `variabilite_journaliere`) × 6 villes en migrations 030 à 034.
+- 3 980 mensuelles ;
+- 14 726 journalières, dont 14 350 en stockage dense (ADR-0017) ;
+- 40 horaires, aux cinq points pilotes (ADR-0014, ADR-0023) ;
+- 3 184 grandeurs dérivées stockées, sans granularité (ADR-0012).
 
-### Extension future
-
-L'introduction d'autres localités avec sous-divisions (par exemple
-`gin_kankan_centre`, `gin_kankan_region`, etc.) suivra le pattern
-défini ici. La décision d'introduire ou non un alias court (analogue
-à `gin_conakry` pour `gin_conakry_kaloum`) sera arbitrée au cas par
-cas, en pesant la cohérence
-visuelle des codes de série contre la traçabilité de la sous-division
-dans `localites.code`.
+6 563 séries denses ne portent pas de lignes et lisent celles de la
+série porteuse de leur maille (`serie_porteuse_id`).
 
 ## Schémas
 
@@ -289,8 +266,8 @@ identifiants français.
 
 ### Routeurs
 
-- Nom de fichier en français singulier : `health.py`, `sources.py`,
-  `localites.py`, `audit.py` (ne pas pluraliser le nom de fichier).
+- Nom de fichier en français, celui de la ressource servie :
+  `health.py`, `horaire.py`, `localites.py`, `calage.py`.
 - Variable du routeur : `routeur` (pas `router`).
   ```python
   routeur = APIRouter(prefix="/health", tags=["sante"])
@@ -302,17 +279,17 @@ identifiants français.
 Nom français descriptif, à l'infinitif ou au substantif selon la
 nature de l'opération :
 
-- Lecture : `sante`, `sante_detailee`, `lister_sources`,
-  `recuperer_source`.
-- Écriture : `creer_source`, `mettre_a_jour_source`, `desactiver_source`.
+- Lecture : `sante`, `sante_detailee`, `lister_localites`,
+  `detailler_localite`, `lister_series`.
+- Écriture : `emettre_cle`, `revoquer_cle`.
 
 ### Modèles Pydantic de requête / réponse
 
-Préfixe `Requete` ou `Reponse` suivi du sujet en français, en
-PascalCase :
+Préfixe `Demande` (corps de requête) ou `Reponse` suivi du sujet en
+français, en PascalCase :
 
-- `ReponseSantePublique`, `ReponseSanteDetailee`.
-- `RequeteCreationSource`, `ReponseSource`, `ReponseListeSources`.
+- `ReponseSantePublique`, `ReponseSanteDetailee`, `ReponseHoraire`.
+- `DemandeCle`, `ReponseCleCreee`, `ReponseRevocation`.
 
 ### Codes d'erreur
 

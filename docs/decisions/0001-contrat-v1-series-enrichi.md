@@ -35,7 +35,7 @@ Cet ADR documente la mise en œuvre de la partie courte terme côté API.
 
 ## Implémentation
 
-### Schéma Pydantic - `SerieListee` enrichi (18 champs)
+### Schéma Pydantic - `SerieListee` enrichi (21 champs)
 
 `src/kuma_data_core/api/v1/schemas/series.py` :
 
@@ -67,7 +67,7 @@ class SerieListee(BaseModel):
     periode_debut: date
     periode_fin: date | None
     methode_collecte: str | None
-    notes_fr: str | None  # ← series_metadonnees.commentaire_editorial
+    notes_fr: str | None  # ← series_metadonnees.note_publique
 
     # Audit
     created_at: datetime  # ← cree_le
@@ -76,6 +76,9 @@ class SerieListee(BaseModel):
     # Flag actif
     actif: bool
 ```
+
+`notes_fr` lisait d'abord `series_metadonnees.commentaire_editorial` ; il
+lit aujourd'hui `note_publique`.
 
 ### Schéma Pydantic - `SerieListeePaginee` (envelope)
 
@@ -89,7 +92,7 @@ class SerieListeePaginee(BaseModel):
 
 ### Schéma Pydantic - `SerieDetail` (héritage automatique)
 
-Hérite des 18 champs de `SerieListee` enrichi + ses propres `unite_code` et `mesures: list[MesureLue]`.
+Hérite des 21 champs de `SerieListee` enrichi + ses propres `unite_code` et `mesures: list[MesureLue]`.
 
 ### Requête SQL - JOINs ajoutés
 
@@ -99,11 +102,11 @@ Hérite des 18 champs de `SerieListee` enrichi + ses propres `unite_code` et `me
 - JOIN `unites u ON u.id = gr.unite_id`
 - Enrichissement des projections sur les JOINs existants `localites` et `sources`
 
-Performance : 4 JOINs au lieu de 2. Acceptable sur 96 séries (FK indexées). À monitorer si la couverture passe à plusieurs centaines de séries : possibilité de basculer sur une vue matérialisée `v_series_catalogue_enrichi` si nécessaire.
+Performance : 4 JOINs au lieu de 2, sur des clés indexées. La décision a été prise sur les 96 séries de l'instance d'origine, avec l'idée d'une vue matérialisée `v_series_catalogue_enrichi` si la couverture grandissait. Le Burkina Faso compte 21 930 séries ; le listing est paginé et aucune vue matérialisée n'a été créée.
 
 ### Stratégie `total` - COUNT séparé
 
-Option simple retenue : `SELECT COUNT(*) FROM series_metadonnees ... WHERE <mêmes filtres>` exécuté séparément du SELECT items. Plus lisible et suffisant pour 96 séries. Window function `COUNT(*) OVER()` à considérer si benchmark le justifie ultérieurement.
+Option simple retenue : `SELECT COUNT(*) FROM series_metadonnees ... WHERE <mêmes filtres>` exécuté séparément du SELECT items. Plus lisible, et suffisant pour les 96 séries de l'instance d'origine. Window function `COUNT(*) OVER()` à considérer si benchmark le justifie ultérieurement.
 
 ## Nommage public côté contrat ≠ nommage DB
 
@@ -116,7 +119,7 @@ Mapping :
 | `source_label` | ← | `sources.titre` |
 | `grandeur_label` | ← | `grandeurs_referentiel.libelle` |
 | `grandeur_unit` | ← | `unites.symbole` |
-| `notes_fr` | ← | `series_metadonnees.commentaire_editorial` |
+| `notes_fr` | ← | `series_metadonnees.note_publique` |
 | `created_at` | ← | `series_metadonnees.cree_le` |
 | `updated_at` | ← | `series_metadonnees.modifie_le` |
 | `localite_nom` | ← | `localites.nom` |
@@ -141,10 +144,10 @@ Les IDs `id`, `localite_id`, `source_id` sont exposés en `int` natif (sérialis
 
 ### Positives
 
-- Un consommateur peut désormais construire son catalogue avec les 96 vraies séries de l'API (au lieu d'un jeu factice)
+- Un consommateur peut désormais construire son catalogue avec les vraies séries de l'API au lieu d'un jeu factice (les 96 séries de l'instance d'origine)
 - Les vues catalogue et fiches détail disposent de la localité, la grandeur et la source dénormalisées, ainsi que de la période complète
 - L'envelope paginée résout un drift documenté côté consommateur : c'est un *alignement* de contrat, pas une introduction de drift
-- Les performances JOIN sont mesurées et acceptables sur 96 séries (50 ms par requête en local)
+- Les performances JOIN ont été mesurées et jugées acceptables sur les 96 séries de l'instance d'origine (50 ms par requête en local)
 
 ### Dettes acceptées
 
@@ -158,4 +161,4 @@ Les IDs `id`, `localite_id`, `source_id` sont exposés en `int` natif (sérialis
 
 ## Cross-references
 
-- Tests d'intégration : `tests/integration/api/test_series.py`
+- Tests d'intégration : `tests/integration/api/test_series_bfa.py`

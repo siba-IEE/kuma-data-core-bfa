@@ -1,7 +1,7 @@
 ---
 name: Revue de méthode
 about: Contester, corriger ou valider une méthode scientifique (QC, incertitude, calage, grille de confiance)
-labels: "méthode", "pour:chercheur"
+labels: ["méthode", "pour:chercheur"]
 ---
 
 ## Méthode concernée

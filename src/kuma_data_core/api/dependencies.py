@@ -1,8 +1,9 @@
 """Dépendances FastAPI partagées.
 
-Contient l'authentification par clé API (``verifier_cle_api``) et
-l'alias ``CleApiValidee`` à utiliser dans les signatures des endpoints
-authentifiés.
+Contient l'authentification par clé API (``verifier_cle_api``), l'alias
+``CleApiValidee`` à utiliser dans les signatures des endpoints
+authentifiés, et ``parametres_requete``, qui construit un modèle de
+paramètres depuis la requête.
 
 Les clés valides sont lues depuis la configuration
 (``Settings.api_cle_solar_bridge``, ``Settings.api_cle_admin``). Une
@@ -12,10 +13,14 @@ révocation et rotation.
 
 from __future__ import annotations
 
+import inspect
 import secrets
-from typing import Annotated
+from collections.abc import Callable
+from typing import Annotated, Any
 
 from fastapi import Depends, Header, status
+from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, ValidationError
 
 from kuma_data_core.api.codes_erreur import CodeErreur
 from kuma_data_core.api.erreurs import ExceptionKuma
@@ -171,3 +176,25 @@ Exemple :
 
 CleAdminValidee = Annotated[str, Depends(verifier_cle_admin)]
 """Type-alias pour les endpoints réservés à la clé administrateur."""
+
+
+def parametres_requete[M: BaseModel](modele: type[M]) -> Callable[..., M]:
+    """Dépendance qui construit ``modele`` à partir des paramètres de la requête.
+
+    Avec ``Depends(modele)``, FastAPI valide chaque paramètre puis construit
+    le modèle ; une erreur levée à ce moment par un ``model_validator``
+    (période inversée, paramètre requis par un autre) sort en 500. Elle
+    devient ici une ``RequestValidationError``, rendue en 422
+    ``VALIDATION_VALEUR_INVALIDE`` comme les autres erreurs d'entrée. La
+    signature du modèle est reprise telle quelle : les paramètres exposés ne
+    changent pas.
+    """
+
+    def construire(**valeurs: Any) -> M:
+        try:
+            return modele(**valeurs)
+        except ValidationError as exc:
+            raise RequestValidationError(exc.errors()) from exc
+
+    construire.__signature__ = inspect.signature(modele)  # type: ignore[attr-defined]
+    return construire

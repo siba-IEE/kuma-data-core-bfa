@@ -110,13 +110,13 @@ irréversible. Elle est destructive au sens de
 Pour inspecter ou sauvegarder un volume :
 
 ```bash
-docker volume inspect kuma_data_core_kuma_postgres_data
-docker run --rm -v kuma_data_core_kuma_postgres_data:/data -v "${PWD}":/backup alpine \
+docker volume inspect docker_kuma_postgres_data
+docker run --rm -v docker_kuma_postgres_data:/data -v "${PWD}":/backup alpine \
   tar czf /backup/postgres-backup.tar.gz -C /data .
 ```
 
-(Le préfixe `kuma_data_core_` est ajouté automatiquement par Compose
-selon le nom du dossier projet.)
+(Compose préfixe les volumes du nom du projet, par défaut celui du dossier
+du fichier Compose, ici `docker`. `docker volume ls` donne le nom exact.)
 
 ## Sécurité
 
@@ -231,7 +231,7 @@ critique n'y est stockée :
 
 ```bash
 docker compose -f docker/docker-compose.yml --env-file .env down
-docker volume rm kuma_data_core_kuma_postgres_data
+docker volume rm docker_kuma_postgres_data
 .\scripts\services-start.ps1
 ```
 

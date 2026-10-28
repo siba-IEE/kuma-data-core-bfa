@@ -1,7 +1,7 @@
 ---
 name: Bug
 about: Signaler un dysfonctionnement du moteur ou de l'API
-labels: bug, "pour:dev"
+labels: ["bug", "pour:dev"]
 ---
 
 ## Contexte

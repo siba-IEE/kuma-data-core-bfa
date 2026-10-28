@@ -1,38 +1,36 @@
 # Note méthodologique - doctrine de contrôle qualité algorithmique des séries horaires
 
-> Note méthodologique sur la validation horaire (cf.
-> [`limites-substrat-physique-solaire.md`](limites-substrat-physique-solaire.md)
-> §4.4). Patron : [`grandeurs-F2-phase-1.md`](grandeurs-F2-phase-1.md).
+> Note méthodologique sur la validation horaire.
 >
 > Objet : fixer la **doctrine versionnée** de contrôle qualité (QC)
-> algorithmique qui permet de **stocker** l'horaire NASA POWER 2001->,
-> d'attribuer automatiquement un statut éditorial et un niveau de
-> confiance, et de **lever le statut `passe_plat_non_valide`**.
+> algorithmique des séries horaires stockées, qui attribue
+> automatiquement un statut éditorial et un niveau de confiance à
+> chaque heure.
 >
 > **Statut des seuils numériques** : les limites de plausibilité et les
 > tolérances de comparaison sont **sourcées verbatim** du document
 > *BSRN Global Network recommended QC tests V2.0* (Long & Dutton, source
-> officielle BSRN/AWI). Restent à acter : la valeur numérique de S₀
-> (constante solaire) et les seuils des tests temporels (§4.4), hors du
-> jeu BSRN canonique.
+> officielle BSRN/AWI). S₀ vaut 1 366,1 W/m², valeur par défaut de
+> pvlib retenue par le code (§3). Les seuils des tests temporels
+> (§4.4), hors du jeu BSRN canonique, restent à fixer.
 >
-> **Hypothèses structurantes** :
-> stockage `TIMESTAMPTZ` UTC ; 6 grandeurs `ghi, dni, dhi, t2m, rh2m,
-> kt` ; lot pilote avant ingestion de masse ; discriminant de
-> granularité côté `series_metadonnees`.
+> **Hypothèses structurantes** : stockage `TIMESTAMPTZ` UTC ;
+> discriminant de granularité côté `series_metadonnees`.
 
 ## 1. Contexte et objet
 
-L'horaire est aujourd'hui exposé en `passe_plat_non_valide` : relayé en
-direct depuis NASA POWER, **non stocké, non validé**. La présente
-doctrine le fait passer au statut de **donnée stockée et validée
+Une heure non stockée est relayée en direct depuis NASA POWER, non
+validée, sous le statut `passe_plat_non_valide`. La présente doctrine
+fait passer l'horaire stocké au statut de **donnée validée
 éditorialement en confiance B**.
 
-La volumétrie interdit la relecture humaine qui validait les séries
-basse fréquence : 6 villes × 25 ans × 6 variables × 24 h ≈ **8 M de
-points**. La validation devient nécessairement **algorithmique**, d'où
-une doctrine explicite, versionnée et traçable, qui est elle-même un
-**enrichissement de la machinerie éditoriale du Core**.
+Au Burkina Faso, l'horaire stocké couvre les cinq points pilotes sur
+2021-2025 : GHI, DNI, DHI et température de NASA POWER (ADR-0014), GHI,
+DNI, DHI et GHI par ciel clair de CAMS Radiation (ADR-0023), soit
+1 752 960 heures. La volumétrie interdit la relecture humaine qui
+valide les séries basse fréquence : la validation est
+**algorithmique**, d'où une doctrine explicite, versionnée et
+traçable.
 
 Cette note fixe : les familles de tests QC, leur ordre d'application,
 les pré-requis géométriques, et la règle d'attribution automatique du
@@ -42,13 +40,13 @@ statut éditorial et du niveau de confiance.
 
 - Le QC algorithmique **automatise la plausibilité physique**, il ne
   constitue **pas** une vérité terrain. Plafond de confiance **B**. Le
-  niveau **A** reste réservé au calage sol (régime terrain,
-  [`limites-substrat-physique-solaire.md`](limites-substrat-physique-solaire.md)
-  §4.8) : aucun test QC ne produit un A.
+  niveau **A** reste réservé à la mesure sol
+  ([`calage-terrain-solaire.md`](calage-terrain-solaire.md)) : aucun test
+  QC ne produit un A.
 - La donnée horaire QC-passée prend le statut DB **`valide_auto`** (déjà
   présent dans le CHECK `statut` des tables `mesures_ressource*`, aucun
   nouvel enum requis) et `niveau_confiance_derive = 'B'`. Côté surface
-  API, le service horaire sert désormais la donnée stockée validée ;
+  API, le service horaire sert la donnée stockée validée ;
   `passe_plat_non_valide` n'est plus émis pour la plage couverte.
 - La doctrine est **versionnée** (`v1`, `v2`…). Toute exécution QC trace
   la version de doctrine appliquée, pour que le verdict de chaque point
@@ -57,7 +55,7 @@ statut éditorial et du niveau de confiance.
 ## 3. Pré-requis géométriques
 
 Les tests radiatifs reposent sur la position solaire, d'où l'ancrage
-**UTC tz-aware** de la colonne instant (arbitrage chantier). Conventions
+**UTC tz-aware** de la colonne instant. Conventions
 alignées verbatim sur BSRN (Long & Dutton) :
 
 - **Angle zénithal solaire SZA**, et **μ₀ = cos(SZA)**, calculés par
@@ -65,13 +63,15 @@ alignées verbatim sur BSRN (Long & Dutton) :
   longitude, instant **UTC**). **Convention BSRN** : si SZA > 90°, μ₀
   est forcé à **0,0** dans les formules.
 - Une valeur moyenne de l'heure se juge au **milieu de l'heure** : NASA
-  POWER date chaque valeur du début de l'heure qu'elle moyenne, la
-  géométrie est donc calculée 30 min après l'instant stocké (ADR-0014).
+  POWER date chaque valeur du début de l'heure qu'elle moyenne ; CAMS
+  Radiation sert la période `HH:00/HH+1:00` et l'ingestion la date de même
+  au début de l'heure ; la géométrie est donc calculée 30 min après
+  l'instant stocké (ADR-0014, ADR-0023).
 - **Constante solaire ajustée distance Terre-Soleil** :
   **Sₐ = S₀ / AU²** (S₀ = constante solaire à distance moyenne Terre-
   Soleil ; AU = distance Terre-Soleil en unités astronomiques). Obtenue
-  via `pvlib.irradiance.get_extra_radiation` (S₀ défaut pvlib
-  1366,1 W/m², *valeur à acter*).
+  via `pvlib.irradiance.get_extra_radiation` (S₀ = 1 366,1 W/m², défaut
+  pvlib, `S0_W_PAR_M2` dans `services/qualite/qc_horaire.py`).
 - **Somme SW** (pour la fermeture, §4.2) :
   **Sum SW = DHI + DNI · μ₀**.
 
@@ -110,10 +110,12 @@ flux horaire).
   sentinelle `-999` reste traitée comme **lacune** (§4.4), pas comme un
   zéro physique.
 - **T2M** : la plage de validité BSRN de la température de l'air est
-  **170 K < Tₐ < 350 K** ; une borne climatique guinéenne plus serrée
-  peut être posée en limite **configurable**. **RH2M ∈ [0, 100] %.**
-- **KT** non défini la nuit -> `null` légitime (cohérent avec le
-  passe-plat).
+  **170 K < Tₐ < 350 K** ; le code applique -90 à 60 °C. Les bornes du
+  contrat d'ingestion, plus serrées (-5 à 55 °C, ADR-0014), arrêtent
+  l'ingestion en amont. **RH2M ∈ [0, 100] %.**
+- **KT** non défini la nuit : `null` légitime (cohérent avec le
+  passe-plat). Aucune série horaire d'humidité ni d'indice de clarté
+  n'est stockée au Burkina Faso.
 
 ### 4.2 Relation de fermeture radiative (comparaison Global / Somme SW)
 
@@ -136,9 +138,9 @@ Test BSRN « Diffuse Ratio » :
 > (DHI) / (GHI) < **1,10** pour **75° < SZA < 93°**, GHI > 50 W/m².
 > Pour GHI < 50 W/m², **test non applicable**.
 
-- **Indice de clarté** Kt = GHI / I₀ₕ ≤ 1 (marge d'« enhancement »
-  nuageux ponctuel) : réutilise `calculer_indice_ciel_clair` / paramètre
-  `ALLSKY_KT` déjà présent dans `external/nasa_power.py`.
+- **Indice de clarté** : `qc_horaire.py` ne teste pas Kt = GHI / I₀ₕ sur
+  le GHI. Il borne seulement une série `kt` stockée, de 0 à 1,2 (marge
+  d'« enhancement » nuageux ponctuel), et le Burkina Faso n'en a pas.
 
 ### 4.4 Détection d'aberrations temporelles (complément hors BSRN V2.0)
 
@@ -150,12 +152,13 @@ seuils restent à fixer (configurables, documentés) :
   consécutifs *[seuil à fixer]*.
 - **Valeurs gelées (persistance)** : N heures consécutives identiques en
   plein jour *[N à fixer]*.
-- **Lacunes** : sentinelles `-999` et trous temporels -> marquées
+- **Lacunes** : sentinelles `-999` et trous temporels : marquées
   **manquantes**, **non imputées** en v1.
 
-Note : Long & Shi 2008 (QCRad) ajoute au-dessus du socle BSRN des
+Le QC v1 n'applique encore ni les pics ni les valeurs gelées
+(ADR-0014). Long & Shi 2008 (QCRad) ajoute au-dessus du socle BSRN des
 **limites configurables d'après la climatologie du site** ; piste
-d'enrichissement ultérieure, non requise au lot pilote.
+d'enrichissement ultérieure.
 
 ## 5. Attribution automatique du statut et du niveau
 
@@ -197,14 +200,12 @@ Attribution **par point horaire** (chaque ligne porte son verdict) :
   L'imputation est une piste ultérieure.
 - Les limites BSRN sont fixées « pour accommoder toutes les latitudes et
   tous les régimes climatiques du programme BSRN » et « peuvent être
-  affinées pour une latitude/climat spécifique » (Long & Dutton). Un
-  raffinement tropical guinéen (limites configurables d'après
-  climatologie locale, §4.4) est une piste ultérieure, non requise au
-  lot pilote. Cohérent plafond B.
+  affinées pour une latitude/climat spécifique » (Long & Dutton). Des
+  limites tirées de la climatologie sahélienne et soudanienne du pays
+  (§4.4) sont une piste ultérieure. Cohérent plafond B.
 
-**À acter** : le sourcing verbatim des coefficients BSRN est fait
-(BSRN V2.0 Long & Dutton, §4.1-§4.3) ; restent la valeur de S₀ (§3) et
-les seuils des tests temporels (§4.4, complément hors BSRN).
+**À acter** : les seuils des tests temporels (§4.4, complément hors
+BSRN). Les coefficients BSRN (§4.1-§4.3) et S₀ (§3) sont fixés.
 
 ## 8. Références
 
@@ -219,7 +220,7 @@ les seuils des tests temporels (§4.4, complément hors BSRN).
 - pvlib - `solarposition`, `irradiance.get_extra_radiation` (SZA, μ₀,
   Sₐ).
 - Cohérence avec la chaîne radiative déjà documentée
-  ([`grandeurs-F2-phase-1.md`](grandeurs-F2-phase-1.md) : Perez 1990,
+  ([`grandeurs-parametrables.md`](grandeurs-parametrables.md) : Perez 1990,
   Erbs 1982).
 
 ## 9. Évolution du document
@@ -229,3 +230,4 @@ les seuils des tests temporels (§4.4, complément hors BSRN).
 | 2026-06-14 | Cadre algorithmique des 4 familles de tests + attribution ; coefficients BSRN à sourcer verbatim |
 | 2026-06-14 | Limites §4.1-§4.3 remplacées par les valeurs verbatim BSRN V2.0 (Long & Dutton) ; restent à acter : S₀ (§3) et tests temporels (§4.4) |
 | 2026-10-15 | Géométrie au milieu de l'heure pour les moyennes horaires (§3) ; arbitrages du §5 tranchés pour le Burkina Faso (ADR-0014) |
+| 2026-10-28 | Contexte ramené aux séries horaires du Burkina Faso (§1) ; S₀ fixé à la valeur du code (§3) ; bornes de température appliquées (§4.1) |

@@ -2,8 +2,12 @@
 
 > Séquence complète pour déployer l'API publique Kuma Data Core sur un VPS
 > nu (Ubuntu 24.04) jusqu'à `https://<domaine>/v1/edition` en ligne.
-> Chaque étape est exécutable telle quelle. Les artefacts référencés vivent
-> dans `docker/` et `scripts/publication/` (ADR-0003).
+> Les fichiers Compose et Caddy sont dans `docker/` (ADR-0003). Les quatre
+> scripts de `scripts/publication/` (`durcir-vps.sh`,
+> `provisionner-serveur.sh`, `exporter-edition.ps1`, `publier-edition.sh`)
+> ne sont pas dans ce dépôt : ils sont dans celui du moteur,
+> [Kuma Data Core](https://github.com/siba-IEE/kuma-data-core), et sont à
+> reprendre ici avant une mise en ligne.
 
 ## Prérequis (avant de commencer)
 
@@ -29,8 +33,8 @@ fonctionne**, sous peine de se verrouiller.
 2. **Récupérer le dépôt public** sur le VPS :
    ```bash
    sudo apt-get update && sudo apt-get install -y git
-   git clone https://github.com/siba-IEE/kuma-data-core.git
-   cd kuma-data-core
+   git clone https://github.com/siba-IEE/kuma-data-core-bfa.git
+   cd kuma-data-core-bfa
    ```
 3. **S'assurer d'un utilisateur admin avec clé** : si la connexion se fait
    déjà en `<utilisateur>` non-root avec ta clé, cet utilisateur est l'admin.
@@ -110,7 +114,7 @@ Ordre important : la base et ses rôles doivent exister avant l'API.
 11. **Transférer** le couple dump + JSON vers le VPS :
     ```bash
     scp -P <port> out/publication/edition_*.dump out/publication/edition_*.json \
-      <utilisateur>@<IP>:~/kuma-data-core/out/publication/
+      <utilisateur>@<IP>:~/kuma-data-core-bfa/out/publication/
     ```
 12. **Sur le VPS** : publier (restauration en base neuve, contrôles de
     non-fuite, grants au rôle lecture seule, mise à jour de `EDITION_DB`).
@@ -160,7 +164,7 @@ Ordre important : la base et ses rôles doivent exister avant l'API.
 
 ## Republier une édition (routine ultérieure)
 
-Après chaque vague d'ingestion mergée, ou à la cadence retenue :
+Après chaque lot d'ingestion fusionné, ou à la cadence retenue :
 `exporter-edition.ps1` (local) -> `scp` du dump + JSON -> `publier-edition.sh`
 (VPS, met à jour `EDITION_DB` dans `.env.prod`) -> `docker compose ... up -d api`
 (recrée le conteneur API). L'édition précédente reste en réserve N-1.
