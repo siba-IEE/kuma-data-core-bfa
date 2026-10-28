@@ -62,8 +62,8 @@ l'amorçage et la montée en charge de la donnée burkinabè.
       (ADR-0021).
 - [x] SARAH-3 journalier aux 398 localités, 2005-2023 : GHI, DNI, DHI
       (ADR-0022).
-- [ ] ERA5-Land journalier aux 398 localités, 2005-2025 : température, point
-      de rosée, pluie, vent, rayonnement, pression.
+- [x] ERA5-Land journalier aux 398 localités, 2005-2025 : température, point
+      de rosée, pluie, vent, rayonnement, pression (ADR-0024).
 - [x] CAMS Radiation horaire aux cinq points pilotes, 2021-2025 : GHI, DNI,
       DHI et GHI par ciel clair (ADR-0023).
 

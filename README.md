@@ -46,6 +46,11 @@ Socle en place. La donnée nationale se construit par lots.
   B et en stockage dense : températures minimale et maximale, point de rosée,
   vent à 10 et 50 m, direction du vent, pression et nébulosité. Voir
   l'[ADR-0021](docs/decisions/0021-meteo-complementaire-nasa-power.md).
+- Météo et rayonnement journaliers ERA5-Land aux 398 localités, 2005-2025, en
+  confiance B et en stockage dense : température moyenne, minimale et
+  maximale, point de rosée, pression, vent et direction du vent, pluie et
+  GHI. La pluie y est d'un tiers plus faible que chez NASA POWER. Voir
+  l'[ADR-0024](docs/decisions/0024-era5-land-journalier.md).
 - SARAH-3 journalier (PVGIS) aux 398 localités, 2005-2023, en confiance B et
   en stockage dense : GHI, DNI et DHI ; les heures que SARAH-3 ne sert pas
   sont complétées au prorata du ciel clair, sauf quand elles couvrent
@@ -97,7 +102,6 @@ d'ingestion.
 
 ### À faire
 
-- Brut satellite et réanalyse (jalon 5) : ERA5-Land journalier.
 - Stations sol ESMAP/WAPP (Dédougou, Dori, Kaya, Koupéla) pour la confiance A
   (jalon 6).
 - Correction du POA en moyenne journalière, biaisé par la géométrie du midi
@@ -130,6 +134,11 @@ Les séries proviennent de :
   - **ERA5**, Copernicus Climate Change Service (C3S), ECMWF (CC BY 4.0) :
     « Contains modified Copernicus Climate Change Service information
     2005-2023 ».
+- **ERA5-Land**, réanalyse du CEPMMT pour le Copernicus Climate Change
+  Service (C3S, CC BY 4.0), jeu « ERA5-Land hourly time-series » du CDS
+  Copernicus (DOI 10.24381/ee82e357), consulté les 27 et 28 octobre 2026 :
+  « Contains modified Copernicus Climate Change Service information
+  2005-2025 ».
 - **CAMS Radiation**, Copernicus Atmosphere Monitoring Service (CC BY 4.0),
   service v4.6 (Vaisala, MINES ParisTech et DLR) diffusé par l'ADS
   Copernicus, consulté le 15 octobre 2026 (séries mensuelles), le 27 octobre

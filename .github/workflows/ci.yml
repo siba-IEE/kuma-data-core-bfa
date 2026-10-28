@@ -103,9 +103,9 @@ jobs:
   tests-integration:
     name: Tests d'intégration
     runs-on: ubuntu-latest
-    # Migrations 0006 à 0022 (mesures lues dans les CSV et les Parquet
+    # Migrations 0006 à 0023 (mesures lues dans les CSV et les Parquet
     # committés, 793 214 grandeurs dérivées calculées en SQL et contrôle
-    # qualité horaire) : upgrade head en une dizaine de minutes ici. Le
+    # qualité horaire) : upgrade head en un quart d'heure environ ici. Le
     # plafond laisse la marge d'un runner lent à installer Python.
     timeout-minutes: 30
     needs: [lint, type-check]

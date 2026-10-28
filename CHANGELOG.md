@@ -3,6 +3,22 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.18.0
+
+- Météo et rayonnement journaliers ERA5-Land aux 398 localités, 2005-2025
+  (ADR-0024, migration 0023) : température moyenne, minimale et maximale,
+  point de rosée, pression de surface, vent à 10 m et sa direction, pluie et
+  GHI, agrégés du jour UTC à partir des valeurs horaires de la réanalyse
+  (maille de 0,1°), en stockage dense ; 3 582 séries et 25 610 130 valeurs.
+  `scripts/ingest_era5_land_journalier.py`.
+- Les notes disent l'origine de chaque famille (température, humidité et
+  pression ramenées à l'altitude de la maille ; pluie, rayonnement et vent
+  du forçage ERA5 interpolé) et les écarts à NASA POWER, dont un tiers de
+  pluie en moins ; le GHI, celui d'ERA5, reste une source de comparaison.
+  Fiche de la source `ecmwf_era5_land` réécrite pour le Burkina Faso.
+- La capsule d'étude prend ses records de température chez NASA POWER
+  seulement (`SOURCE_TEMPERATURES`).
+
 ## 0.17.0
 
 - Rayonnement horaire CAMS Radiation aux cinq points pilotes, 2021-2025

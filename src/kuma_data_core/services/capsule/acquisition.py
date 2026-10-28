@@ -27,6 +27,10 @@ from sqlalchemy.orm import Session
 from kuma_data_core.services.capsule.construire import EntreesRessource
 from kuma_data_core.services.horaire import SOURCE_RELAIS
 
+# Source des records de température : une seule, pour que la provenance dise d'où
+# viennent les deux records (ERA5-Land sert aussi ces grandeurs, ADR-0024).
+SOURCE_TEMPERATURES: str = "nasa_power"
+
 # Période de référence des climatologies mensuelles du référentiel.
 _CLIMATO_DEBUT = "1991-01-01"
 _CLIMATO_FIN = "2020-12-31"
@@ -217,12 +221,13 @@ class SourceCore:
         """Records de température au point : le plus froid des minima journaliers et
         le plus chaud des maxima journaliers, sur les séries ``t2m_min``/``t2m_max``.
 
-        Bruts NASA, HORS calage : le calage corrige l'irradiance, pas la
-        température. Rendus ``(None, None)`` tant que les séries ne sont pas
-        seedées : la capsule omet alors le bloc et le dimensionnement des strings
-        retombe sur une saisie manuelle côté application. Le record absolu est le
-        cas ``percentile = 0`` (décision Siba 2026-08-18) ; un futur passage en
-        P1/P99 ne changerait que l'agrégat, sans re-fetch.
+        Bruts NASA POWER (``SOURCE_TEMPERATURES``), HORS calage : le calage
+        corrige l'irradiance, pas la température. Rendus ``(None, None)`` tant
+        que les séries ne sont pas seedées : la capsule omet alors le bloc et le
+        dimensionnement des strings retombe sur une saisie manuelle côté
+        application. Le record absolu est le cas ``percentile = 0`` (décision
+        Siba 2026-08-18) ; un futur passage en P1/P99 ne changerait que
+        l'agrégat, sans re-fetch.
         """
         row = self.session.execute(
             text(
@@ -243,11 +248,12 @@ class SourceCore:
                         WHERE localite_id = :loc
                           AND grandeur_code IN ('t2m_min', 't2m_max')
                           AND granularite = 'journalier' AND actif
+                          AND source_id = (SELECT id FROM sources WHERE code = :source)
                       ))
                   AND m.statut <> 'deprecie'
                 """
             ),
-            {"loc": localite_id},
+            {"loc": localite_id, "source": SOURCE_TEMPERATURES},
         ).first()
         if row is None or row.froid is None or row.chaud is None:
             return None, None

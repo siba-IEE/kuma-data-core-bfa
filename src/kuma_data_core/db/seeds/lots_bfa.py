@@ -1,4 +1,4 @@
-"""Lots de séries : points et contrats (ADR-0009 à ADR-0011, ADR-0013 à ADR-0023).
+"""Lots de séries : points et contrats (ADR-0009 à ADR-0011, ADR-0013 à ADR-0024).
 
 Un **lot** est un ensemble de localités du référentiel dont les séries sont
 demandées aux sources sous le même contrat :
@@ -387,6 +387,38 @@ CONTRATS_METEO_COMPLEMENTAIRE: dict[str, ContratSerie] = {
         borne_min=borne_min,
     )
     for grandeur, (_, borne_min, borne_max) in METEO_NASA_COMPLEMENTAIRE.items()
+}
+
+# ERA5-Land journalier (ADR-0024), aux 398 localités, 2005-2025, en stockage
+# dense : agrégats du jour UTC des valeurs horaires de la réanalyse (maille de
+# 0,1°). Bornes basse et haute (°C, kPa, m/s, degrés depuis le nord, mm/jour,
+# kWh/m²/jour), celles des mêmes grandeurs chez NASA POWER.
+METEO_ERA5_LAND: dict[str, tuple[float, float]] = {
+    "t2m": (0.0, 50.0),
+    "t2m_min": (0.0, 45.0),
+    "t2m_max": (5.0, 55.0),
+    "point_rosee_2m": (-30.0, 35.0),
+    "pression_surface": (85.0, 105.0),
+    "vent_10m": (0.0, 15.0),
+    "direction_vent_10m": (0.0, 360.0),
+    "precipitation": (0.0, 500.0),
+    "ghi": (0.0, BORNES_JOURNALIERES["ghi"]),
+}
+CONTRATS_ERA5_LAND_JOURNALIERS: dict[str, ContratSerie] = {
+    grandeur: ContratSerie(
+        source_code="ecmwf_era5_land",
+        source_id=12,
+        source_libelle="ERA5-Land",
+        prefixe_code=f"era5_land_{grandeur}_journalier",
+        grandeur_code=grandeur,
+        methode_collecte="reanalyse",
+        annee_debut=2005,
+        annee_fin=2025,
+        borne_max=borne_max,
+        granularite="journalier",
+        borne_min=borne_min,
+    )
+    for grandeur, (borne_min, borne_max) in METEO_ERA5_LAND.items()
 }
 
 
