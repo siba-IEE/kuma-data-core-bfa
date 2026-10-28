@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gzip
+from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
@@ -28,6 +29,7 @@ _CONTRAT = ContratSerie(
     prefixe_code="nasa_power_ghi_mensuel",
     grandeur_code="ghi",
     methode_collecte="modele_satellitaire",
+    fiabilite_source="haute",
     annee_debut=2019,
     annee_fin=2020,
     borne_max=8.5,
@@ -39,6 +41,7 @@ _JOURNALIER = ContratSerie(
     prefixe_code="nasa_power_ghi_journalier",
     grandeur_code="ghi",
     methode_collecte="modele_satellitaire",
+    fiabilite_source="haute",
     annee_debut=2019,
     annee_fin=2020,
     borne_max=9.0,
@@ -184,6 +187,7 @@ def test_borne_basse_incluse() -> None:
         prefixe_code="nasa_power_precipitation_journalier",
         grandeur_code="precipitation",
         methode_collecte="reanalyse",
+        fiabilite_source="haute",
         annee_debut=2019,
         annee_fin=2020,
         borne_max=500.0,
@@ -207,6 +211,7 @@ def test_libelle_des_particules_fines() -> None:
         prefixe_code="cams_eac4_pm2_5_journalier",
         grandeur_code="pm2_5",
         methode_collecte="reanalyse",
+        fiabilite_source="haute",
         annee_debut=2019,
         annee_fin=2020,
         borne_max=3000.0,
@@ -225,6 +230,7 @@ _HORAIRE = ContratSerie(
     prefixe_code="nasa_power_ghi_horaire",
     grandeur_code="ghi",
     methode_collecte="modele_satellitaire",
+    fiabilite_source="haute",
     annee_debut=2020,
     annee_fin=2020,
     borne_max=1400.0,
@@ -260,3 +266,20 @@ def test_horaire_rejets(mesures: list[tuple[datetime, float]], message: str) -> 
     """Heure manquante, hors période ou non alignée sur l'heure : écriture refusée."""
     with pytest.raises(ValueError, match=message):
         ecrire_series_horaires(_HORAIRE, "test", [(*_POINT, mesures)])
+
+
+@pytest.mark.parametrize(
+    ("methode", "fiabilite", "niveau"),
+    [
+        ("modele_satellitaire", "haute", "B"),
+        ("reanalyse", "moyenne", "B"),
+        ("mesure_directe", "haute", "A"),
+        ("mesure_directe", "moyenne", "B"),
+        ("mesure_directe", "faible", "C"),
+        ("expertise_humaine", "haute", "C"),
+    ],
+)
+def test_niveau_confiance_du_contrat(methode: str, fiabilite: str, niveau: str) -> None:
+    """Le niveau du contrat découle de sa méthode et de la fiabilité de sa source (R1 à R4)."""
+    contrat = replace(_CONTRAT, methode_collecte=methode, fiabilite_source=fiabilite)
+    assert contrat.niveau_confiance == niveau

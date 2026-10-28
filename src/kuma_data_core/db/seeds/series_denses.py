@@ -49,7 +49,12 @@ import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
 import sqlalchemy as sa
 
-from kuma_data_core.db.seeds.series_csv import DOSSIER_DONNEES, NOMS_LOCALITES, ContratSerie
+from kuma_data_core.db.seeds.series_csv import (
+    DOSSIER_DONNEES,
+    NOMS_LOCALITES,
+    ContratSerie,
+    verifier_source,
+)
 
 DOSSIER_DENSES: Path = DOSSIER_DONNEES / "denses"
 ECHELLE: int = 10_000
@@ -410,15 +415,17 @@ def charger_series_denses(
 ) -> tuple[int, int, int]:
     """Insère les séries d'un fichier dense et verse leurs valeurs ; renvoie (séries, lignes, valeurs).
 
-    ``localites`` associe chaque code de localité attendu à son id ; le fichier
-    doit couvrir exactement ces localités, aux coordonnées qu'elles ont en
-    base. ``note`` donne la note publique d'une localité ; le chargement y
+    Le contrat doit d'abord correspondre à la fiche de sa source
+    (``verifier_source``). ``localites`` associe chaque code de localité
+    attendu à son id ; le fichier doit couvrir exactement ces localités, aux
+    coordonnées qu'elles ont en base. ``note`` donne la note publique d'une localité ; le chargement y
     ajoute les valeurs écartées (``unite`` en suffixe) et les jours sans valeur,
     introduits par ``absents``, en citant les ``jours_cites`` premiers. Les
     séries des représentantes sont insérées d'abord et portent les lignes, une
     par année, versées par ``COPY`` ; les autres pointent vers elles par
     ``serie_porteuse_id``.
     """
+    verifier_source(bind, contrat)
     nom = nom_fichier_dense(contrat, lot)
     denses = lire_series_denses(contrat, lot)
     if denses.codes != sorted(localites):

@@ -17,6 +17,11 @@ Valeurs dans l'unité de la grandeur (kWh/m²/jour pour le rayonnement mensuel
 et journalier, W/m² pour le rayonnement horaire, °C, % et mm/jour pour la
 météo), arrondies à 4 décimales.
 
+Le contrat d'une famille de séries déclare la méthode de collecte et recopie la
+fiabilité de la fiche de sa source ; son niveau de confiance en découle par les
+règles R1 à R4 (``editorial.niveaux_confiance``). ``verifier_source`` refuse un
+contrat dont la source n'a plus, en base, ce code ou cette fiabilité.
+
 L'écriture est **déterministe** (lignes triées, horodatage gzip nul) : régénérer
 un fichier depuis les mêmes données produit les mêmes octets. Elle passe par un
 fichier temporaire, validé avant de remplacer le fichier versionné. La lecture
@@ -36,10 +41,13 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Literal
 
+import sqlalchemy as sa
+
 from kuma_data_core.db.seeds.localites_bfa_departements_seed_data import (
     LOCALITES_SEED as _COMMUNES,
 )
 from kuma_data_core.db.seeds.localites_bfa_seed_data import LOCALITES_SEED as _LOCALITES
+from kuma_data_core.editorial.niveaux_confiance import calculer_niveau_confiance_derive
 
 DOSSIER_DONNEES: Path = Path(__file__).resolve().parent / "donnees"
 COLONNES: tuple[str, ...] = ("localite_code", "latitude", "longitude", "annee", "mois", "valeur")
@@ -91,10 +99,11 @@ class ContratSerie:
     prefixe_code: str  # préfixe du code de série, ex. "nasa_power_ghi_mensuel"
     grandeur_code: str
     methode_collecte: str
+    # Recopiée de la fiche de la source (sources.fiabilite)
+    fiabilite_source: Literal["haute", "moyenne", "faible"]
     annee_debut: int
     annee_fin: int
     borne_max: float  # borne de plausibilité, dans l'unité de la grandeur
-    niveau_confiance: str = "B"
     granularite: Literal["mensuel", "journalier", "horaire"] = "mensuel"
     # Borne basse incluse ; sans elle, la valeur doit être strictement positive
     # (rayonnement). La pluie, par exemple, vaut souvent zéro.
@@ -103,6 +112,13 @@ class ContratSerie:
     # (localité, jour ISO). Toute autre valeur hors bornes arrête l'ingestion
     # (ADR-0017) ; les CSV n'en admettent aucune.
     ecarts_admis: frozenset[tuple[str, str]] = frozenset()
+
+    @property
+    def niveau_confiance(self) -> str:
+        """Niveau A/B/C des valeurs, dérivé par les règles R1 à R4."""
+        return calculer_niveau_confiance_derive(
+            methode_collecte=self.methode_collecte, fiabilite_source=self.fiabilite_source
+        )
 
     @property
     def periode_debut(self) -> str:
@@ -136,6 +152,25 @@ class ContratSerie:
         return (
             f"{grandeur} {self.granularite} {self.source_libelle}, "
             f"{NOMS_LOCALITES[localite_code]} ({self.annee_debut}-{self.annee_fin})"
+        )
+
+
+def verifier_source(bind: sa.Connection, contrat: ContratSerie) -> None:
+    """Vérifie que la source du contrat a, en base, son code et sa fiabilité.
+
+    Le niveau de confiance du contrat découle de la fiabilité qu'il recopie :
+    une fiche modifiée depuis le rendrait faux. Lève ``ValueError`` sinon. La
+    fiabilité d'une source est figée une fois ses séries chargées
+    (``docs/conventions/02-migrations.md``).
+    """
+    fiche = bind.execute(
+        sa.text("SELECT code, fiabilite FROM sources WHERE id = :id"), {"id": contrat.source_id}
+    ).one_or_none()
+    attendu = (contrat.source_code, contrat.fiabilite_source)
+    if fiche is None or (fiche.code, fiche.fiabilite) != attendu:
+        raise ValueError(
+            f"{contrat.prefixe_code} : source id {contrat.source_id} attendue {attendu!r}, "
+            f"trouvée {tuple(fiche) if fiche else None!r}."
         )
 
 

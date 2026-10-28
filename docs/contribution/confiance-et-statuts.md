@@ -37,6 +37,17 @@ CAMS, ERA5) est en confiance B. Une décision éditoriale peut poser un override
 sur une ligne, avec une justification obligatoire conservée dans le commentaire
 éditorial.
 
+Les règles s'appliquent au chargement. Le contrat d'une famille de séries
+(`db/seeds/series_csv.py`) déclare la méthode de collecte et recopie la
+fiabilité de la fiche de sa source ; le niveau de ses valeurs en découle, sans
+saisie. Le chargement dense refuse un contrat dont la fiabilité n'est plus
+celle de la fiche. Pour toutes les séries, un test d'intégration compare le
+niveau stocké à celui que les règles donnent pour leur méthode et leur source.
+Une série `mesure_directe` d'une source de fiabilité haute (`esmap_wapp`, par
+exemple) entrerait donc en A sans saisie. Les grandeurs dérivées stockées
+(migrations 0009 et 0014) gardent le B écrit par leur migration : aucune règle
+ne propage encore le niveau des mesures dont elles sont calculées.
+
 **La confiance A est réservée aux données validées au sol.** Un fait exact tiré
 d'une source satellitaire reste B, avec un caveat documenté, tant qu'il n'a pas
 été confronté à une mesure terrain. La définition publiée est rappelée dans la
@@ -66,7 +77,8 @@ sa place.
 
 Aucune mise à jour destructive. Une valeur corrigée ou ré-ingérée ne remplace
 pas l'ancienne en place : une nouvelle ligne est créée, l'ancienne est bornée
-par `valide_au`, et les lectures ne renvoient que la version courante. L'histoire
+par `valide_au`, et les lectures ne renvoient que la version courante
+(`editorial.versioning` pour les mesures journalières versionnées). L'histoire
 reste vérifiable. Une série dense fait exception : une correction la réédite en
 bloc depuis un nouveau fichier, et l'édition précédente ne survit que dans
 l'historique du dépôt (ADR-0017).

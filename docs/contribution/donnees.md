@@ -44,9 +44,10 @@ Par un script d'ingestion et une migration. Le script
 (`scripts/ingest_*.py`) interroge la source et écrit un fichier versionné,
 CSV gzip ou Parquet, dans `src/kuma_data_core/db/seeds/donnees/`. La migration
 relit ce fichier, sans accès réseau, contrôle ses valeurs contre le contrat de
-la série (période, bornes) et les insère. Une donnée proposée suit le même
-chemin : elle entre par une migration, écrite à partir de ce que vous
-fournissez.
+la série (période, bornes) et les insère avec le niveau de confiance que les
+règles donnent pour la méthode du contrat et la fiabilité de sa source. Une
+donnée proposée suit le même chemin : elle entre par une migration, écrite à
+partir de ce que vous fournissez.
 
 ## Où contribuer
 

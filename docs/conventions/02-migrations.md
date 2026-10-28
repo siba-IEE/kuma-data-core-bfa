@@ -116,6 +116,13 @@ Réviser une valeur versionnée ferme la ligne courante (`valide_au`) et insère
 la remplaçante (`valide_du`) dans la même transaction, avec un seul `now()`
 pour les deux bornes : les plages `[)` se touchent alors sans trou, et la
 contrainte `EXCLUDE` sur l'identité métier refuse tout chevauchement.
+`editorial.versioning.roter_ligne_versionnee` le fait pour `mesures_ressource`.
+
+La fiabilité d'une source est figée une fois ses séries chargées : les
+contrats de séries la recopient pour dériver le niveau de confiance. Le
+chargement dense vérifie qu'elle n'a pas changé, et les tests d'intégration le
+vérifient pour tous les contrats. Revoir la fiabilité d'une source passe par
+une nouvelle fiche.
 
 ## Tests de migration
 

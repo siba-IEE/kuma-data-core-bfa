@@ -3,6 +3,21 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.21.0
+
+- Le niveau de confiance des séries chargées est dérivé par les règles R1 à R4
+  au lieu d'un B par défaut : le contrat d'une famille de séries
+  (`ContratSerie`) déclare la fiabilité de sa source à côté de sa méthode de
+  collecte, et son niveau en découle. Le chargement dense refuse un contrat
+  dont la source n'a plus, en base, ce code ou cette fiabilité
+  (`verifier_source`). Les séries actuelles, satellitaires ou de réanalyse et
+  de sources de fiabilité haute, restent en B ; un test compare, pour chaque
+  série en base, une valeur stockée au niveau des règles.
+- Retour de `editorial/versioning.py` (`roter_ligne_versionnee`), retiré en
+  0.20.2 : réviser une mesure journalière versionnée ferme la ligne courante
+  et insère la remplaçante au même instant. La fonction a maintenant des tests
+  d'intégration ; aucun code ne l'appelle encore.
+
 ## 0.20.2
 
 - Retrait du paquet `ingestion/` hérité du dépôt d'origine (`nasa_power_daily`,
