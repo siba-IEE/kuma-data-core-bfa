@@ -183,10 +183,10 @@ def _chercher_serie_horaire_stockee(
     indépendamment du nommage de la série.
 
     La clause ``EXISTS`` écarte les séries « coquilles » (métadonnées
-    actives sans aucune ligne dans ``mesures_ressource_horaires``) : retenue,
-    une coquille dont la période couvre la fenêtre demandée ferait servir 200
-    avec zéro résultat. Le ``ORDER BY`` rend la sélection déterministe si
-    plusieurs séries portent des mesures.
+    actives sans aucune ligne courante, la leur ou celle de leur porteuse,
+    ADR-0026) : retenue, une coquille dont la période couvre la fenêtre
+    demandée ferait servir 200 avec zéro résultat. Le ``ORDER BY`` rend la
+    sélection déterministe si plusieurs séries portent des mesures.
     """
     row = session.execute(
         text(
@@ -201,7 +201,7 @@ def _chercher_serie_horaire_stockee(
               AND sm.actif = TRUE
               AND (CAST(:source AS text) IS NULL OR s.code = :source)
               AND EXISTS (
-                  SELECT 1 FROM mesures_ressource_horaires m
+                  SELECT 1 FROM v_mesures_horaires m
                   WHERE m.serie_id = sm.id
               )
             ORDER BY (s.code = :relais) DESC, sm.id
@@ -230,16 +230,17 @@ def _lire_horaire_validee(
     """Lit les points horaires ``valide_auto`` d'une série sur la plage.
 
     Les lignes rejetées par le QC (statut ``brut``) sont exclues. Instant
-    renvoyé en UTC naïf, cohérent avec le passe-plat.
+    renvoyé en UTC naïf, cohérent avec le passe-plat. Lit la vue
+    ``v_mesures_horaires`` : une série qui lit une porteuse rend les mesures
+    de sa porteuse (ADR-0026).
     """
     rows = session.execute(
         text(
             """
             SELECT instant_mesure, valeur
-            FROM mesures_ressource_horaires
+            FROM v_mesures_horaires
             WHERE serie_id = :serie_id
               AND statut IN ('valide_auto', 'valide_humain', 'publie')
-              AND valide_au IS NULL
               AND (instant_mesure AT TIME ZONE 'UTC')::date >= :debut
               AND (instant_mesure AT TIME ZONE 'UTC')::date <= :fin
             ORDER BY instant_mesure
@@ -282,20 +283,20 @@ def _repondre_horaire(
     "/{localite}/{grandeur}",
     response_model=None,
     status_code=status.HTTP_200_OK,
-    summary="Donnees horaires passe-plat sur une fenetre temporelle",
+    summary="Donnees horaires sur une fenetre temporelle (stocke valide ou relais)",
 )
 def grandeur_horaire(
     params: Annotated[ParametresHoraire, Depends(parametres_requete(ParametresHoraire))],
     _cle: CleApiValidee,
     session: Annotated[Session, Depends(obtenir_session)],
 ) -> Response:
-    """Retourne les valeurs horaires passe-plat pour une plage temporelle.
+    """Retourne les valeurs horaires d'une localité sur une plage temporelle.
 
-    Pattern passe-plat : aucune donnée n'est ingérée ni stockée côté
-    Kuma. La réponse est calculée à la volée en relayant la requête
-    vers le service amont, puis convertie au format Kuma cohérent
-    (instant ISO 8601, valeur ou ``null`` si sentinelle, unité cible,
-    statut éditorial ``passe_plat_non_valide``).
+    Une série stockée qui couvre la plage sert ses heures validées
+    (``valide_auto``), les siennes ou celles de la porteuse de sa maille
+    (ADR-0026). Sinon, la requête est relayée vers le service amont, puis
+    convertie au format Kuma cohérent (instant ISO 8601, valeur ou ``null``
+    si sentinelle, unité cible, statut éditorial ``passe_plat_non_valide``).
 
     Pré-validation : la fenêtre demandée doit être incluse dans la
     plage disponible (option B1 statique). Sinon : 400

@@ -200,16 +200,18 @@ Sans granularité dans le code (ADR-0012,
 
 ### Décompte factuel
 
-21 930 séries à la migration 0023 (`SELECT count(*) FROM
+23 502 séries à la migration 0027 (`SELECT count(*) FROM
 series_metadonnees`) :
 
 - 3 980 mensuelles ;
 - 14 726 journalières, dont 14 350 en stockage dense (ADR-0017) ;
-- 40 horaires, aux cinq points pilotes (ADR-0014, ADR-0023) ;
+- 1 612 horaires : 1 592 NASA POWER aux 398 localités (ADR-0014,
+  ADR-0026) et 20 CAMS Radiation aux cinq points pilotes (ADR-0023) ;
 - 3 184 grandeurs dérivées stockées, sans granularité (ADR-0012).
 
-6 563 séries denses ne portent pas de lignes et lisent celles de la
-série porteuse de leur maille (`serie_porteuse_id`).
+7 973 séries ne portent pas de lignes et lisent celles de la série
+porteuse de leur maille (`serie_porteuse_id`) : 6 563 denses et
+1 410 horaires.
 
 ## Schémas
 

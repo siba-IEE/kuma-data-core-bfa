@@ -2,7 +2,9 @@
 
 Vérifie les 20 séries horaires NASA POWER (5 pilotes, 4 grandeurs) sur
 2021-2025, leur accord avec la série mensuelle de la même localité et le
-contrôle qualité horaire (ADR-0014).
+contrôle qualité horaire (ADR-0014). Les autres localités ont leurs séries
+horaires depuis la migration 0027 (ADR-0026) : les requêtes s'en tiennent aux
+pilotes.
 """
 
 from __future__ import annotations
@@ -43,8 +45,10 @@ def test_series_horaires(db_session: Session) -> None:
             JOIN localites l ON l.id = s.localite_id
             WHERE s.granularite = 'horaire'
               AND s.source_id = (SELECT id FROM sources WHERE code = 'nasa_power')
+              AND s.localite_id IN (SELECT id FROM localites WHERE code = ANY(:pilotes))
             """
-        )
+        ),
+        {"pilotes": sorted(_PILOTES)},
     ).all()
     assert len(lignes) == 20
     assert {(r.localite, r.grandeur_code) for r in lignes} == {
@@ -72,9 +76,11 @@ def test_mesures_completes_et_bornees(db_session: Session) -> None:
             JOIN mesures_ressource_horaires m ON m.serie_id = s.id
             WHERE s.granularite = 'horaire'
               AND s.source_id = (SELECT id FROM sources WHERE code = 'nasa_power')
+              AND s.localite_id IN (SELECT id FROM localites WHERE code = ANY(:pilotes))
             GROUP BY 1, 2
             """
-        )
+        ),
+        {"pilotes": sorted(_PILOTES)},
     ).all()
     assert len(lignes) == 20
     for r in lignes:
@@ -103,9 +109,11 @@ def test_convention_debut_d_heure(db_session: Session) -> None:
             JOIN localites l ON l.id = s.localite_id
             WHERE s.grandeur_code = 'ghi' AND s.granularite = 'horaire'
               AND s.source_id = (SELECT id FROM sources WHERE code = 'nasa_power')
+              AND s.localite_id IN (SELECT id FROM localites WHERE code = ANY(:pilotes))
             GROUP BY l.code, l.longitude
             """
-        )
+        ),
+        {"pilotes": sorted(_PILOTES)},
     ).all()
     assert {r.code for r in lignes} == _PILOTES
     for r in lignes:
@@ -132,6 +140,7 @@ def test_sommes_horaires_egales_au_mensuel(db_session: Session) -> None:
                 JOIN series_metadonnees s ON s.id = m.serie_id
                 WHERE s.grandeur_code = 'ghi' AND s.granularite = 'horaire'
                   AND s.source_id = (SELECT id FROM sources WHERE code = 'nasa_power')
+              AND s.localite_id IN (SELECT id FROM localites WHERE code = ANY(:pilotes))
                 GROUP BY 1, 2, 3
             )
             SELECT l.code, count(*) AS mois, max(abs(h.moyenne - mm.valeur)) AS ecart
@@ -141,11 +150,13 @@ def test_sommes_horaires_egales_au_mensuel(db_session: Session) -> None:
               ON s.localite_id = h.localite_id AND s.grandeur_code = 'ghi'
              AND s.granularite = 'mensuel'
              AND s.source_id = (SELECT id FROM sources WHERE code = 'nasa_power')
+              AND s.localite_id IN (SELECT id FROM localites WHERE code = ANY(:pilotes))
             JOIN mesures_ressource_mensuelles mm
               ON mm.serie_id = s.id AND mm.annee = h.annee AND mm.mois = h.mois
             GROUP BY 1
             """
-        )
+        ),
+        {"pilotes": sorted(_PILOTES)},
     ).all()
     assert {r.code for r in lignes} == _PILOTES
     for r in lignes:
@@ -175,9 +186,11 @@ def test_controle_qualite(db_session: Session) -> None:
             JOIN localites l ON l.id = s.localite_id
             WHERE s.granularite = 'horaire'
               AND s.source_id = (SELECT id FROM sources WHERE code = 'nasa_power')
+              AND s.localite_id IN (SELECT id FROM localites WHERE code = ANY(:pilotes))
             GROUP BY 1, 2
             """
-        )
+        ),
+        {"pilotes": sorted(_PILOTES)},
     ).all()
     assert len(lignes) == 20
     for r in lignes:

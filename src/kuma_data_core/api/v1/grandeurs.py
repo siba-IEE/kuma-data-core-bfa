@@ -408,8 +408,9 @@ def _lire_mesures_horaires_par_serie_id(
 ) -> dict[datetime, float]:
     """Lit les valeurs horaires **validées** d'une série sur la fenêtre.
 
-    Lit ``mesures_ressource_horaires`` (statut ``valide_auto``, lignes
-    courantes), renvoie ``{instant_mesure: valeur}`` indexé par datetime
+    Lit la vue ``v_mesures_horaires`` (statut ``valide_auto``, lignes
+    courantes, celles de sa porteuse pour une série qui en lit une,
+    ADR-0026), renvoie ``{instant_mesure: valeur}`` indexé par datetime
     UTC. Utilisé par l'intégration horaire DJC
     (``methode='integration_horaire'``). Les lignes rejetées par le QC
     (statut ``brut``) sont exclues. Borne de fenêtre sur la date UTC,
@@ -421,10 +422,9 @@ def _lire_mesures_horaires_par_serie_id(
             """
             SELECT instant_mesure, valeur,
                    coalesce(niveau_confiance_override, niveau_confiance_derive) AS niveau
-            FROM mesures_ressource_horaires
+            FROM v_mesures_horaires
             WHERE serie_id = :serie_id
               AND statut IN ('valide_auto', 'valide_humain', 'publie')
-              AND valide_au IS NULL
               AND (instant_mesure AT TIME ZONE 'UTC')::date >= :debut
               AND (instant_mesure AT TIME ZONE 'UTC')::date <= :fin
             ORDER BY instant_mesure

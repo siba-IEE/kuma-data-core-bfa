@@ -251,11 +251,14 @@ def test_notes_publiques(db_session: Session) -> None:
 
 
 def test_fiche_de_la_source(db_session: Session) -> None:
-    """La fiche de ``nasa_power`` est celle du Burkina Faso, avec sa consultation."""
+    """La fiche de ``nasa_power`` est celle du Burkina Faso, avec sa consultation.
+
+    La migration 0027 y ajoute l'horaire des localités et sa consultation (ADR-0026).
+    """
     fiche = db_session.execute(
         text("SELECT date_consultation::text AS consultation, notes FROM sources WHERE id = 1")
     ).one()
-    assert fiche.consultation == "2026-10-27"
+    assert fiche.consultation == "2026-10-29"
     assert "Au Burkina Faso" in fiche.notes and "ADR-0021" in fiche.notes
     assert "DNI et DHI mensuels 2001-2025" in fiche.notes and "SRB" in fiche.notes
     assert "guinéen" not in fiche.notes

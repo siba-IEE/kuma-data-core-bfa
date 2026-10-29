@@ -78,11 +78,14 @@ Socle en place. La donnée nationale se construit par lots.
   énergie utile ECS, degrés-jours, P50/P90, PR réaliste corrigé de la
   température. Voir
   l'[ADR-0013](docs/decisions/0013-meteo-journaliere-et-grandeurs-calculees.md).
-- Séries horaires NASA POWER (GHI, DNI, DHI, température, 2021-2025) à cinq
-  points pilotes, Ouagadougou et les quatre sites des stations sol, contrôlées
-  par la doctrine QC v1 et servies par `/v1/horaire` ; grandeurs métier en
-  intégration horaire. Voir
+- Séries horaires NASA POWER (GHI, DNI, DHI, température, 2021-2025) aux
+  398 localités, contrôlées par la doctrine QC v1 et servies par
+  `/v1/horaire` ; grandeurs métier en intégration horaire. D'abord aux cinq
+  points pilotes, Ouagadougou et les quatre sites des stations sol : voir
   l'[ADR-0014](docs/decisions/0014-series-horaires-et-controle-qualite.md).
+  Puis partout, une série par maille de NASA POWER (33 pour le rayonnement,
+  83 pour la température), que lisent les autres localités de la maille :
+  voir l'[ADR-0026](docs/decisions/0026-horaire-nasa-power-aux-localites.md).
 - Particules fines CAMS EAC4 (PM2.5 et PM10 journaliers, 2005-2025) aux
   47 provinces, en confiance B, et grandeurs qui en dépendent : proxy de
   salissure et PR réaliste corrigé de la salissure. Voir
@@ -120,7 +123,8 @@ Les séries proviennent de :
 - **NASA POWER** (CC BY 4.0), POWER Monthly and Annual API, POWER Daily API
   v2.10.0 et POWER Hourly API v2.10.2, consultées le 15 octobre 2026 ; POWER
   Daily API v2.10.1 pour les communes et la météo complémentaire, consultée le
-  27 octobre 2026. « The
+  27 octobre 2026 ; POWER Hourly API v2.10.3 pour l'horaire des 398 localités,
+  consultée le 29 octobre 2026. « The
   data was obtained from National Aeronautics and Space Administration (NASA)
   Langley Research Center's Prediction Of Worldwide Energy Resources (POWER)
   project funded through the NASA Earth Science Division. » NASA POWER tire sa

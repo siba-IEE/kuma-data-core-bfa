@@ -250,7 +250,9 @@ def test_defaut_source_du_relais(db_session: Session) -> None:
     """Sans source, la série de NASA POWER l'emporte, quel que soit l'ordre d'insertion.
 
     Les sources des deux séries GHI de Dori sont échangées dans la transaction du test :
-    la série étiquetée NASA POWER porte alors l'id le plus grand, et reste servie.
+    la série étiquetée NASA POWER porte alors l'id le plus grand, et reste servie. La
+    série NASA POWER de Dori porte sa maille (ADR-0026) : les séries qui la lisent en
+    sont d'abord détachées, une porteuse lue ne changeant pas de famille.
     """
     ids = {
         row.source: row.id
@@ -265,6 +267,12 @@ def test_defaut_source_du_relais(db_session: Session) -> None:
         ).all()
     }
     assert ids["nasa_power"] < ids["cams_radiation"]
+    db_session.execute(
+        text(
+            "UPDATE series_metadonnees SET serie_porteuse_id = NULL WHERE serie_porteuse_id = :id"
+        ),
+        {"id": ids["nasa_power"]},
+    )
     # Échange en trois temps, par une source de passage, sous la contrainte d'unicité.
     for serie_id, source_id in (
         (ids["nasa_power"], 10),

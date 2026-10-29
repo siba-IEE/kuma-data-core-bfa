@@ -455,7 +455,11 @@ def test_disponibilite_selon_la_source(client: TestClient, headers_auth: dict[st
 def test_disponibilite_en_edition_figee(
     client: TestClient, headers_auth: dict[str, str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Sans relais, la plage est celle de la série stockée, et 404 hors des points pilotes."""
+    """Sans relais, la plage est celle de la série stockée ; sans série, 404.
+
+    Toutes les localités ont l'horaire NASA POWER (ADR-0026) ; le GHI par ciel
+    clair n'existe, stocké, qu'aux points pilotes (CAMS Radiation).
+    """
     figee = get_settings().model_copy(update={"edition_figee": True})
     monkeypatch.setattr("kuma_data_core.api.v1.horaire.get_settings", lambda: figee)
     stockee = _disponibilite(client, headers_auth, "bfa_dep_dori/ghi")
@@ -464,7 +468,9 @@ def test_disponibilite_en_edition_figee(
         {"debut": "2021-01-01", "fin": "2025-12-31"},
         "valide_auto",
     )
-    response = client.get("/v1/horaire/bfa_prov_kadiogo/ghi/disponibilite", headers=headers_auth)
+    response = client.get(
+        "/v1/horaire/bfa_prov_kadiogo/ghi_ciel_clair/disponibilite", headers=headers_auth
+    )
     assert response.status_code == 404, response.text
     assert response.json()["erreur"]["code"] == "RESSOURCE_SERIE_INCONNUE"
 

@@ -66,6 +66,11 @@ l'amorçage et la montée en charge de la donnée burkinabè.
       de rosée, pluie, vent, rayonnement, pression (ADR-0024).
 - [x] CAMS Radiation horaire aux cinq points pilotes, 2021-2025 : GHI, DNI,
       DHI et GHI par ciel clair (ADR-0023).
+- [x] NASA POWER horaire aux 398 localités, 2021-2025 : GHI, DNI, DHI et
+      température, une série par maille (ADR-0026).
+- [ ] Horaire NASA POWER depuis 2001 : une quarantaine de millions de valeurs,
+      pour lesquelles le stockage horaire dense, avec le statut du contrôle
+      qualité, est à reconsidérer (ADR-0026).
 
 ## Jalon 6 : terrain (confiance A)
 

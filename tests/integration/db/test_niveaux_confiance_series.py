@@ -38,7 +38,8 @@ SELECT s.code, s.methode_collecte, so.fiabilite, CASE
         WHERE m.serie_id = s.id AND m.valide_au IS NULL ORDER BY m.annee, m.mois LIMIT 1)
     WHEN s.granularite = 'horaire' THEN (
         SELECT m.niveau_confiance_derive FROM mesures_ressource_horaires m
-        WHERE m.serie_id = s.id AND m.valide_au IS NULL ORDER BY m.instant_mesure LIMIT 1)
+        WHERE m.serie_id = coalesce(s.serie_porteuse_id, s.id) AND m.valide_au IS NULL
+        ORDER BY m.instant_mesure LIMIT 1)
     ELSE (
         SELECT g.niveau_confiance_derive FROM grandeurs_metier g
         WHERE g.grandeur_code = s.grandeur_code AND g.localite_id = s.localite_id

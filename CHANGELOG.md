@@ -3,6 +3,38 @@
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et
 le projet suit le versionnement sémantique.
 
+## 0.23.0
+
+- Horaire NASA POWER aux 398 localités, 2021-2025 : GHI, DNI, DHI et
+  température, contrôlés par la doctrine QC v1 (ADR-0026). Une série par
+  maille de la source porte les mesures (33 mailles CERES de 1° pour le
+  rayonnement, 83 mailles MERRA-2 pour la température) ; les séries des
+  autres localités de la maille les lisent. Les cinq points pilotes portent
+  leur maille. 1 572 séries et 7 099 488 heures de plus.
+- Migration 0026 : une série horaire peut lire les mesures d'une porteuse de
+  la même famille (`serie_porteuse_id`, jusqu'ici réservé aux séries denses),
+  avec ses gardes en base, et la vue `v_mesures_horaires` rend à chaque série
+  les mesures horaires courantes, les siennes ou celles de sa porteuse.
+  `/v1/horaire`, sa disponibilité, les grandeurs en intégration horaire et la
+  capsule d'étude lisent par cette vue. Migration 0027 : les séries et les
+  mesures.
+- `/v1/horaire` sert l'horaire validé NASA POWER de 2021-2025 partout ; le
+  relais ne sert plus que les plages qui en débordent et les autres
+  grandeurs, et l'édition figée sert l'horaire de toutes les localités. Les
+  grandeurs en intégration horaire se calculent aux 398 localités.
+- `qualifier_series_horaires` applique le contrôle qualité v1 à des séries en
+  mémoire, avant leur chargement : mêmes verdicts et mêmes commentaires que
+  `executer_qc_horaire`, vérifiés sur les 1 752 960 heures des pilotes, en
+  0,25 s par maille de rayonnement au lieu de 1,5 s, sans relire les lignes
+  chargées ni les mettre à jour.
+- `scripts/ingest_nasa_power_horaire.py --lot localites` interroge les
+  398 localités, constate les mailles sur les valeurs et écrit les porteuses
+  de chaque localité (`mailles_horaires`) et les séries des porteuses. Son
+  cache garde les réponses compressées (`.json.gz`).
+- La fiche de `nasa_power` et le commentaire de `mesures_ressource_horaires`
+  disent l'horaire des 398 localités (POWER Hourly API v2.10.3, consultée le
+  29 octobre 2026).
+
 ## 0.22.0
 
 - Confiance : règle de propagation P (ADR-0025), reprise du moteur. Une valeur

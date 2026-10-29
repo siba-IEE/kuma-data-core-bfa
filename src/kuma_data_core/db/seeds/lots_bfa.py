@@ -1,4 +1,4 @@
-"""Lots de séries : points et contrats (ADR-0009 à ADR-0011, ADR-0013 à ADR-0024).
+"""Lots de séries : points et contrats (ADR-0009 à ADR-0011, ADR-0013 à ADR-0024, ADR-0026).
 
 Un **lot** est un ensemble de localités du référentiel dont les séries sont
 demandées aux sources sous le même contrat :
@@ -11,10 +11,13 @@ demandées aux sources sous le même contrat :
 Les séries mensuelles portent sur les provinces et les communes. Les séries
 journalières portent sur les provinces, sur les communes ou sur les
 398 localités, en stockage dense hors des provinces. Les séries horaires
-portent sur cinq points pilotes du lot ``communes`` (la commune de
-Ouagadougou et quatre départements). Chaque contrat fixe sa période ; les
-migrations qui chargent ses fichiers le figent : une autre source ou une
-autre période passera par de nouveaux contrats et de nouveaux fichiers.
+CAMS Radiation portent sur cinq points pilotes du lot ``communes`` (la
+commune de Ouagadougou et quatre départements) ; les séries horaires NASA
+POWER, d'abord à ces points (lot ``pilotes``), portent sur les
+398 localités, une série par maille (ADR-0026). Chaque contrat fixe sa
+période ; les migrations qui chargent ses fichiers le figent : une autre
+source ou une autre période passera par de nouveaux contrats et de nouveaux
+fichiers.
 """
 
 from __future__ import annotations
@@ -225,10 +228,12 @@ CONTRATS_METEO_JOURNALIERS: dict[str, ContratSerie] = {
     for grandeur, (_, borne_min, borne_max) in METEO_NASA.items()
 }
 
-# Séries horaires NASA POWER (ADR-0014) aux cinq points pilotes : Ouagadougou et
-# les quatre villes des stations sol ESMAP/WAPP. 2021-2025, valeur moyenne de
-# l'heure qui commence à l'instant (UTC). Paramètre, méthode, bornes basse et
-# haute (W/m² pour le rayonnement, °C pour la température).
+# Séries horaires NASA POWER (ADR-0014, ADR-0026) : lot ``pilotes`` aux cinq
+# points pilotes, Ouagadougou et les quatre villes des stations sol
+# ESMAP/WAPP, lot ``localites`` aux 398 localités, une série par maille.
+# 2021-2025, valeur moyenne de l'heure qui commence à l'instant (UTC).
+# Paramètre, méthode, bornes basse et haute (W/m² pour le rayonnement, °C pour
+# la température).
 LOT_HORAIRE: str = "pilotes"
 PILOTES_HORAIRES: tuple[str, ...] = (
     "bfa_com_ouagadougou",

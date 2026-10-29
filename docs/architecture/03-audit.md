@@ -167,8 +167,8 @@ d'insertion en local, 24 minutes de job CI, et autant de lignes
 d'`audit_log` écrites **à chaque rejeu complet** (CI, base locale
 reconstruite) sans aucune valeur de traçabilité : la donnée est déjà
 tracée par le fichier versionné et la migration elle-même. Au Burkina
-Faso, les migrations de séries 0006 à 0013 et 0022 suspendent ainsi le
-trigger de leur table.
+Faso, les migrations de séries 0006 à 0013, 0022 et 0027 suspendent ainsi
+le trigger de leur table.
 
 Bornes strictes : la suspension est **par table et par migration**,
 jamais globale (`session_replication_role` interdit) ; elle ne

@@ -116,7 +116,7 @@ curl "$API/v1/series/nasa_power_ghi_journalier_bfa_com_ouagadougou?from=2024-01-
 | `GET /v1/localites/{code}` | Détail d'une localité | oui |
 | `GET /v1/grandeurs/incertitude_inter_source/{localite}` | Écarts entre sources et dégénérescence de pixel | oui |
 | `GET /v1/grandeurs/<code>` | Grandeurs calculées et paramétrables (POA, productible...) | oui |
-| `GET /v1/horaire/{localite}/{grandeur}` | Horaire stocké aux cinq points pilotes, relais NASA POWER ailleurs | oui |
+| `GET /v1/horaire/{localite}/{grandeur}` | Horaire stocké 2021-2025 (NASA POWER aux 398 localités, CAMS Radiation aux cinq points pilotes), relais NASA POWER hors de cette période et pour les autres grandeurs | oui |
 
 Référence complète des paramètres et des réponses :
 [`docs/architecture/06-api-reference-publique.md`](../architecture/06-api-reference-publique.md).

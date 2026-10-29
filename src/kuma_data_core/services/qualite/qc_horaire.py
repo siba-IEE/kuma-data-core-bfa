@@ -12,6 +12,11 @@ Deux niveaux :
 - **Runner** ``executer_qc_horaire`` : lit les lignes horaires d'un jeu
   de séries, calcule la géométrie solaire via ``pvlib`` (UTC), applique
   les tests et renvoie un verdict par ligne. Le commit est au caller.
+- **Qualification en masse** ``qualifier_series_horaires`` : mêmes tests,
+  mêmes verdicts et mêmes commentaires, sur des séries en mémoire, avant
+  leur chargement (ADR-0026). La géométrie et les bornes se calculent par
+  instant avec les fonctions ci-dessous ; seules les comparaisons sur les
+  valeurs sont vectorisées.
 
 Doctrine d'attribution (§5) :
 
@@ -30,11 +35,12 @@ tests V2.0* ; constante solaire S₀ = 1366,1 W/m² (défaut pvlib
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
+import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 import pvlib  # type: ignore[import-untyped]
 from sqlalchemy import text
@@ -335,3 +341,122 @@ def executer_qc_horaire(
         sa = float(sa_values[i])
         verdicts.extend(evaluer_instant(mesures_par_instant[instant], sa, mu0, sza_deg))
     return verdicts
+
+
+# === Qualification en masse (séries en mémoire) ===========================
+
+_BORNES_RADIATIVES = {
+    "ghi": _borne_haute_ghi,
+    "dhi": _borne_haute_dhi,
+    "dni": _borne_haute_dni,
+}
+_BORNES_NON_RADIATIVES: dict[str, tuple[float, float]] = {
+    "rh2m": (0.0, 100.0),
+    "t2m": (-90.0, 60.0),
+    "kt": (0.0, 1.2),
+}
+
+
+def qualifier_series_horaires(
+    instants: Sequence[datetime],
+    valeurs_par_grandeur: Mapping[str, Sequence[float]],
+    latitude: float,
+    longitude: float,
+    decalage: timedelta,
+) -> dict[str, list[tuple[str, str]]]:
+    """Statut et commentaire du QC pour chaque valeur de séries alignées, sans SQL.
+
+    Donne, valeur par valeur, le statut cible et le commentaire que
+    :func:`executer_qc_horaire` donnerait à la ligne correspondante (mêmes
+    tests, même doctrine). Les séries ``{grandeur: valeurs}`` sont alignées
+    sur ``instants`` (UTC) ; les tests croisés s'appliquent si le GHI, le DHI
+    et le DNI sont tous fournis.
+
+    Returns:
+        ``{grandeur: [(statut_cible, commentaire), ...]}``, dans l'ordre des
+        instants.
+    """
+    n = len(instants)
+    for grandeur, valeurs in valeurs_par_grandeur.items():
+        if len(valeurs) != n:
+            raise ValueError(f"{grandeur} : {len(valeurs)} valeurs pour {n} instants.")
+    if any(i.tzinfo is None for i in instants):
+        raise ValueError("Instants sans fuseau : la géométrie solaire se calcule en UTC.")
+    if n == 0:
+        return {grandeur: [] for grandeur in valeurs_par_grandeur}
+
+    temps = pd.DatetimeIndex([i.astimezone(UTC) for i in instants]) + pd.Timedelta(decalage)
+    zeniths = pvlib.solarposition.get_solarposition(temps, latitude, longitude)["zenith"].to_numpy()
+    sas = pvlib.irradiance.get_extra_radiation(temps, solar_constant=S0_W_PAR_M2).to_numpy()
+    # Géométrie par instant, avec les fonctions scalaires du runner.
+    sza = [float(z) for z in zeniths]
+    mu0 = [max(0.0, math.cos(math.radians(z))) for z in sza]
+    sa = [float(x) for x in sas]
+    sza_arr = np.array(sza)
+    mu0_arr = np.array(mu0)
+    v = {g: np.asarray(valeurs, dtype=float) for g, valeurs in valeurs_par_grandeur.items()}
+
+    fermeture_echoue = np.zeros(n, dtype=bool)
+    ratio_echoue = np.zeros(n, dtype=bool)
+    if {"ghi", "dhi", "dni"} <= v.keys():
+        ghi, dhi, dni = v["ghi"], v["dhi"], v["dni"]
+        sum_sw = dhi + dni * mu0_arr
+        # Conditions écrites comme dans les fonctions scalaires : « non ≤ 50 ».
+        applicable = ~(sum_sw <= 50.0) & (sza_arr < 93.0)
+        tolerance = np.where(sza_arr < 75.0, 0.08, 0.15)
+        ecart = np.full(n, np.inf)
+        np.divide(ghi, sum_sw, out=ecart, where=applicable)
+        fermeture_echoue = applicable & ~(np.abs(ecart - 1.0) <= tolerance)
+        applicable = ~(ghi <= 50.0) & (sza_arr < 93.0)
+        seuil = np.where(sza_arr < 75.0, 1.05, 1.10)
+        ratio = np.full(n, np.inf)
+        np.divide(dhi, ghi, out=ratio, where=applicable)
+        ratio_echoue = applicable & ~(ratio < seuil)
+
+    resultats: dict[str, list[tuple[str, str]]] = {}
+    for grandeur, x in v.items():
+        rare = np.zeros(n, dtype=bool)
+        if grandeur in _BORNES_RADIATIVES:
+            borne = _BORNES_RADIATIVES[grandeur]
+            max_possible = np.array([borne(a, m, rare=False) for a, m in zip(sa, mu0, strict=True)])
+            max_rare = np.array([borne(a, m, rare=True) for a, m in zip(sa, mu0, strict=True)])
+            impossible = (x < -4.0) | (x > max_possible)
+            rare = ~impossible & ((x < -2.0) | (x > max_rare))
+            fermeture = fermeture_echoue
+        else:
+            impossible = np.zeros(n, dtype=bool)
+            if grandeur in _BORNES_NON_RADIATIVES:
+                bas, haut = _BORNES_NON_RADIATIVES[grandeur]
+                impossible = ~((bas <= x) & (x <= haut))
+            fermeture = np.zeros(n, dtype=bool)
+        diffus = ratio_echoue if grandeur == "dhi" else np.zeros(n, dtype=bool)
+        textes = _textes_verdicts(grandeur)
+        codes = np.where(impossible, -1, rare * 1 + fermeture * 2 + diffus * 4)
+        resultats[grandeur] = [textes[int(c)] for c in codes]
+    return resultats
+
+
+def _textes_verdicts(grandeur: str) -> dict[int, tuple[str, str]]:
+    """Statut et commentaire de chaque combinaison d'échecs, ceux de :class:`VerdictLigne`."""
+    textes = {
+        -1: VerdictLigne(
+            row_id=0,
+            statut_cible="brut",
+            niveau="B",
+            motif_rejet=f"plausibilite {grandeur} hors borne physique",
+        )
+    }
+    for code in range(8):
+        flags = [
+            libelle
+            for bit, libelle in (
+                (1, f"{grandeur} extremement rare"),
+                (2, "fermeture hors tolerance"),
+                (4, "ratio diffus eleve"),
+            )
+            if code & bit
+        ]
+        textes[code] = VerdictLigne(
+            row_id=0, statut_cible="valide_auto", niveau="B", flags=tuple(flags)
+        )
+    return {code: (v.statut_cible, v.commentaire()) for code, v in textes.items()}

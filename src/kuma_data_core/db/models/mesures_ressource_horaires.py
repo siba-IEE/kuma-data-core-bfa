@@ -166,7 +166,8 @@ class MesureRessourceHoraire(Base):
         ),
         {
             "comment": (
-                "Mesures horaires ingérées depuis les sources externes (NASA POWER et CAMS "
+                "Mesures horaires ingérées depuis les sources externes (NASA POWER aux 398 "
+                "localités, une série par maille, lue par la vue v_mesures_horaires ; CAMS "
                 "Radiation aux points pilotes). Pendant horaire de mesures_ressource (journalier) "
                 "et de mesures_ressource_mensuelles (mensuel). instant_mesure en TIMESTAMPTZ "
                 "(UTC), début de l'heure moyennée, pour le contrôle qualité horaire (position "

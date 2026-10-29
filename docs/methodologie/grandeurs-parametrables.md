@@ -50,12 +50,13 @@ albédo de 0,2 sauf mention contraire.
 | journalier | CAMS Radiation | GHI, DNI, DHI | 398 | 2005-2025 |
 | journalier | SARAH-3 (PVGIS) | GHI, DNI, DHI | 398 | 2005-2023 |
 | journalier | ERA5-Land | GHI, T2M | 398 | 2005-2025 |
-| horaire | NASA POWER | GHI, DNI, DHI, T2M | 5 points pilotes | 2021-2025 |
+| horaire | NASA POWER | GHI, DNI, DHI, T2M | 398 | 2021-2025 |
 | horaire | CAMS Radiation | GHI, DNI, DHI | 5 points pilotes | 2021-2025 |
 
 Les cinq points pilotes sont la commune de Ouagadougou et les
-départements de Dédougou, Dori, Kaya et Koupéla (ADR-0014). Il en
-découle :
+départements de Dédougou, Dori, Kaya et Koupéla (ADR-0014). L'horaire
+NASA POWER des 398 localités a une série par maille de la source, que
+lisent les autres localités de la maille (ADR-0026). Il en découle :
 
 - CAMS Radiation et SARAH-3 ne servent pas de température : le
   productible avec correction thermique, le PR corrigé de la température
@@ -63,9 +64,11 @@ découle :
   demandent un T2M de NASA POWER ou d'ERA5-Land.
 - ERA5-Land ne sert ni DNI ni DHI : le POA mono-plan passe par le repli
   (section 3), le bifacial répond 400.
-- L'intégration horaire n'existe qu'aux cinq points pilotes, en
-  2021-2025, et seulement avec NASA POWER pour les grandeurs qui
-  demandent la température (ADR-0023). Seuls les jours UTC dont les
+- L'intégration horaire existe en 2021-2025 aux 398 localités avec
+  NASA POWER, aux cinq points pilotes avec CAMS Radiation, et seulement
+  avec NASA POWER pour les grandeurs qui demandent la température
+  (ADR-0023, ADR-0026). Une commune prend sa propre géométrie solaire et
+  le rayonnement de sa maille. Seuls les jours UTC dont les
   24 heures sont présentes et validées entrent dans le calcul
   (ADR-0014).
 - Une série horaire passée sans `methode=integration_horaire` donne une

@@ -433,9 +433,10 @@ DNI du jour avec la géométrie du midi solaire, ce qui surestime le POA : sur
 un plan horizontal, en 2024, de 6,2 % avec NASA POWER au Kadiogo comme à Fô,
 de 18,8 % au Kadiogo et 18,5 % à Fô avec CAMS Radiation ; autant ou plus sur
 un plan incliné (ADR-0013, ADR-0020). La réponse le signale par son champ
-`limite` (§3.7.5). Le mode horaire n'existe qu'aux cinq points pilotes, depuis une série horaire NASA
-POWER ou CAMS Radiation ; CAMS ne sert pas de température, et les routes qui
-demandent une compagne T2M horaire partent de la série NASA POWER (ADR-0023).
+`limite` (§3.7.5). Le mode horaire part d'une série horaire NASA POWER, aux
+398 localités (ADR-0026), ou CAMS Radiation, aux cinq points pilotes ; CAMS ne
+sert pas de température, et les routes qui demandent une compagne T2M horaire
+partent de la série NASA POWER (ADR-0023).
 
 #### 3.7.4 Pattern auto-compagne (F2)
 
@@ -598,15 +599,17 @@ Localités : toute localité du référentiel par son **code complet**
 
 Cet endpoint sert d'abord l'horaire stocké et validé par contrôle
 qualité, avec repli passe-plat sur la source amont sinon. Au Burkina Faso,
-l'horaire stocké couvre 2021-2025 aux cinq points pilotes (Ouagadougou,
-Dédougou, Dori, Kaya, Koupéla) : GHI, DNI, DHI et T2M de NASA POWER, GHI,
-DNI, DHI et GHI par ciel clair de CAMS Radiation (ADR-0014, ADR-0023).
-Ailleurs, ou pour les autres grandeurs, la requête est relayée.
+l'horaire stocké couvre 2021-2025 : GHI, DNI, DHI et T2M de NASA POWER aux
+398 localités, une série par maille de la source (ADR-0014, ADR-0026), GHI,
+DNI, DHI et GHI par ciel clair de CAMS Radiation aux cinq points pilotes
+(Ouagadougou, Dédougou, Dori, Kaya, Koupéla, ADR-0023). Une plage qui
+déborde de 2021-2025, ou une autre grandeur, est relayée.
 
 Comportement :
 
 1. Si une série horaire stockée couvre la plage demandée, l'endpoint
-   renvoie les points validés (`mesures_ressource_horaires`, statut
+   renvoie les points validés (`mesures_ressource_horaires`, ceux de la
+   porteuse de la maille pour une série qui en lit une, statut
    `valide_auto`, confiance B). Les lignes rejetées par le contrôle
    qualité (statut `brut`) sont exclues.
 2. Sinon, l'API relaie la requête vers le service amont (NASA POWER),
@@ -722,8 +725,9 @@ mêmes `localite`, `grandeur` et `source` (ADR-0023).
   avant les autres.
 - En profil édition figée, celui du serveur public, il n'y a pas de
   relais : la plage est toujours celle de la série stockée, en
-  `valide_auto` (2021-01-01 à 2025-12-31 aux cinq points pilotes, avec
-  `"source": "nasa_power"` sans paramètre `source`) ; ailleurs, 404.
+  `valide_auto` (2021-01-01 à 2025-12-31 aux 398 localités, avec
+  `"source": "nasa_power"` sans paramètre `source`) ; sans série stockée,
+  404.
 - La plage d'une série stockée est recoupée avec la fenêtre du relais, que
   `/v1/horaire` impose à toute requête : elle est donc toujours acceptée
   par `/v1/horaire`.
@@ -1046,9 +1050,9 @@ série ni route au Burkina Faso (4.3).
 
 ### 4.1 Grandeurs brutes ingérées depuis sources externes (F1 stockée)
 
-Granularités : H horaire (cinq points pilotes, 2021-2025), J journalier,
-M mensuel. Hors horaire, chaque série existe aux 398 localités (47 provinces
-et 351 communes).
+Granularités : H horaire (2021-2025 ; NASA POWER aux 398 localités, CAMS
+Radiation aux cinq points pilotes), J journalier, M mensuel. Hors horaire
+CAMS, chaque série existe aux 398 localités (47 provinces et 351 communes).
 
 | Code | Libellé | Unité | Sources (granularités) |
 |---|---|---|---|
@@ -1131,9 +1135,12 @@ Voir 3.7 pour les routes, modèles physiques et paramètres.
 
 Une partie du substrat solaire existe en granularité horaire, stockée dans
 `mesures_ressource_horaires` avec passage par contrôle qualité (statut
-`valide_auto`, confiance B). Aux cinq points pilotes, NASA POWER et CAMS
-Radiation servent chacun le GHI, le DNI et le DHI horaires de 2021 à
-2025 ; NASA POWER y ajoute la température et CAMS le GHI par ciel clair
+`valide_auto`, confiance B). NASA POWER sert le GHI, le DNI, le DHI et la
+température horaires de 2021 à 2025 aux 398 localités : une série par
+maille de la source (33 mailles CERES de 1° pour le rayonnement, 83 mailles
+MERRA-2 pour la température) porte les mesures, et les séries des autres
+localités de la maille les lisent (ADR-0026). Aux cinq points pilotes, CAMS
+Radiation sert aussi le GHI, le DNI, le DHI et le GHI par ciel clair
 (ADR-0014, ADR-0023). Ces séries alimentent l'endpoint horaire (3.8) et le
 mode `integration_horaire` des routes F2. CAMS ne sert pas de température :
 les grandeurs qui demandent la température horaire partent de la série
@@ -1144,7 +1151,7 @@ leurs mesures se lisent par `/v1/horaire`.
 ### 4.6 Détails méthodologiques
 
 Chaque grandeur ingérée ou calculée au Burkina Faso a son ADR sous
-`docs/decisions/` (ADR-0009 à ADR-0024). Les modèles des grandeurs
+`docs/decisions/` (ADR-0009 à ADR-0026). Les modèles des grandeurs
 paramétrables sont décrits dans
 [`docs/methodologie/grandeurs-parametrables.md`](../methodologie/grandeurs-parametrables.md),
 la fraction diffuse dans
@@ -1287,7 +1294,7 @@ reçoit en suffixe le slug de sa province
 | `mesures_ressource` (journalier) | Séries journalières des 47 provinces : rayonnement et météo NASA POWER depuis 1991 ou 2001 (ADR-0010, ADR-0013), PM2.5 et PM10 depuis 2005 (ADR-0015) |
 | `mesures_journalieres_denses` (journalier) | Toutes les autres séries journalières, une ligne par série et par année (ADR-0017) ; la vue `v_mesures_journalieres` réunit les deux tables |
 | `mesures_ressource_mensuelles` | Mensuel NASA POWER, SARAH-3, ERA5 (PVGIS) et CAMS Radiation |
-| `mesures_ressource_horaires` | Horaire stocké validé par contrôle qualité (statut `valide_auto`, confiance B) |
+| `mesures_ressource_horaires` | Horaire stocké validé par contrôle qualité (statut `valide_auto`, confiance B), une série par maille pour NASA POWER ; la vue `v_mesures_horaires` le rend à chaque série, porteuse de sa maille ou non (ADR-0026) |
 | `grandeurs_metier` | Grandeurs F1 calculées Kuma : fraction diffuse, écarts entre sources, dégénérescence de pixel |
 | Calculé à la volée | Routes F1 (`ghi_exceedance`, `taux_salissure_proxy`, `pr_realiste`, `incertitude_inter_source`) et F2 paramétrables |
 | Passe-plat à la volée | Horaire non couvert par le stocké (relais amont) |
@@ -1345,7 +1352,7 @@ un déploiement se lit via `/v1/series` (filtre `source`).
 
 | Code | Organisme | Rôle Kuma | Couche |
 |---|---|---|---|
-| `nasa_power` | NASA Langley Research Center | Source primaire du substrat : rayonnement et météo, mensuel, journalier et horaire (ADR-0009, ADR-0010, ADR-0013, ADR-0014, ADR-0021) | B |
+| `nasa_power` | NASA Langley Research Center | Source primaire du substrat : rayonnement et météo, mensuel, journalier et horaire (ADR-0009, ADR-0010, ADR-0013, ADR-0014, ADR-0017, ADR-0021, ADR-0026) | B |
 | `sarah3_monthly` | CM SAF / EUMETSAT (via PVGIS, JRC) | Rayonnement SARAH-3 mensuel et journalier, 2005-2023 (ADR-0009, ADR-0022) | B |
 | `era5_pvgis` | ECMWF (via PVGIS, JRC) | GHI et DNI mensuels ERA5, 2005-2023 (ADR-0009) | B |
 | `cams_radiation` | Copernicus Atmosphere Monitoring Service / ECMWF | Rayonnement tous temps et par ciel clair, mensuel et journalier 2005-2025, horaire aux points pilotes 2021-2025 (ADR-0011, ADR-0020, ADR-0023) | B |
@@ -1403,6 +1410,6 @@ Faits de couverture durables (indépendants du volume ingéré) :
   Radiation 2005-2025 ; SARAH-3 et ERA5 (PVGIS) 2005-2023.
 - Journalier : 2005-2025 (SARAH-3 2005-2023) ; NASA POWER aux provinces
   depuis 1991 (GHI, température, humidité, pluie) ou 2001 (DNI, DHI).
-- Horaire stocké : 2021-2025 aux cinq points pilotes ; relais NASA POWER
-  depuis 2001.
+- Horaire stocké : 2021-2025, NASA POWER aux 398 localités et CAMS
+  Radiation aux cinq points pilotes ; relais NASA POWER depuis 2001.
 - Atlas d'incertitude inter-source : 2005-2023.

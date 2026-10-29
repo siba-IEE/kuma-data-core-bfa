@@ -24,12 +24,12 @@ validée, sous le statut `passe_plat_non_valide`. La présente doctrine
 fait passer l'horaire stocké au statut de **donnée validée
 éditorialement en confiance B**.
 
-Au Burkina Faso, l'horaire stocké couvre les cinq points pilotes sur
-2021-2025 : GHI, DNI, DHI et température de NASA POWER (ADR-0014), GHI,
-DNI, DHI et GHI par ciel clair de CAMS Radiation (ADR-0023), soit
-1 752 960 heures. La volumétrie interdit la relecture humaine qui
-valide les séries basse fréquence : la validation est
-**algorithmique**, d'où une doctrine explicite, versionnée et
+Au Burkina Faso, l'horaire stocké couvre 2021-2025 : GHI, DNI, DHI et
+température de NASA POWER aux 398 localités, une série par maille
+(ADR-0014, ADR-0026), GHI, DNI, DHI et GHI par ciel clair de CAMS Radiation
+aux cinq points pilotes (ADR-0023), soit 8 852 448 heures. La volumétrie
+interdit la relecture humaine qui valide les séries basse fréquence : la
+validation est **algorithmique**, d'où une doctrine explicite, versionnée et
 traçable.
 
 Cette note fixe : les familles de tests QC, leur ordre d'application,
@@ -185,6 +185,16 @@ Attribution **par point horaire** (chaque ligne porte son verdict) :
 
 ## 6. Versionnement et traçabilité
 
+- Le contrôle s'exécute de deux façons, aux verdicts identiques : par
+  `executer_qc_horaire`, sur des lignes déjà stockées (migrations 0012 et
+  0022), et par `qualifier_series_horaires`, sur des séries en mémoire avant
+  leur chargement (migration 0027). La seconde calcule la géométrie et les
+  bornes heure par heure avec les mêmes fonctions et ne vectorise que les
+  comparaisons ; un test vérifie qu'elle redonne le statut et le commentaire
+  de chacune des heures des pilotes.
+- Une série qui lit la porteuse de sa maille (ADR-0026) n'a pas de lignes
+  propres : le contrôle de la maille se fait aux coordonnées de la porteuse,
+  et toutes les localités de la maille en lisent les verdicts.
 - La doctrine (présente note + module service `services/qualite/`) est un
   **artefact versionné**. La version (`vX`) est inscrite dans chaque
   exécution.
@@ -231,3 +241,4 @@ BSRN). Les coefficients BSRN (§4.1-§4.3) et S₀ (§3) sont fixés.
 | 2026-06-14 | Limites §4.1-§4.3 remplacées par les valeurs verbatim BSRN V2.0 (Long & Dutton) ; restent à acter : S₀ (§3) et tests temporels (§4.4) |
 | 2026-10-15 | Géométrie au milieu de l'heure pour les moyennes horaires (§3) ; arbitrages du §5 tranchés pour le Burkina Faso (ADR-0014) |
 | 2026-10-28 | Contexte ramené aux séries horaires du Burkina Faso (§1) ; S₀ fixé à la valeur du code (§3) ; bornes de température appliquées (§4.1) |
+| 2026-10-29 | Horaire NASA POWER aux 398 localités, une série par maille (§1) ; contrôle en masse avant chargement et contrôle d'une maille aux coordonnées de sa porteuse (§6, ADR-0026) |

@@ -113,7 +113,7 @@ class SerieMetadonnees(Base):
         ),
     )
 
-    # === Stockage des mesures journalières (ADR-0017) ===
+    # === Stockage des mesures et séries porteuses (ADR-0017, ADR-0026) ===
     stockage: Mapped[str] = mapped_column(
         String(9),
         nullable=False,
@@ -133,8 +133,9 @@ class SerieMetadonnees(Base):
         ),
         nullable=True,
         comment=(
-            "Serie dense dont celle-ci lit les mesures (meme maille de la source, "
-            "valeurs identiques) ; NULL si la serie porte ses propres mesures."
+            "Serie dont celle-ci lit les mesures (meme maille de la source, valeurs "
+            "identiques), dense (ADR-0017) ou horaire (ADR-0026) ; NULL si la serie porte "
+            "ses propres mesures."
         ),
     )
 
@@ -209,8 +210,9 @@ class SerieMetadonnees(Base):
             name="ck_series_metadonnees_stockage_valide",
         ),
         CheckConstraint(
-            "serie_porteuse_id IS NULL OR (stockage = 'dense' AND serie_porteuse_id <> id)",
-            name="ck_series_metadonnees_serie_porteuse_dense",
+            "serie_porteuse_id IS NULL OR (serie_porteuse_id <> id "
+            "AND (stockage = 'dense' OR granularite = 'horaire'))",
+            name="ck_series_metadonnees_serie_porteuse_valide",
         ),
         CheckConstraint(
             "(actif = TRUE AND desactive_le IS NULL) "

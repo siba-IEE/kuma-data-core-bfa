@@ -308,7 +308,6 @@ class SourceCore:
         clauses = [
             "sm.code = :code",
             "mh.statut = 'valide_auto'",
-            "mh.valide_au IS NULL",
         ]
         params: dict[str, object] = {"code": meta.code}
         if self.annee_min is not None:
@@ -325,7 +324,7 @@ class SourceCore:
                 SELECT extract(month from mh.instant_mesure at time zone 'UTC')::int AS mois,
                        extract(hour from mh.instant_mesure at time zone 'UTC')::int AS heure,
                        mh.valeur
-                FROM mesures_ressource_horaires mh
+                FROM v_mesures_horaires mh
                 JOIN series_metadonnees sm ON sm.id = mh.serie_id
                 WHERE {where}
                 ORDER BY mh.instant_mesure

@@ -68,7 +68,10 @@ def test_series_des_communes(db_session: Session) -> None:
 
 
 def test_porteuses_coherentes(db_session: Session) -> None:
-    """Porteuse de même famille, sans relais ; seules les porteuses ont des lignes."""
+    """Porteuse de même famille, sans relais ; seules les porteuses ont des lignes.
+
+    Les séries horaires qui lisent une porteuse (ADR-0026) ont leur propre test.
+    """
     incoherentes = db_session.execute(
         text(
             """
@@ -76,10 +79,10 @@ def test_porteuses_coherentes(db_session: Session) -> None:
             JOIN series_metadonnees p ON p.id = s.serie_porteuse_id
             JOIN localites ls ON ls.id = s.localite_id
             JOIN localites lp ON lp.id = p.localite_id
-            WHERE p.serie_porteuse_id IS NOT NULL OR p.stockage <> 'dense'
+            WHERE s.stockage = 'dense' AND (p.serie_porteuse_id IS NOT NULL OR p.stockage <> 'dense'
                OR (p.grandeur_code, p.source_id, p.periode_debut, p.periode_fin)
                   IS DISTINCT FROM (s.grandeur_code, s.source_id, s.periode_debut, s.periode_fin)
-               OR lp.code >= ls.code
+               OR lp.code >= ls.code)
             """
         )
     ).scalar_one()

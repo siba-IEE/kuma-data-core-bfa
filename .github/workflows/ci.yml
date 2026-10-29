@@ -103,11 +103,12 @@ jobs:
   tests-integration:
     name: Tests d'intégration
     runs-on: ubuntu-latest
-    # Migrations 0006 à 0023 (mesures lues dans les CSV et les Parquet
-    # committés, 793 214 grandeurs dérivées calculées en SQL et contrôle
-    # qualité horaire) : upgrade head en un quart d'heure environ ici. Le
-    # plafond laisse la marge d'un runner lent à installer Python.
-    timeout-minutes: 30
+    # Migrations 0006 à 0027 (mesures lues dans les CSV et les Parquet
+    # committés, 793 214 grandeurs dérivées calculées en SQL, contrôle
+    # qualité horaire) : upgrade head en un quart d'heure environ jusqu'à la
+    # 0026 ; la 0027 (7,1 millions d'heures NASA POWER) ajoute quelque sept
+    # minutes en local. Le plafond laisse la marge d'un runner lent.
+    timeout-minutes: 40
     needs: [lint, type-check]
 
     # Service container natif GitHub Actions : un PostgreSQL 16-alpine
