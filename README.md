@@ -2,19 +2,19 @@
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-Données de ressource solaire et de météo des 398 localités du Burkina Faso
-(47 provinces et 351 communes du découpage de 2025), servies par une API
-FastAPI sur PostgreSQL. Instance burkinabè du moteur Kuma Data Core.
+Base de données sur le gisement solaire et la météo du Burkina Faso, pour les
+47 provinces et les 351 communes du découpage de 2025, avec une API pour la
+consulter.
 
-Chaque valeur garde sa source, sa méthode, son niveau de confiance (A, B ou C)
-et son statut éditorial. Une correction ajoute une version sans effacer
-l'ancienne, sauf pour les séries journalières en stockage dense, rechargées
-en bloc depuis leurs fichiers versionnés (ADR-0017).
+Chaque valeur est enregistrée avec sa source, sa méthode, son niveau de
+confiance (A, B ou C) et son statut éditorial. Une correction crée une nouvelle
+version et conserve l'ancienne. Les séries journalières en stockage dense
+(ADR-0017) font exception : elles sont rechargées entières.
 
 ## Données
 
-Toutes les séries sont en confiance B ; le niveau A viendra des stations sol
-ESMAP/WAPP ([feuille de route](ROADMAP.md), jalon 6).
+Toutes les séries ont le niveau de confiance B. Le niveau A demande les mesures
+des stations au sol ESMAP/WAPP, prévues dans la [feuille de route](ROADMAP.md).
 
 | Source | Grandeurs | Pas | Localités | Période |
 |---|---|---|---|---|
@@ -32,21 +32,20 @@ ESMAP/WAPP ([feuille de route](ROADMAP.md), jalon 6).
 | CAMS Radiation | GHI, DNI, DHI, GHI par ciel clair | heure | 5 points pilotes | 2021-2025 |
 | CAMS EAC4 | PM2.5, PM10, épaisseur optique des aérosols à 550 nm (totale, poussières, matière organique) | jour | 398 | 2005-2025 |
 
-Les points pilotes sont Ouagadougou et les quatre sites des stations sol
+Les points pilotes sont Ouagadougou et les quatre sites des stations au sol
 (Dédougou, Dori, Kaya, Koupéla). Les séries horaires passent par le contrôle
 qualité v1 (ADR-0014).
 
-La base stocke aussi la fraction diffuse et les écarts mensuels de SARAH-3,
-ERA5 et CAMS à NASA POWER (ADR-0012). L'API calcule à la demande
+La base contient aussi la fraction diffuse et les écarts mensuels de SARAH-3,
+ERA5 et CAMS par rapport à NASA POWER (ADR-0012). L'API calcule à la demande
 (`/v1/grandeurs`) le POA, les productibles, l'énergie utile ECS, les
 degrés-jours de climatisation, les P50/P90 du GHI, le proxy de salissure, le
 PR réaliste et l'incertitude inter-source. Une grandeur calculée prend le
-niveau de confiance le plus bas de ses entrées, plafonné selon la méthode
-(ADR-0025).
+niveau de confiance de sa plus faible entrée, au plus B sauf pour un calcul
+exact (ADR-0025).
 
-La [référence de l'API](docs/architecture/06-api-reference-publique.md)
-détaille chaque grandeur ; les choix de méthode sont dans les
-[ADR](docs/decisions/).
+La [référence de l'API](docs/architecture/06-api-reference-publique.md) décrit
+chaque grandeur, et les [ADR](docs/decisions/) expliquent les choix de méthode.
 
 ## Démarrage rapide
 
@@ -63,8 +62,8 @@ uv run uvicorn kuma_data_core.api.main:app --reload
 ```
 
 Les migrations chargent les données depuis les fichiers du dépôt, sans accès
-réseau ; elles prennent une vingtaine de minutes en CI. L'API écoute sur
-`http://127.0.0.1:8000` (`/docs` en dev).
+réseau ; elles prennent une vingtaine de minutes en CI. L'API répond ensuite
+sur `http://127.0.0.1:8000` (`/docs` en dev).
 
 ## Stack
 
@@ -74,16 +73,16 @@ et d'intégration, contrôle de cohérence Alembic).
 
 ## Structure
 
-| Chemin | Rôle |
+| Chemin | Contenu |
 |---|---|
 | `src/kuma_data_core/db/` | Modèles SQLAlchemy, sessions, seeds de référentiels |
-| `src/kuma_data_core/db/seeds/donnees/` | Données versionnées (CSV, Parquet) lues par les migrations |
+| `src/kuma_data_core/db/seeds/donnees/` | Fichiers de données (CSV, Parquet) chargés par les migrations |
 | `src/kuma_data_core/api/` | Application FastAPI (auth Bearer) |
-| `src/kuma_data_core/services/grandeurs/` | Modules de calcul par grandeur |
-| `src/kuma_data_core/editorial/` | Statuts éditoriaux, confiance A/B/C, versionnement |
+| `src/kuma_data_core/services/grandeurs/` | Calcul des grandeurs |
+| `src/kuma_data_core/editorial/` | Statuts éditoriaux, confiance A/B/C, versions |
 | `scripts/` | Scripts d'ingestion des sources externes et d'exploitation |
 | `migrations/versions/` | Migrations Alembic |
-| `migrations/sql/` | SQL de la baseline schéma et des référentiels |
+| `migrations/sql/` | SQL du schéma initial et des référentiels |
 | `tests/` | Tests unitaires et d'intégration |
 | `docs/` | Architecture, conventions, méthodologie |
 
@@ -93,7 +92,7 @@ Le SQL et les identifiants métier sont en français. Toute évolution du schém
 passe par une migration Alembic. Détails dans
 [docs/conventions/](docs/conventions/) et [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Attribution des données amont
+## Sources des données
 
 - NASA POWER (CC BY 4.0), API v2.10.0 à v2.10.3, consultée les 15, 27 et
   29 octobre 2026 : « The data was obtained from National Aeronautics and
@@ -103,9 +102,9 @@ passe par une migration Alembic. Détails dans
 - PVGIS (JRC, Commission européenne), API v5_3, consultée les 15 et
   27 octobre 2026 : « PVGIS © Union européenne, 2001-2026 ». La décision
   2011/833/UE autorise la réutilisation sous réserve de citer la source. PVGIS
-  sert ici SARAH-3, du CM SAF d'EUMETSAT (« © 2005-2023 EUMETSAT »), et ERA5,
-  du Copernicus Climate Change Service (C3S, CC BY 4.0 : « Contains modified
-  Copernicus Climate Change Service information 2005-2023 »).
+  fournit ici SARAH-3, du CM SAF d'EUMETSAT (« © 2005-2023 EUMETSAT »), et
+  ERA5, du Copernicus Climate Change Service (C3S, CC BY 4.0 : « Contains
+  modified Copernicus Climate Change Service information 2005-2023 »).
 - ERA5-Land, CEPMMT pour le C3S (CC BY 4.0, DOI 10.24381/ee82e357),
   consulté les 27 et 28 octobre 2026 : « Contains modified Copernicus Climate
   Change Service information 2005-2025 ».

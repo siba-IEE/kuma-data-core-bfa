@@ -28,7 +28,7 @@ pour les chercheurs locaux de contribuer. Au Burkina Faso, la campagne
 ESMAP/WAPP a mesuré deux ans à Dédougou, Dori, Kaya et Koupéla (2021-2023,
 licence CC BY 4.0) ; ces stations ne sont pas encore intégrées (voir
 [calage terrain](../methodologie/calage-terrain-solaire.md)). Une contribution
-est un renfort, pas un prérequis : l'instance démarre à partir des sources
+est un renfort, pas un prérequis : la base démarre à partir des sources
 satellitaires et de réanalyse ouvertes.
 
 ## Par où commencer

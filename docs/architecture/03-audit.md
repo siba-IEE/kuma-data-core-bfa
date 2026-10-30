@@ -160,7 +160,7 @@ migrations de contrôle qualité algorithmique qui requalifient ces
 mêmes lignes en masse, et pour les grandeurs dérivées calculées en SQL
 depuis ces lignes (calcul déterministe, rejouable au bit près).
 
-Motif : l'audit trace l'édition, pas le déversement. Sur l'instance
+Motif : l'audit trace l'édition, pas le déversement. Sur la base
 d'origine du moteur, le rejeu d'un backfill journalier de
 4 147 830 insertions a montré le coût du trigger par ligne : 19 minutes
 d'insertion en local, 24 minutes de job CI, et autant de lignes

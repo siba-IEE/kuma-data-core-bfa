@@ -1,7 +1,7 @@
 """Tests d'intégration du seed des référentiels génériques (migration 0002).
 
-Vérifie le peuplement des tables de référence indépendantes du pays et la
-curation de l'instance : la source guinéenne
+Vérifie le peuplement des tables de référence indépendantes du pays et le
+tri des sources pour le Burkina Faso : la source guinéenne
 ``anm_guinee_stations`` est absente, l'amont générique est présent.
 """
 
@@ -31,7 +31,7 @@ def test_unites_et_grandeurs_peuplees(db_session: Session) -> None:
 
 
 def test_source_guineenne_retiree(db_session: Session) -> None:
-    """La source verrouillée sur la Guinée n'est pas versée dans l'instance BFA."""
+    """La source verrouillée sur la Guinée n'est pas versée dans la base BFA."""
     presente = db_session.execute(
         text("SELECT count(*) FROM sources WHERE code = 'anm_guinee_stations'")
     ).scalar_one()

@@ -2,10 +2,10 @@ cff-version: 1.2.0
 message: "Si vous utilisez ce logiciel, merci de le citer comme ci-dessous."
 title: "Kuma Data Core (Burkina Faso)"
 abstract: >-
-  Moteur de données à confiance tracée (niveaux A/B/C), versionnement
-  temporel non destructif et audit applicatif. Base PostgreSQL et API
-  FastAPI. Instance dédiée : ressource solaire au Burkina Faso. Dérivé
-  du moteur Kuma Data Core (instance pilote Guinée).
+  Base de données sur le gisement solaire et la météo du Burkina Faso
+  (47 provinces et 351 communes), avec niveaux de confiance A/B/C,
+  historique des corrections et API FastAPI sur PostgreSQL. Code issu de
+  Kuma Data Core.
 type: software
 authors:
   - family-names: "Kalivogui"

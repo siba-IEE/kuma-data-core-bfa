@@ -1,6 +1,6 @@
 # Contribuer à Kuma Data Core
 
-Merci de votre intérêt. Ce dépôt est l'instance Burkina Faso du moteur
+Merci de votre intérêt. Ce dépôt est la version Burkina Faso de
 [Kuma Data Core](https://github.com/siba-IEE/kuma-data-core).
 
 ## Par où commencer
@@ -86,7 +86,8 @@ bloque le merge tant que ce n'est pas fait.
 N'ajoutez aucun secret ni donnée personnelle ; les jeux de test sont
 synthétiques ou issus de sources publiques ouvertes. Le code est distribué
 sous AGPL-3.0-or-later (voir [LICENSE](LICENSE) et [NOTICE](NOTICE)) ;
-l'attribution des données amont figure dans le [README](README.md).
+les sources des données et leurs attributions figurent dans le
+[README](README.md).
 
 ## Signaler un problème
 

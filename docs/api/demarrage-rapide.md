@@ -163,4 +163,4 @@ Citez le dépôt selon son fichier [`CITATION.cff`](../../CITATION.cff), avec
 l'`edition_id` et la `date_publication` renvoyés par `GET /v1/edition` pour
 préciser l'état des données consultées. Les sources amont (NASA POWER,
 Copernicus, PVGIS) demandent leur propre attribution : voir la section
-« Attribution des données amont » du [`README`](../../README.md).
+« Sources des données » du [`README`](../../README.md).

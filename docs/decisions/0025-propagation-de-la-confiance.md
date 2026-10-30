@@ -11,7 +11,7 @@ Les calculs à la volée de `/v1/grandeurs` posaient B en dur, et la fraction
 diffuse stockée par la migration 0009 écrit B en SQL. Une grandeur tirée d'une
 valeur qu'un override éditorial a descendue en C sortait donc en B, plus sûre
 que ce dont elle est faite. La règle de propagation P vient du moteur ;
-l'instance la reprend.
+ce dépôt la reprend.
 
 ## Décision
 
@@ -27,7 +27,7 @@ l'instance la reprend.
   et pour les proxys (salissure HSU, PR réaliste). Chaque module de calcul
   déclare son `PLAFOND_CONFIANCE`.
 - **Source du calcul :** comme R3 pour une mesure, A exige une source de calcul
-  de fiabilité haute : `kuma_calculs` pour une grandeur stockée, l'instance
+  de fiabilité haute : `kuma_calculs` pour une grandeur stockée, l'API
   elle-même pour un calcul à la volée.
 - **Période :** chaque valeur ne voit que les entrées de sa période, un jour, un
   mois, ou la normale 1991-2020 de `ghi_exceedance`. Les lecteurs de l'API

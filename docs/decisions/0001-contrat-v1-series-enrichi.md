@@ -102,11 +102,11 @@ Hérite des 21 champs de `SerieListee` enrichi + ses propres `unite_code` et `me
 - JOIN `unites u ON u.id = gr.unite_id`
 - Enrichissement des projections sur les JOINs existants `localites` et `sources`
 
-Performance : 4 JOINs au lieu de 2, sur des clés indexées. La décision a été prise sur les 96 séries de l'instance d'origine, avec l'idée d'une vue matérialisée `v_series_catalogue_enrichi` si la couverture grandissait. Le Burkina Faso compte 21 930 séries ; le listing est paginé et aucune vue matérialisée n'a été créée.
+Performance : 4 JOINs au lieu de 2, sur des clés indexées. La décision a été prise sur les 96 séries de la base d'origine du moteur, avec l'idée d'une vue matérialisée `v_series_catalogue_enrichi` si la couverture grandissait. Le Burkina Faso compte 23 502 séries ; le listing est paginé et aucune vue matérialisée n'a été créée.
 
 ### Stratégie `total` - COUNT séparé
 
-Option simple retenue : `SELECT COUNT(*) FROM series_metadonnees ... WHERE <mêmes filtres>` exécuté séparément du SELECT items. Plus lisible, et suffisant pour les 96 séries de l'instance d'origine. Window function `COUNT(*) OVER()` à considérer si benchmark le justifie ultérieurement.
+Option simple retenue : `SELECT COUNT(*) FROM series_metadonnees ... WHERE <mêmes filtres>` exécuté séparément du SELECT items. Plus lisible, et suffisant pour les 96 séries de la base d'origine du moteur. Window function `COUNT(*) OVER()` à considérer si benchmark le justifie ultérieurement.
 
 ## Nommage public côté contrat ≠ nommage DB
 
@@ -144,10 +144,10 @@ Les IDs `id`, `localite_id`, `source_id` sont exposés en `int` natif (sérialis
 
 ### Positives
 
-- Un consommateur peut désormais construire son catalogue avec les vraies séries de l'API au lieu d'un jeu factice (les 96 séries de l'instance d'origine)
+- Un consommateur peut désormais construire son catalogue avec les vraies séries de l'API au lieu d'un jeu factice (les 96 séries de la base d'origine du moteur)
 - Les vues catalogue et fiches détail disposent de la localité, la grandeur et la source dénormalisées, ainsi que de la période complète
 - L'envelope paginée résout un drift documenté côté consommateur : c'est un *alignement* de contrat, pas une introduction de drift
-- Les performances JOIN ont été mesurées et jugées acceptables sur les 96 séries de l'instance d'origine (50 ms par requête en local)
+- Les performances JOIN ont été mesurées et jugées acceptables sur les 96 séries de la base d'origine du moteur (50 ms par requête en local)
 
 ### Dettes acceptées
 

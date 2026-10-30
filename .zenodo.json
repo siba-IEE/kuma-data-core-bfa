@@ -1,6 +1,6 @@
 {
   "title": "Kuma Data Core (Burkina Faso)",
-  "description": "Moteur de données à confiance tracée (niveaux A/B/C), versionnement temporel non destructif et audit applicatif. Base PostgreSQL et API FastAPI. Instance dédiée : ressource solaire au Burkina Faso. Dérivé du moteur Kuma Data Core (instance pilote Guinée).",
+  "description": "Base de données sur le gisement solaire et la météo du Burkina Faso (47 provinces et 351 communes), avec niveaux de confiance A/B/C, historique des corrections et API FastAPI sur PostgreSQL. Code issu de Kuma Data Core.",
   "upload_type": "software",
   "access_right": "open",
   "license": "AGPL-3.0-or-later",

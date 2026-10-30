@@ -31,8 +31,8 @@ servie en Guinée (2021 à août 2025).
   les seuls zéros ne corrigerait qu'une partie du creux. Ils sont signalés,
   chiffrés, dans la note publique de chaque série.
 - Lot `provinces`, 2005-2025 : EAC4 est servi depuis 2003, mais la période
-  reste celle de CAMS Radiation (ADR-0011), seule autre source CAMS de
-  l'instance. Méthode `reanalyse`, confiance B. Valeurs strictement
+  reste celle de CAMS Radiation (ADR-0011), seule autre source CAMS du
+  dépôt. Méthode `reanalyse`, confiance B. Valeurs strictement
   positives, au plus 1 000 µg/m³ pour le PM2.5 et 1 500 µg/m³ pour le PM10,
   au-dessus des maxima servis (bornes relevées par l'ADR-0018).
 - Ingesteur `scripts/ingest_cams_eac4_journalier.py` (clé `ADS_API_KEY`) ;

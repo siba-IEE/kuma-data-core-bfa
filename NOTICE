@@ -11,5 +11,4 @@ Ce dépôt inclut des jeux de données dérivés de sources ouvertes
 (NASA POWER, EUMETSAT CM SAF / SARAH-3 et Copernicus / ERA5 via PVGIS,
 Copernicus / ERA5-Land via le CDS, Copernicus / CAMS Radiation et CAMS
 EAC4 via l'ADS, Wikidata, RGPH 2019 de l'INSD, contours COD-AB de l'IGB
-via OCHA). Voir la section
-« Attribution des données amont » du README.
+via OCHA). Voir la section « Sources des données » du README.

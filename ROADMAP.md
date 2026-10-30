@@ -1,9 +1,5 @@
 # Feuille de route
 
-Instance dédiée au Burkina Faso du moteur Kuma Data Core. Le moteur est
-générique (le pays est un axe de classification) ; cette feuille de route couvre
-l'amorçage et la montée en charge de la donnée burkinabè.
-
 ## Jalon 1 : localités
 
 - [x] Pays `bfa`, 17 régions (`region_administrative`) et 47 provinces

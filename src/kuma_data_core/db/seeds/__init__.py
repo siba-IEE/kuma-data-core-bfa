@@ -1,1 +1,1 @@
-"""Données de seed des référentiels de Kuma Data Core (instance Burkina Faso)."""
+"""Données de seed des référentiels de Kuma Data Core (Burkina Faso)."""

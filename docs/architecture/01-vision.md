@@ -59,20 +59,21 @@ et de la fiabilité de la source ; une grandeur calculée prend le niveau le
 plus bas de ses entrées, sans dépasser le plafond de sa méthode (ADR-0025).
 Un override éditorial justifié reste possible.
 
-## Instance : Burkina Faso
+## Burkina Faso
 
-Ce dépôt porte le substrat physique solaire du Burkina Faso, aux
+Ce dépôt contient les données solaires et météo du Burkina Faso aux
 398 localités du découpage de 2025 : 47 provinces, 350 départements et
-la commune de Ouagadougou (ADR-0007). Il sert le rayonnement (GHI, DNI,
-DHI, ciel clair) et la météo aux pas mensuel, journalier et horaire,
-issus de NASA POWER, de SARAH-3 et ERA5 via PVGIS, d'ERA5-Land et de CAMS
-Radiation, et les aérosols de CAMS EAC4 (particules fines, épaisseur
-optique), en confiance B ; des grandeurs dérivées stockées (écarts entre
-sources, fraction diffuse) ; et des grandeurs calculées par l'API (POA, productibles, énergie utile ECS, degrés-jours,
-PR réaliste). La confiance A attend les stations sol (feuille de route,
-jalon 6). Le modèle reste générique : d'autres substrats (vent,
-hydrologie, biomasse, infrastructure, usages) et d'autres pays
-s'ajoutent selon le même schéma.
+la commune de Ouagadougou (ADR-0007). Le rayonnement (GHI, DNI, DHI, ciel
+clair) et la météo, aux pas mensuel, journalier et horaire, viennent de
+NASA POWER, de SARAH-3 et ERA5 via PVGIS, d'ERA5-Land et de CAMS
+Radiation ; les aérosols (particules fines, épaisseur optique) viennent de
+CAMS EAC4. Toutes ces séries sont en confiance B. La base stocke aussi des
+grandeurs dérivées (écarts entre sources, fraction diffuse), et l'API en
+calcule d'autres à la demande (POA, productibles, énergie utile ECS,
+degrés-jours, PR réaliste). La confiance A attend les stations au sol
+(feuille de route, jalon 6). D'autres domaines (vent, hydrologie, biomasse,
+infrastructure, usages) et d'autres pays peuvent s'ajouter sans changer le
+schéma.
 
 ## Données publiques
 

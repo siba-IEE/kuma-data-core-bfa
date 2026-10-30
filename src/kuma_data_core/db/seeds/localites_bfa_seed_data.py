@@ -1,6 +1,6 @@
-"""Données de seed pour la table ``localites`` (instance Burkina Faso).
+"""Données de seed pour la table ``localites`` (Burkina Faso).
 
-Premier lot du moteur dédié Burkina Faso : la racine continentale, le pays,
+Premier lot pour le Burkina Faso : la racine continentale, le pays,
 les 17 régions (``region_administrative``) et les 47 provinces
 (``prefecture``) du découpage de 2025 (ADR-0007).
 

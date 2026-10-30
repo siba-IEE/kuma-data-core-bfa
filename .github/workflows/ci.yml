@@ -166,7 +166,7 @@ jobs:
         run: uv sync --group dev --frozen
 
       - name: Appliquer les migrations Alembic
-        # Instance Burkina Faso : baseline schéma squashée + référentiels +
+        # Burkina Faso : baseline schéma squashée + référentiels +
         # localités + séries mensuelles et journalières (rayonnement, météo)
         # + grandeurs dérivées + séries journalières denses des communes. Les
         # mesures sont lues dans les CSV gzip et les Parquet committés et les

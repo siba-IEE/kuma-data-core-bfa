@@ -4,7 +4,7 @@ Rien d'optique ici : ni transposition au plan des modules, ni Perez. La
 « transposition » du moteur est un rééchelonnage mensuel par ratios, pure
 arithmétique. Ce module reproduit fidèlement les formules de la vue TypeScript
 (``calage.ts``, ``ressource-v2.ts``, ``transposition.ts`` du moteur), validées
-sur des valeurs de référence dans l'instance d'origine.
+sur des valeurs de référence dans la base d'origine du moteur.
 """
 
 from __future__ import annotations

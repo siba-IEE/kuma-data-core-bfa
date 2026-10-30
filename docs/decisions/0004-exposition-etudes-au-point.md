@@ -16,7 +16,7 @@ n'étaient pas servis par l'API :
    Savoir quelle série représente un point est un savoir éditorial : le
    plus-proche-voisin naïf est faux dès que la localité la plus proche
    est dans une autre cellule que le point. La décision a été prise sur
-   l'instance d'origine du moteur, où la moyenne 1991-2020 d'une série
+   la base d'origine du moteur, où la moyenne 1991-2020 d'une série
    reproduisait à l'identique, sur les 12 mois, le relevé NASA POWER
    d'un point de la même cellule, alors que la localité la plus proche
    de ce point était dans la cellule voisine. Le laisser aux

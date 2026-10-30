@@ -1,7 +1,7 @@
 [project]
 name = "kuma-data-core-bfa"
 version = "0.23.0"
-description = "Moteur de données à confiance tracée (niveaux A/B/C), versionnement temporel non destructif et audit applicatif. Base PostgreSQL et API FastAPI. Instance dédiée : ressource solaire au Burkina Faso."
+description = "Base de données sur le gisement solaire et la météo du Burkina Faso (47 provinces et 351 communes), avec niveaux de confiance A/B/C, historique des corrections et API FastAPI sur PostgreSQL. Code issu de Kuma Data Core."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "AGPL-3.0-or-later" }

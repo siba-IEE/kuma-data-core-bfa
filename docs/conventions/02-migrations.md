@@ -11,9 +11,8 @@ des migrations.
 
 Une migration est un artefact immuable une fois mergée sur `main`. Toute
 correction se fait par une nouvelle migration, jamais par modification
-de l'existante. Cette règle protège l'historique de la base de données
-et garantit que toute instance peut être reconstruite à partir de la
-suite ordonnée des migrations.
+de l'existante. Ainsi l'historique de la base reste intact, et toute base
+se reconstruit en rejouant les migrations dans l'ordre.
 
 ## Nommage des fichiers
 

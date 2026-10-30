@@ -1,9 +1,8 @@
 # Guide de contribution de données
 
-Ce dépôt est l'instance Burkina Faso du moteur
-[Kuma Data Core](https://github.com/siba-IEE/kuma-data-core). Ce guide
-explique comment une donnée est modélisée dans le Core, pour que vous sachiez
-ce que vous contribuez.
+Ce dépôt est la version Burkina Faso de
+[Kuma Data Core](https://github.com/siba-IEE/kuma-data-core). Une donnée
+contribuée entre dans le modèle ci-dessous.
 
 ## Le modèle, entité par entité
 
